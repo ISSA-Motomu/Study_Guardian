@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 from services.gsheet import GSheetService
 from services.economy import EconomyService
 from services.stats import SagaStats
+from services.shop import ShopService
 
 load_dotenv()
 
@@ -26,14 +27,6 @@ LINE_ACCESS_TOKEN = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN")
 LINE_SECRET = os.environ.get("LINE_CHANNEL_SECRET")
 line_bot_api = LineBotApi(LINE_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_SECRET)
-
-# --- 商品リスト（ハードコードで定義） ---
-SHOP_ITEMS = {
-    "game_30": {"name": "🎮 ゲーム30分", "cost": 300},
-    "game_60": {"name": "🎮 ゲーム1時間", "cost": 600},
-    "cash_100": {"name": "💴 お小遣い100円", "cost": 100},
-    "snack": {"name": "🍩 おやつ券", "cost": 150},
-}
 
 
 @app.route("/")
@@ -62,12 +55,65 @@ def handle_postback(event):
 
     action = data.get("action")
 
+    # --- 0. 勉強開始・終了 (確認後) ---
+    if action == "start_study":
+        try:
+            profile = line_bot_api.get_profile(user_id)
+            user_name = profile.display_name
+        except:
+            user_name = "User"
+
+        now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
+        today = now.strftime("%Y-%m-%d")
+        current_time = now.strftime("%H:%M:%S")
+
+        if GSheetService.log_activity(user_id, user_name, today, current_time):
+            reply_text = (
+                f"【記録開始】\n{current_time} スタート！\n今日も頑張ってえらい！"
+            )
+        else:
+            reply_text = "エラー：記録に失敗しました。"
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
+
+    elif action == "end_study":
+        now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
+        current_time = now.strftime("%H:%M:%S")
+
+        result = GSheetService.update_end_time(user_id, current_time)
+        if result:
+            start_time_str = result["start_time"]
+            try:
+                start_dt = datetime.datetime.strptime(start_time_str, "%H:%M:%S")
+                end_dt = datetime.datetime.strptime(current_time, "%H:%M:%S")
+                if end_dt < start_dt:
+                    end_dt += datetime.timedelta(days=1)
+
+                duration = end_dt - start_dt
+                minutes = int(duration.total_seconds() / 60)
+                earned_exp = minutes
+                new_balance = EconomyService.add_exp(
+                    user_id, earned_exp, "STUDY_REWARD"
+                )
+
+                hours, mins = divmod(minutes, 60)
+                reply_text = f"【記録終了】\nお疲れ様でした！\n勉強時間: {hours}時間{mins}分\n獲得EXP: {earned_exp} EXP\n現在残高: {new_balance} EXP"
+            except Exception as e:
+                print(f"計算エラー: {e}")
+                reply_text = "時間の計算に失敗しました。"
+        else:
+            reply_text = "「勉強開始」が見つかりません。"
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
+
     # --- 1. 商品購入処理 ---
-    if action == "buy":
+    elif action == "buy":
         item_key = data.get("item")
-        item = SHOP_ITEMS.get(item_key)
+        shop_items = ShopService.get_items()
+        item = shop_items.get(item_key)
 
         if not item:
+            line_bot_api.reply_message(
+                event.reply_token, TextSendMessage(text="商品が見つかりません。")
+            )
             return
 
         # 残高チェック
@@ -182,14 +228,17 @@ def handle_postback(event):
         # 権限があれば実行
         target_id = data.get("target")
         item_key = data.get("item")
-        item = SHOP_ITEMS.get(item_key)
+        shop_items = ShopService.get_items()
+        item = shop_items.get(item_key)
+
+        item_name = item["name"] if item else "商品"
 
         # 弟への通知（本来は push_message ですが、無料版LINE Botの制限があるため reply で返すか、
         # あるいはグループLINE内でのやり取りなら reply で全員に見えます）
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(
-                text=f"🙆‍♀️ 承認されました！\n\n🎟 【利用許可証】\n{item['name']}\n\nこの画面を親に見せて使いましょう！"
+                text=f"🙆‍♀️ 承認されました！\n\n🎟 【利用許可証】\n{item_name}\n\nこの画面を親に見せて使いましょう！"
             ),
         )
 
@@ -239,62 +288,115 @@ def handle_message(event):
 
     reply_text = ""
 
-    # --- 1. 勉強開始 ---
+    # --- 1. 勉強開始 (確認) ---
     if msg == "勉強開始":
-        if GSheetService.log_activity(user_id, user_name, today, current_time):
-            reply_text = (
-                f"【記録開始】\n{current_time} スタート！\n今日も頑張ってえらい！"
-            )
-        else:
-            reply_text = (
-                "エラー：記録に失敗しました。スプレッドシートを確認してください。"
-            )
+        confirm_flex = {
+            "type": "bubble",
+            "body": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                    {
+                        "type": "text",
+                        "text": "勉強を始めますか？",
+                        "weight": "bold",
+                        "size": "lg",
+                        "align": "center",
+                    }
+                ],
+            },
+            "footer": {
+                "type": "box",
+                "layout": "horizontal",
+                "spacing": "sm",
+                "contents": [
+                    {
+                        "type": "button",
+                        "style": "primary",
+                        "action": {
+                            "type": "postback",
+                            "label": "はい",
+                            "data": "action=start_study",
+                        },
+                    },
+                    {
+                        "type": "button",
+                        "style": "secondary",
+                        "action": {
+                            "type": "message",
+                            "label": "いいえ",
+                            "text": "キャンセル",
+                        },
+                    },
+                ],
+            },
+        }
+        line_bot_api.reply_message(
+            event.reply_token,
+            FlexSendMessage(alt_text="勉強開始確認", contents=confirm_flex),
+        )
 
-        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
-
-    # --- 2. 勉強終了 ---
+    # --- 2. 勉強終了 (確認) ---
     elif msg == "勉強終了":
-        result = GSheetService.update_end_time(user_id, current_time)
-        if result:
-            # 時間計算
-            start_time_str = result["start_time"]
-            try:
-                start_dt = datetime.datetime.strptime(start_time_str, "%H:%M:%S")
-                end_dt = datetime.datetime.strptime(current_time, "%H:%M:%S")
-
-                # 日付またぎ対応（簡易）
-                if end_dt < start_dt:
-                    end_dt += datetime.timedelta(days=1)
-
-                duration = end_dt - start_dt
-                minutes = int(duration.total_seconds() / 60)
-
-                # 報酬計算 (例: 1分 = 1 EXP)
-                earned_exp = minutes
-                new_balance = EconomyService.add_exp(
-                    user_id, earned_exp, "STUDY_REWARD"
-                )
-
-                hours, mins = divmod(minutes, 60)
-                reply_text = (
-                    f"【記録終了】\nお疲れ様でした！\n"
-                    f"勉強時間: {hours}時間{mins}分\n"
-                    f"獲得EXP: {earned_exp} EXP\n"
-                    f"現在残高: {new_balance} EXP"
-                )
-            except Exception as e:
-                print(f"計算エラー: {e}")
-                reply_text = "時間の計算に失敗しました。"
-        else:
-            reply_text = "「勉強開始」が見つかりません。\n先に「勉強開始」を押してね！"
-
-        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
+        confirm_flex = {
+            "type": "bubble",
+            "body": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                    {
+                        "type": "text",
+                        "text": "勉強を終わりますか？",
+                        "weight": "bold",
+                        "size": "lg",
+                        "align": "center",
+                    }
+                ],
+            },
+            "footer": {
+                "type": "box",
+                "layout": "horizontal",
+                "spacing": "sm",
+                "contents": [
+                    {
+                        "type": "button",
+                        "style": "primary",
+                        "action": {
+                            "type": "postback",
+                            "label": "はい",
+                            "data": "action=end_study",
+                        },
+                    },
+                    {
+                        "type": "button",
+                        "style": "secondary",
+                        "action": {
+                            "type": "message",
+                            "label": "いいえ",
+                            "text": "キャンセル",
+                        },
+                    },
+                ],
+            },
+        }
+        line_bot_api.reply_message(
+            event.reply_token,
+            FlexSendMessage(alt_text="勉強終了確認", contents=confirm_flex),
+        )
 
     # --- 3. ショップメニュー表示 ---
     elif msg == "ショップ" or msg == "使う":
+        shop_items = ShopService.get_items()
+        if not shop_items:
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text="現在販売中の商品はありません。"),
+            )
+            return
+
         # 商品カタログFlex Messageを作成
         items_contents = []
-        for key, item in SHOP_ITEMS.items():
+        for key, item in shop_items.items():
             row = {
                 "type": "box",
                 "layout": "horizontal",
