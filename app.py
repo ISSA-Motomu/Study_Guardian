@@ -104,8 +104,73 @@ def handle_postback(event):
             reply_text = "「勉強開始」が見つかりません。"
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
 
-    # --- 1. 商品購入処理 ---
+    # --- 1. 商品購入処理 (確認) ---
     elif action == "buy":
+        item_key = data.get("item")
+        shop_items = ShopService.get_items()
+        item = shop_items.get(item_key)
+
+        if not item:
+            line_bot_api.reply_message(
+                event.reply_token, TextSendMessage(text="商品が見つかりません。")
+            )
+            return
+
+        confirm_flex = {
+            "type": "bubble",
+            "body": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                    {
+                        "type": "text",
+                        "text": f"{item['name']} を購入しますか？",
+                        "weight": "bold",
+                        "size": "md",
+                        "wrap": True,
+                    },
+                    {
+                        "type": "text",
+                        "text": f"価格: {item['cost']} EXP",
+                        "size": "sm",
+                        "color": "#aaaaaa",
+                        "margin": "sm",
+                    },
+                ],
+            },
+            "footer": {
+                "type": "box",
+                "layout": "horizontal",
+                "spacing": "sm",
+                "contents": [
+                    {
+                        "type": "button",
+                        "style": "primary",
+                        "action": {
+                            "type": "postback",
+                            "label": "はい",
+                            "data": f"action=confirm_buy&item={item_key}",
+                        },
+                    },
+                    {
+                        "type": "button",
+                        "style": "secondary",
+                        "action": {
+                            "type": "message",
+                            "label": "いいえ",
+                            "text": "キャンセル",
+                        },
+                    },
+                ],
+            },
+        }
+        line_bot_api.reply_message(
+            event.reply_token,
+            FlexSendMessage(alt_text="購入確認", contents=confirm_flex),
+        )
+
+    # --- 1.5 商品購入処理 (実行) ---
+    elif action == "confirm_buy":
         item_key = data.get("item")
         shop_items = ShopService.get_items()
         item = shop_items.get(item_key)
