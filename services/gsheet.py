@@ -41,10 +41,9 @@ class GSheetService:
             print(f"【Error】シート '{sheet_name}' が見つかりません")
             return None
 
-@staticmethod
+    @staticmethod
     def log_activity(user_id, user_name, today, time):
         """学習記録ログを study_log シートに保存"""
-        # ★修正：必ず 'study_log' を指定。なければエラーにして、usersシート汚染を防ぐ
         sheet = GSheetService.get_worksheet("study_log")
         if not sheet:
             print("【Error】study_log シートが見つかりません。作成してください。")
@@ -61,7 +60,6 @@ class GSheetService:
     @staticmethod
     def update_end_time(user_id, end_time):
         """終了時刻を study_log シートに更新"""
-        # ★修正：ここも 'study_log' を指定
         sheet = GSheetService.get_worksheet("study_log")
         if not sheet: return None
 
