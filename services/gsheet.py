@@ -41,19 +41,17 @@ class GSheetService:
             print(f"【Error】シート '{sheet_name}' が見つかりません")
             return None
 
-    @staticmethod
+@staticmethod
     def log_activity(user_id, user_name, today, time):
-        """(旧互換) 学習記録用"""
-        # study_log というシート名に変更してもOKですが、一旦 sheet1 (index 0) または名前指定で
-        # ここでは 'study_log' というシートがあると仮定、なければ1枚目を使うロジック
-        try:
-            sheet = GSheetService.get_worksheet("study_log")
-            if not sheet: 
-                # study_logがない場合は作成するか、デフォルト1枚目を使う（運用に合わせて調整）
-                # 今回は簡略化のためログは今まで通り1枚目と仮定する場合は以下
-                GSheetService._connect()
-                sheet = GSheetService._doc.get_worksheet(0)
+        """学習記録ログを study_log シートに保存"""
+        # ★修正：必ず 'study_log' を指定。なければエラーにして、usersシート汚染を防ぐ
+        sheet = GSheetService.get_worksheet("study_log")
+        if not sheet:
+            print("【Error】study_log シートが見つかりません。作成してください。")
+            return False
             
+        try:
+            # A:ID, B:名前, C:日付, D:開始, E:終了
             sheet.append_row([user_id, user_name, today, time, ""])
             return True
         except Exception as e:
@@ -62,16 +60,18 @@ class GSheetService:
 
     @staticmethod
     def update_end_time(user_id, end_time):
-        """(旧互換) 終了時刻更新"""
-        # 簡易実装：1枚目のシートを見る
-        GSheetService._connect()
-        if not GSheetService._doc: return None
-        sheet = GSheetService._doc.get_worksheet(0)
-        
+        """終了時刻を study_log シートに更新"""
+        # ★修正：ここも 'study_log' を指定
+        sheet = GSheetService.get_worksheet("study_log")
+        if not sheet: return None
+
         all_records = sheet.get_all_values()
         target_row = None
+        
+        # 後ろから検索
         for i in range(len(all_records), 0, -1):
             row = all_records[i-1]
+            # ID一致 かつ 終了時刻(E列=index4)が空
             if len(row) >= 5 and row[0] == user_id and row[4] == "":
                 target_row = i
                 break
