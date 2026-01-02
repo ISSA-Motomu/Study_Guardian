@@ -48,7 +48,7 @@
           }
         ],
         "margin": "md",
-        "alignItems": "end"
+        "alignItems": "flex-end"
       }
     ],
     "backgroundColor": "#27ACB2",
