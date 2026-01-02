@@ -1,5 +1,5 @@
 import os
-from flask import Flask, request, abort
+from flask import Flask, request, abort, render_template
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import (
     MessageEvent,
@@ -11,15 +11,35 @@ from dotenv import load_dotenv
 # 新しい構成のインポート
 from bot_instance import line_bot_api, handler
 from handlers import study, shop, job, admin, status, common
+from services.history import HistoryService
+from services.economy import EconomyService
 
 load_dotenv()
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder="templates/html")
 
 
 @app.route("/")
 def home():
     return "Saga Guardian Active"
+
+
+@app.route("/admin/dashboard")
+def admin_dashboard():
+    # 本来は認証が必要だが、簡易的にURLを知っている人のみアクセス可能とする
+    # もしくはクエリパラメータで ?key=secret_key のように簡易認証を入れても良い
+
+    transactions = HistoryService.get_all_transactions()
+
+    # ユーザーIDを名前に変換
+    users = EconomyService.get_all_users()
+    user_map = {str(u["user_id"]): u["display_name"] for u in users}
+
+    for tx in transactions:
+        uid = str(tx.get("user_id"))
+        tx["user_name"] = user_map.get(uid, uid[:4])
+
+    return render_template("admin_dashboard.html", transactions=transactions)
 
 
 @app.route("/callback", methods=["POST"])

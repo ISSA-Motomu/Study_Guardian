@@ -3,6 +3,7 @@ from linebot.models import TextSendMessage, FlexSendMessage
 from bot_instance import line_bot_api
 from services.gsheet import GSheetService
 from services.economy import EconomyService
+from services.stats import SagaStats
 from utils.template_loader import load_template
 
 
@@ -50,6 +51,14 @@ def handle_postback(event, action, data):
                     minutes = 90
 
                 earned_exp = minutes
+
+                # ランク計算と保存 (Looker Studio用)
+                stats = SagaStats.calculate(minutes)
+                if stats:
+                    GSheetService.update_study_stats(
+                        result["row_index"], minutes, stats["rank"]
+                    )
+
                 hours, mins = divmod(minutes, 60)
 
                 # ユーザーへの返信

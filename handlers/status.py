@@ -12,7 +12,7 @@ def handle_message(event, text):
         # 1. Adminかどうかチェック
         if EconomyService.is_admin(user_id):
             # --- Admin View (Transaction History) ---
-            history = HistoryService.get_admin_history(limit=10)
+            history = HistoryService.get_admin_history(limit=5)  # LINE上は直近5件だけ
 
             bubble = load_template("status_admin_view.json")
             # body -> contents[2] is the list container
@@ -50,6 +50,35 @@ def handle_message(event, text):
                         color=color,
                     )
                     list_container.append(row)
+
+            # Web Dashboard / Looker Studio へのリンクボタンを追加
+            if "footer" not in bubble:
+                bubble["footer"] = {"type": "box", "layout": "vertical", "contents": []}
+
+            import os
+
+            # Looker StudioのURLが設定されていればそちらを優先
+            # デフォルト値をコードに埋め込んでおくことで、環境変数がなくても動作するようにする
+            looker_url = os.environ.get(
+                "LOOKER_STUDIO_URL", "https://lookerstudio.google.com/s/uS2xDhhDtAw"
+            )
+            base_url = os.environ.get("APP_URL", "https://your-app.herokuapp.com")
+
+            if looker_url:
+                uri = looker_url
+                label = "Looker Studioで分析"
+            else:
+                uri = f"{base_url}/admin/dashboard"
+                label = "詳細な履歴をWebで見る"
+
+            bubble["footer"]["contents"].append(
+                {
+                    "type": "button",
+                    "style": "link",
+                    "height": "sm",
+                    "action": {"type": "uri", "label": label, "uri": uri},
+                }
+            )
 
             line_bot_api.reply_message(
                 event.reply_token,

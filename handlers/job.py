@@ -9,6 +9,16 @@ def handle_postback(event, action, data):
     user_id = event.source.user_id
 
     if action == "job_accept":
+        # 管理者は受注不可
+        if EconomyService.is_admin(user_id):
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(
+                    text="🚫 管理者はお手伝いを受注できません。\n子供たちに任せましょう！"
+                ),
+            )
+            return True
+
         job_id = data.get("id")
         success, result = JobService.accept_job(job_id, user_id)
 

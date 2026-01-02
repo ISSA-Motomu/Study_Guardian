@@ -5,6 +5,24 @@ from services.economy import EconomyService
 
 class HistoryService:
     @staticmethod
+    def get_all_transactions():
+        """全取引履歴を取得（Web表示用）"""
+        sheet = GSheetService.get_worksheet("transactions")
+        if not sheet:
+            return []
+
+        try:
+            records = sheet.get_all_records()
+            # 新しい順にソート
+            sorted_records = sorted(
+                records, key=lambda x: x.get("timestamp", ""), reverse=True
+            )
+            return sorted_records
+        except Exception as e:
+            print(f"All History Error: {e}")
+            return []
+
+    @staticmethod
     def get_admin_history(limit=10):
         """管理用：最近の取引履歴を取得"""
         sheet = GSheetService.get_worksheet("transactions")

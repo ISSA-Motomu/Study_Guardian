@@ -91,6 +91,21 @@ class GSheetService:
         return None
 
     @staticmethod
+    def update_study_stats(row_index, duration, rank):
+        """学習時間とランクを study_log シートに追記"""
+        sheet = GSheetService.get_worksheet("study_log")
+        if not sheet:
+            return False
+        try:
+            # G列(7): Duration, H列(8): Rank
+            sheet.update_cell(row_index, 7, duration)
+            sheet.update_cell(row_index, 8, rank)
+            return True
+        except Exception as e:
+            print(f"Stats Update Error: {e}")
+            return False
+
+    @staticmethod
     def get_pending_studies():
         """承認待ちの学習記録を取得"""
         sheet = GSheetService.get_worksheet("study_log")

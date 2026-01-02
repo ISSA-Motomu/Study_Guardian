@@ -85,17 +85,21 @@ class EconomyService:
             return False
 
         row_num = cell.row
-        # current_exp は C列(3列目)と仮定
+        # display_name は B列(2列目)、current_exp は C列(3列目)
+        user_name = users_sheet.cell(row_num, 2).value
         current_exp_cell = users_sheet.cell(row_num, 3)
+
         new_exp = int(current_exp_cell.value) + amount
         users_sheet.update_cell(row_num, 3, new_exp)
 
         # 2. 取引履歴(Transaction)を記録
-        # 列: tx_id, user_id, amount, tx_type, related_id, timestamp
+        # 列: tx_id, user_id, amount, tx_type, related_id, timestamp, user_name
         tx_id = f"tx_{int(datetime.datetime.now().timestamp())}"
         tx_type = "REWARD" if amount > 0 else "SPEND"
         now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        tx_sheet.append_row([tx_id, user_id, amount, tx_type, related_id, now_str])
+        tx_sheet.append_row(
+            [tx_id, user_id, amount, tx_type, related_id, now_str, user_name]
+        )
 
         return new_exp
