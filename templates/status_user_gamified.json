@@ -1,0 +1,188 @@
+{
+  "type": "bubble",
+  "size": "giga",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "box",
+        "layout": "horizontal",
+        "contents": [
+          {
+            "type": "text",
+            "text": "PLAYER PROFILE",
+            "color": "#ffffff",
+            "weight": "bold",
+            "size": "sm"
+          },
+          {
+            "type": "text",
+            "text": "ID: ${user_id_short}",
+            "color": "#ffffff",
+            "size": "xs",
+            "align": "end"
+          }
+        ]
+      },
+      {
+        "type": "box",
+        "layout": "horizontal",
+        "contents": [
+          {
+            "type": "text",
+            "text": "${user_name}",
+            "weight": "bold",
+            "size": "xxl",
+            "color": "#ffffff",
+            "flex": 2
+          },
+          {
+            "type": "text",
+            "text": "Lv.${level}",
+            "weight": "bold",
+            "size": "3xl",
+            "color": "#FFD700",
+            "align": "end",
+            "flex": 1
+          }
+        ],
+        "margin": "md",
+        "alignItems": "end"
+      }
+    ],
+    "backgroundColor": "#27ACB2",
+    "paddingAll": "20px"
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "NEXT LEVEL",
+            "size": "xs",
+            "color": "#aaaaaa",
+            "weight": "bold"
+          },
+          {
+            "type": "box",
+            "layout": "horizontal",
+            "contents": [
+              {
+                "type": "text",
+                "text": "${progress_bar}",
+                "color": "#00B900",
+                "size": "sm",
+                "weight": "bold",
+                "flex": 4
+              },
+              {
+                "type": "text",
+                "text": "あと ${next_level_rem}分",
+                "size": "xs",
+                "color": "#aaaaaa",
+                "align": "end",
+                "flex": 2
+              }
+            ],
+            "margin": "sm"
+          }
+        ]
+      },
+      {
+        "type": "separator",
+        "margin": "lg"
+      },
+      {
+        "type": "box",
+        "layout": "horizontal",
+        "contents": [
+          {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+              {
+                "type": "text",
+                "text": "RANK",
+                "size": "xs",
+                "color": "#aaaaaa"
+              },
+              {
+                "type": "text",
+                "text": "${rank}",
+                "size": "xl",
+                "weight": "bold",
+                "color": "#333333"
+              }
+            ],
+            "flex": 1,
+            "alignItems": "center"
+          },
+          {
+            "type": "separator"
+          },
+          {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+              {
+                "type": "text",
+                "text": "WALLET",
+                "size": "xs",
+                "color": "#aaaaaa"
+              },
+              {
+                "type": "text",
+                "text": "${current_exp}",
+                "size": "xl",
+                "weight": "bold",
+                "color": "#ff8800"
+              },
+              {
+                "type": "text",
+                "text": "EXP",
+                "size": "xxs",
+                "color": "#ff8800"
+              }
+            ],
+            "flex": 1,
+            "alignItems": "center"
+          }
+        ],
+        "margin": "lg"
+      },
+      {
+        "type": "separator",
+        "margin": "lg"
+      },
+      {
+        "type": "text",
+        "text": "📊 今週の学習: ${weekly_study}分",
+        "size": "sm",
+        "color": "#555555",
+        "margin": "lg"
+      }
+    ],
+    "paddingAll": "20px"
+  },
+  "footer": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "button",
+        "style": "secondary",
+        "action": {
+          "type": "uri",
+          "label": "詳細分析 (Looker Studio)",
+          "uri": "${looker_url}"
+        }
+      }
+    ]
+  }
+}

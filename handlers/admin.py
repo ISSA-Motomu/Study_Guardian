@@ -67,6 +67,68 @@ def handle_message(event, text):
                 )
             return True
 
+        if text.startswith("商品追加"):
+            if not EconomyService.is_admin(user_id):
+                line_bot_api.reply_message(
+                    event.reply_token, TextSendMessage(text="権限がありません。")
+                )
+                return True
+
+            # Parse args: 商品追加 [Name] [Cost] [Description...]
+            parts = text.split()
+            if len(parts) < 3:
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(
+                        text="使用法: 商品追加 [商品名] [価格] [説明(任意)]"
+                    ),
+                )
+                return True
+
+            # 価格(数値)を境に、前を名前、後ろを説明とする
+            name_parts = []
+            cost = None
+            desc_parts = []
+
+            found_cost = False
+            for part in parts[1:]:
+                if not found_cost:
+                    try:
+                        val = int(part)
+                        cost = val
+                        found_cost = True
+                    except ValueError:
+                        name_parts.append(part)
+                else:
+                    desc_parts.append(part)
+
+            if cost is None:
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text="価格を数値で指定してください。"),
+                )
+                return True
+
+            name = " ".join(name_parts)
+            description = " ".join(desc_parts)
+
+            if not name:
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text="商品名を指定してください。"),
+                )
+                return True
+
+            success, result = ShopService.add_item(name, cost, description)
+            if success:
+                msg = f"商品「{name}」を追加しました。(価格: {cost} EXP)"
+                line_bot_api.reply_message(event.reply_token, TextSendMessage(text=msg))
+            else:
+                line_bot_api.reply_message(
+                    event.reply_token, TextSendMessage(text=f"追加失敗: {result}")
+                )
+            return True
+
         if text in ["管理", "承認", "admin"]:
             if not EconomyService.is_admin(user_id):
                 line_bot_api.reply_message(

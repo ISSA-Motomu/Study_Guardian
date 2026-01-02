@@ -101,96 +101,48 @@ def handle_message(event, text):
                 return True
 
             study_stats = HistoryService.get_user_study_stats(user_id)
-            job_history = HistoryService.get_user_job_history(user_id, limit=3)
 
-            carousel = load_template(
-                "status_user_view.json",
-                user_name=user_info["display_name"],
-                current_exp=user_info["current_exp"],
-                weekly_study=study_stats["weekly"],
-                monthly_study=study_stats["monthly"],
-            )
+            # --- Gamification Logic ---
+            total_minutes = study_stats.get("total", 0)
+            level = int(total_minutes / 60) + 1
+            next_level_rem = 60 - (total_minutes % 60)
 
-            # Looker Studioボタンをユーザー画面にも追加
+            # Progress Bar (10 blocks)
+            progress = int((total_minutes % 60) / 60 * 10)
+            progress_bar = "🟩" * progress + "⬜" * (10 - progress)
+
+            # Rank Logic
+            if total_minutes >= 3000:
+                rank = "S (Master)"
+            elif total_minutes >= 1200:
+                rank = "A (Elite)"
+            elif total_minutes >= 600:
+                rank = "B (Pro)"
+            else:
+                rank = "C (Rookie)"
+
             import os
 
             looker_url = os.environ.get(
                 "LOOKER_STUDIO_URL", "https://lookerstudio.google.com/s/uS2xDhhDtAw"
             )
-            personal_bubble = carousel["contents"][0]
-            if "footer" not in personal_bubble:
-                personal_bubble["footer"] = {
-                    "type": "box",
-                    "layout": "vertical",
-                    "contents": [],
-                }
 
-            personal_bubble["footer"]["contents"].append(
-                {
-                    "type": "button",
-                    "style": "link",
-                    "height": "sm",
-                    "action": {
-                        "type": "uri",
-                        "label": "Looker Studioで分析",
-                        "uri": looker_url,
-                    },
-                }
+            bubble = load_template(
+                "status_user_gamified.json",
+                user_id_short=user_id[:4],
+                user_name=user_info["display_name"],
+                level=level,
+                progress_bar=progress_bar,
+                next_level_rem=next_level_rem,
+                rank=rank,
+                current_exp=user_info["current_exp"],
+                weekly_study=study_stats["weekly"],
+                looker_url=looker_url,
             )
-
-            # Job List Injection
-            # carousel["contents"][0] is Personal Bubble
-            # body -> contents[6] is Job List Container (index based on template structure)
-            # Let's verify index:
-            # 0:Name, 1:Exp, 2:Sep, 3:StudyTitle, 4:StudyBox, 5:Sep, 6:JobTitle, 7:JobBox
-            job_container = carousel["contents"][0]["body"]["contents"][7]["contents"]
-
-            if not job_history:
-                job_container.append(
-                    {
-                        "type": "text",
-                        "text": "履歴なし",
-                        "size": "xs",
-                        "color": "#aaaaaa",
-                    }
-                )
-            else:
-                for job in job_history:
-                    row = load_template(
-                        "status_row_job.json", title=job["title"], reward=job["reward"]
-                    )
-                    job_container.append(row)
-
-            # B. Ranking
-            ranking = HistoryService.get_leaderboard()
-            # carousel["contents"][1] is Ranking Bubble
-            # body -> contents[2] is Ranking List Container
-            rank_container = carousel["contents"][1]["body"]["contents"][2]["contents"]
-
-            for i, user in enumerate(ranking[:5]):  # Top 5
-                rank = i + 1
-                rank_color = (
-                    "#FFD700"
-                    if rank == 1
-                    else "#C0C0C0"
-                    if rank == 2
-                    else "#CD7F32"
-                    if rank == 3
-                    else "#333333"
-                )
-
-                row = load_template(
-                    "status_row_ranking.json",
-                    rank=str(rank),
-                    rank_color=rank_color,
-                    name=user["display_name"],
-                    exp=user["current_exp"],
-                )
-                rank_container.append(row)
 
             line_bot_api.reply_message(
                 event.reply_token,
-                FlexSendMessage(alt_text="ステータス", contents=carousel),
+                FlexSendMessage(alt_text="マイステータス", contents=bubble),
             )
             return True
 

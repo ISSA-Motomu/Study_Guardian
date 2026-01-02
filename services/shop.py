@@ -99,3 +99,19 @@ class ShopService:
         except Exception as e:
             print(f"【Error】商品リスト取得エラー: {e}")
             return {}
+
+    @staticmethod
+    def add_item(name, cost, description=""):
+        """新しい商品をショップに追加"""
+        sheet = GSheetService.get_worksheet("shop_items")
+        if not sheet:
+            return False, "シートエラー"
+
+        try:
+            item_key = f"item_{int(datetime.datetime.now().timestamp())}"
+            # item_key, name, cost, description, is_active
+            sheet.append_row([item_key, name, cost, description, "TRUE"])
+            return True, item_key
+        except Exception as e:
+            print(f"Add Item Error: {e}")
+            return False, str(e)
