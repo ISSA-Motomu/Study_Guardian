@@ -90,7 +90,7 @@ def handle_postback(event, action, data):
             )
             return True
 
-        job_id = data.get("id")
+        job_id = data.get("id") or data.get("row_id")
         success, result = JobService.approve_job(job_id)
 
         # 承認者名を取得

@@ -5,12 +5,67 @@ from bot_instance import line_bot_api
 from services.economy import EconomyService
 from services.approval import ApprovalService
 from services.shop import ShopService
+from services.job import JobService
 from utils.template_loader import load_template
 
 
 def handle_message(event, text):
     try:
         user_id = event.source.user_id
+
+        if text.startswith("タスク追加"):
+            if not EconomyService.is_admin(user_id):
+                line_bot_api.reply_message(
+                    event.reply_token, TextSendMessage(text="権限がありません。")
+                )
+                return True
+
+            # Parse args: タスク追加 [Title] [Reward]
+            parts = text.split()
+            if len(parts) < 3:
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text="使用法: タスク追加 [タイトル] [報酬]"),
+                )
+                return True
+
+            # 最後の要素を報酬、それ以外をタイトルとする（タイトルにスペースが含まれる場合に対応）
+            try:
+                reward = int(parts[-1])
+                title = " ".join(parts[1:-1])
+            except ValueError:
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text="報酬は数値で指定してください。"),
+                )
+                return True
+
+            success, result = JobService.create_job(title, reward, "", user_id)
+            if success:
+                msg = f"タスク「{title}」を作成しました。(報酬: {reward})"
+                line_bot_api.reply_message(event.reply_token, TextSendMessage(text=msg))
+
+                # Notify Users
+                all_users = EconomyService.get_all_users()
+                target_ids = [
+                    str(u["user_id"]) for u in all_users if str(u["user_id"]) != user_id
+                ]
+
+                if target_ids:
+                    try:
+                        line_bot_api.multicast(
+                            target_ids,
+                            TextSendMessage(
+                                text=f"🆕 新しいお手伝いが追加されました！\n\n「{title}」\n報酬: {reward} EXP\n\n早い者勝ちだよ！"
+                            ),
+                        )
+                    except Exception as e:
+                        print(f"Multicast Error: {e}")
+            else:
+                line_bot_api.reply_message(
+                    event.reply_token, TextSendMessage(text=f"作成失敗: {result}")
+                )
+            return True
 
         if text in ["管理", "承認", "admin"]:
             if not EconomyService.is_admin(user_id):
