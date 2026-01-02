@@ -1,0 +1,20 @@
+{
+  "type": "box",
+  "layout": "horizontal",
+  "contents": [
+    {
+      "type": "text",
+      "text": "${title}",
+      "size": "xs",
+      "flex": 3
+    },
+    {
+      "type": "text",
+      "text": "+${reward}",
+      "size": "xs",
+      "align": "end",
+      "color": "#ff5555",
+      "flex": 1
+    }
+  ]
+}

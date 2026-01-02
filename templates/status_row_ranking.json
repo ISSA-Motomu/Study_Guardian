@@ -1,0 +1,29 @@
+{
+  "type": "box",
+  "layout": "horizontal",
+  "contents": [
+    {
+      "type": "text",
+      "text": "${rank}",
+      "size": "lg",
+      "weight": "bold",
+      "color": "${rank_color}",
+      "flex": 1
+    },
+    {
+      "type": "text",
+      "text": "${name}",
+      "size": "sm",
+      "gravity": "center",
+      "flex": 4
+    },
+    {
+      "type": "text",
+      "text": "${exp} EXP",
+      "size": "sm",
+      "align": "end",
+      "gravity": "center",
+      "flex": 3
+    }
+  ]
+}

@@ -1,0 +1,125 @@
+{
+  "type": "carousel",
+  "contents": [
+    {
+      "type": "bubble",
+      "header": {
+        "type": "box",
+        "layout": "vertical",
+        "backgroundColor": "#00B900",
+        "contents": [
+          {
+            "type": "text",
+            "text": "👤 個人の記録",
+            "color": "#ffffff",
+            "weight": "bold"
+          }
+        ]
+      },
+      "body": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "${user_name}",
+            "weight": "bold",
+            "size": "xl"
+          },
+          {
+            "type": "text",
+            "text": "現在の所持金: ${current_exp} EXP",
+            "size": "sm",
+            "color": "#555555"
+          },
+          {
+            "type": "separator",
+            "margin": "md"
+          },
+          {
+            "type": "text",
+            "text": "📚 勉強時間",
+            "margin": "md",
+            "weight": "bold",
+            "color": "#27ACB2"
+          },
+          {
+            "type": "box",
+            "layout": "horizontal",
+            "contents": [
+              {
+                "type": "text",
+                "text": "週間: ${weekly_study}分",
+                "size": "sm"
+              },
+              {
+                "type": "text",
+                "text": "月間: ${monthly_study}分",
+                "size": "sm",
+                "align": "end"
+              }
+            ]
+          },
+          {
+            "type": "separator",
+            "margin": "md"
+          },
+          {
+            "type": "text",
+            "text": "🧹 最近のお手伝い",
+            "margin": "md",
+            "weight": "bold",
+            "color": "#FF9800"
+          },
+          {
+            "type": "box",
+            "layout": "vertical",
+            "margin": "sm",
+            "spacing": "xs",
+            "contents": []
+          }
+        ]
+      }
+    },
+    {
+      "type": "bubble",
+      "header": {
+        "type": "box",
+        "layout": "vertical",
+        "backgroundColor": "#101010",
+        "contents": [
+          {
+            "type": "text",
+            "text": "🏆 みんなのランキング",
+            "color": "#ffffff",
+            "weight": "bold"
+          }
+        ]
+      },
+      "body": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "現在のEXPランキング",
+            "size": "xs",
+            "color": "#aaaaaa",
+            "align": "center"
+          },
+          {
+            "type": "separator",
+            "margin": "md"
+          },
+          {
+            "type": "box",
+            "layout": "vertical",
+            "margin": "md",
+            "spacing": "sm",
+            "contents": []
+          }
+        ]
+      }
+    }
+  ]
+}

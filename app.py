@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 # 新しい構成のインポート
 from bot_instance import line_bot_api, handler
-from handlers import study, shop, job, admin, common
+from handlers import study, shop, job, admin, status, common
 
 load_dotenv()
 
@@ -66,6 +66,8 @@ def handle_message(event):
     if job.handle_message(event, msg):
         return
     if admin.handle_message(event, msg):
+        return
+    if status.handle_message(event, msg):
         return
 
     # どのハンドラも処理しなかった場合

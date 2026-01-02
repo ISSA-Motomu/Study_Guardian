@@ -1,0 +1,40 @@
+{
+  "type": "bubble",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "backgroundColor": "#333333",
+    "contents": [
+      {
+        "type": "text",
+        "text": "📊 管理者ダッシュボード",
+        "color": "#ffffff",
+        "weight": "bold"
+      }
+    ]
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "最近の取引履歴",
+        "weight": "bold",
+        "size": "sm",
+        "color": "#aaaaaa"
+      },
+      {
+        "type": "separator",
+        "margin": "md"
+      },
+      {
+        "type": "box",
+        "layout": "vertical",
+        "margin": "md",
+        "spacing": "sm",
+        "contents": []
+      }
+    ]
+  }
+}

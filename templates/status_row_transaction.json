@@ -1,0 +1,27 @@
+{
+  "type": "box",
+  "layout": "horizontal",
+  "contents": [
+    {
+      "type": "text",
+      "text": "${date}",
+      "size": "xxs",
+      "color": "#aaaaaa",
+      "flex": 2
+    },
+    {
+      "type": "text",
+      "text": "${user}",
+      "size": "xs",
+      "flex": 2
+    },
+    {
+      "type": "text",
+      "text": "${amount}",
+      "size": "xs",
+      "align": "end",
+      "color": "${color}",
+      "flex": 1
+    }
+  ]
+}
