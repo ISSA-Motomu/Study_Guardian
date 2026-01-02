@@ -47,7 +47,7 @@ class GSheetService:
             return None
 
     @staticmethod
-    def log_activity(user_id, user_name, today, time):
+    def log_activity(user_id, user_name, today, time, subject=""):
         """学習記録ログを study_log シートに保存"""
         sheet = GSheetService.get_worksheet("study_log")
         if not sheet:
@@ -55,8 +55,10 @@ class GSheetService:
             return False
 
         try:
-            # A:ID, B:名前, C:日付, D:開始, E:終了, F:ステータス
-            sheet.append_row([user_id, user_name, today, time, "", "STARTED"])
+            # A:ID, B:名前, C:日付, D:開始, E:終了, F:ステータス, G:Duration, H:Rank, I:Subject
+            sheet.append_row(
+                [user_id, user_name, today, time, "", "STARTED", "", "", subject]
+            )
             return True
         except Exception as e:
             print(f"ログ記録エラー: {e}")

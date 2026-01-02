@@ -21,10 +21,11 @@ def handle_postback(event, action, data):
         today = now.strftime("%Y-%m-%d")
         current_time = now.strftime("%H:%M:%S")
 
-        if GSheetService.log_activity(user_id, user_name, today, current_time):
-            reply_text = (
-                f"【記録開始】\n{current_time} スタート！\n今日も頑張ってえらい！"
-            )
+        subject = data.get("subject", "")
+
+        if GSheetService.log_activity(user_id, user_name, today, current_time, subject):
+            subject_text = f"【{subject}】" if subject else ""
+            reply_text = f"【記録開始】\n{current_time} {subject_text}スタート！\n今日も頑張ってえらい！"
         else:
             reply_text = "エラー：記録に失敗しました。"
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
@@ -147,14 +148,11 @@ def handle_postback(event, action, data):
 
 def handle_message(event, text):
     if text == "勉強開始":
-        confirm_flex = load_template(
-            "confirm_dialog.json",
-            text="勉強を始めますか？",
-            action_data="action=start_study",
-        )
+        # 教科選択ダイアログを表示
+        subject_flex = load_template("study_subject_select.json")
         line_bot_api.reply_message(
             event.reply_token,
-            FlexSendMessage(alt_text="勉強開始確認", contents=confirm_flex),
+            FlexSendMessage(alt_text="教科選択", contents=subject_flex),
         )
         return True
 

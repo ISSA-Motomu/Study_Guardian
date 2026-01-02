@@ -1,0 +1,105 @@
+{
+  "type": "bubble",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "教科を選んでね",
+        "weight": "bold",
+        "size": "lg",
+        "color": "#ffffff"
+      }
+    ],
+    "backgroundColor": "#27ACB2",
+    "paddingAll": "15px"
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "box",
+        "layout": "horizontal",
+        "contents": [
+          {
+            "type": "button",
+            "action": {
+              "type": "postback",
+              "label": "国語",
+              "data": "action=start_study&subject=国語"
+            },
+            "style": "secondary",
+            "margin": "xs"
+          },
+          {
+            "type": "button",
+            "action": {
+              "type": "postback",
+              "label": "数学",
+              "data": "action=start_study&subject=数学"
+            },
+            "style": "secondary",
+            "margin": "xs"
+          }
+        ],
+        "margin": "md"
+      },
+      {
+        "type": "box",
+        "layout": "horizontal",
+        "contents": [
+          {
+            "type": "button",
+            "action": {
+              "type": "postback",
+              "label": "英語",
+              "data": "action=start_study&subject=英語"
+            },
+            "style": "secondary",
+            "margin": "xs"
+          },
+          {
+            "type": "button",
+            "action": {
+              "type": "postback",
+              "label": "理科",
+              "data": "action=start_study&subject=理科"
+            },
+            "style": "secondary",
+            "margin": "xs"
+          }
+        ],
+        "margin": "md"
+      },
+      {
+        "type": "box",
+        "layout": "horizontal",
+        "contents": [
+          {
+            "type": "button",
+            "action": {
+              "type": "postback",
+              "label": "社会",
+              "data": "action=start_study&subject=社会"
+            },
+            "style": "secondary",
+            "margin": "xs"
+          },
+          {
+            "type": "button",
+            "action": {
+              "type": "postback",
+              "label": "その他",
+              "data": "action=start_study&subject=その他"
+            },
+            "style": "secondary",
+            "margin": "xs"
+          }
+        ],
+        "margin": "md"
+      }
+    ]
+  }
+}
