@@ -86,9 +86,16 @@ class GSheetService:
             # E列(5):終了時刻, F列(6):ステータス
             sheet.update_cell(target_row, 5, end_time)
             sheet.update_cell(target_row, 6, "PENDING")
+
+            # 教科(I列=index8)を取得
+            subject = ""
+            if len(all_records[target_row - 1]) >= 9:
+                subject = all_records[target_row - 1][8]
+
             return {
                 "start_time": all_records[target_row - 1][3],
                 "row_index": target_row,
+                "subject": subject,
             }
         return None
 

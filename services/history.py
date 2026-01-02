@@ -121,6 +121,25 @@ class HistoryService:
             return []
 
     @staticmethod
+    def get_user_job_count(user_id):
+        """ユーザーの完了したジョブ総数"""
+        sheet = GSheetService.get_worksheet("jobs")
+        if not sheet:
+            return 0
+
+        try:
+            records = sheet.get_all_records()
+            user_jobs = [
+                r
+                for r in records
+                if str(r.get("worker_id")) == user_id and r.get("status") == "CLOSED"
+            ]
+            return len(user_jobs)
+        except Exception as e:
+            print(f"Job Count Error: {e}")
+            return 0
+
+    @staticmethod
     def get_leaderboard():
         """全ユーザーのランキング（EXP順）"""
         users = EconomyService.get_all_users()

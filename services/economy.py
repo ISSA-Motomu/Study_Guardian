@@ -1,5 +1,6 @@
 from services.gsheet import GSheetService
 import datetime
+import json
 
 
 class EconomyService:
@@ -65,10 +66,49 @@ class EconomyService:
         if EconomyService.get_user_info(user_id):
             return True  # 登録済み
 
-        # 新規登録 (初期EXP: 0, Role: USER)
-        # 列順: user_id, display_name, current_exp, total_study_time, role
-        sheet.append_row([user_id, display_name, 0, 0, "USER"])
+        # 新規登録 (初期EXP: 0, Role: USER, Inventory: {})
+        # 列順: user_id, display_name, current_exp, total_study_time, role, inventory_json
+        sheet.append_row([user_id, display_name, 0, 0, "USER", "{}"])
         return True
+
+    @staticmethod
+    def get_user_inventory(user_id):
+        """ユーザーの所持品リストを取得"""
+        user = EconomyService.get_user_info(user_id)
+        if not user:
+            return []
+
+        inventory_json = user.get("inventory_json", "{}")
+        if not inventory_json:
+            inventory_json = "{}"
+
+        try:
+            inventory_dict = json.loads(inventory_json)
+        except:
+            inventory_dict = {}
+
+        # 辞書からリスト形式に変換 (表示用)
+        # 定義マスタ (本来は別ファイルやDBで管理すべきだが一旦ここに記述)
+        item_master = {
+            "ticket_1.5x": {"name": "EXP 1.5倍", "icon": "🎟"},
+            "shield_chores": {"name": "絶対防御", "icon": "🛡"},
+            "supple_focus": {"name": "集中サプリ", "icon": "💊"},
+            "bonus_100": {"name": "臨時ボーナス", "icon": "💸"},
+        }
+
+        items = []
+        for item_key, count in inventory_dict.items():
+            if count > 0:
+                master = item_master.get(item_key, {"name": item_key, "icon": "📦"})
+                items.append(
+                    {
+                        "key": item_key,
+                        "name": master["name"],
+                        "icon": master["icon"],
+                        "count": count,
+                    }
+                )
+        return items
 
     @staticmethod
     def add_exp(user_id, amount, related_id="STUDY"):

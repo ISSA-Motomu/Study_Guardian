@@ -2,6 +2,7 @@ from linebot.models import TextSendMessage, FlexSendMessage
 from bot_instance import line_bot_api
 from services.economy import EconomyService
 from services.history import HistoryService
+from services.status_service import StatusService
 from utils.template_loader import load_template
 
 
@@ -101,44 +102,15 @@ def handle_message(event, text):
                 return True
 
             study_stats = HistoryService.get_user_study_stats(user_id)
+            job_count = HistoryService.get_user_job_count(user_id)
+            inventory = EconomyService.get_user_inventory(user_id)
 
-            # --- Gamification Logic ---
-            total_minutes = study_stats.get("total", 0)
-            level = int(total_minutes / 60) + 1
-            next_level_rem = 60 - (total_minutes % 60)
+            # Prepare data for StatusService
+            user_data = user_info.copy()
+            user_data["total_study_time"] = study_stats["total"]
+            user_data["total_jobs"] = job_count
 
-            # Progress Bar (10 blocks)
-            progress = int((total_minutes % 60) / 60 * 10)
-            progress_bar = "🟩" * progress + "⬜" * (10 - progress)
-
-            # Rank Logic
-            if total_minutes >= 3000:
-                rank = "S (Master)"
-            elif total_minutes >= 1200:
-                rank = "A (Elite)"
-            elif total_minutes >= 600:
-                rank = "B (Pro)"
-            else:
-                rank = "C (Rookie)"
-
-            import os
-
-            looker_url = os.environ.get(
-                "LOOKER_STUDIO_URL", "https://lookerstudio.google.com/s/uS2xDhhDtAw"
-            )
-
-            bubble = load_template(
-                "status_user_gamified.json",
-                user_id_short=user_id[:4],
-                user_name=user_info["display_name"],
-                level=level,
-                progress_bar=progress_bar,
-                next_level_rem=next_level_rem,
-                rank=rank,
-                current_exp=user_info["current_exp"],
-                weekly_study=study_stats["weekly"],
-                looker_url=looker_url,
-            )
+            bubble = StatusService.create_life_skills_gui(user_data, inventory)
 
             line_bot_api.reply_message(
                 event.reply_token,

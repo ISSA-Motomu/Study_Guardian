@@ -74,6 +74,7 @@ def handle_postback(event, action, data):
                     "state": "WAITING_COMMENT",
                     "row_index": result["row_index"],
                     "minutes": minutes,
+                    "subject": result.get("subject", ""),
                 }
 
                 line_bot_api.reply_message(
@@ -227,6 +228,7 @@ def handle_message(event, text):
 def finalize_study(event, user_id, state_data, concentration):
     row_index = state_data["row_index"]
     minutes = state_data["minutes"]
+    subject = state_data.get("subject", "")
     comment = state_data.get("comment", "なし")
 
     # 詳細情報を保存
@@ -235,11 +237,13 @@ def finalize_study(event, user_id, state_data, concentration):
     hours, mins = divmod(minutes, 60)
     earned_exp = minutes
 
+    subject_str = f"\n教科: {subject}" if subject else ""
+
     # ユーザーへの返信
     line_bot_api.reply_message(
         event.reply_token,
         TextSendMessage(
-            text=f"記録しました！\n勉強時間: {hours}時間{mins}分\n成果: {comment}\n集中度: {concentration}/5\n\n親に承認依頼を送りました。"
+            text=f"記録しました！\n勉強時間: {hours}時間{mins}分{subject_str}\n成果: {comment}\n集中度: {concentration}/5\n\n親に承認依頼を送りました。"
         ),
     )
 
