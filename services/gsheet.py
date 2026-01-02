@@ -142,6 +142,11 @@ class GSheetService:
         if not sheet:
             return False
         try:
+            # 既に承認済みかチェック (F列=6)
+            current_status = sheet.cell(row_index, 6).value
+            if current_status == "APPROVED":
+                return False
+
             sheet.update_cell(row_index, 6, "APPROVED")
             return True
         except:

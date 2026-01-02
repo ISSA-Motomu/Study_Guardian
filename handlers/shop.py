@@ -139,8 +139,27 @@ def handle_postback(event, action, data):
         cost = int(data.get("cost"))
         row_id = data.get("row_id")
 
+        # 承認者名を取得
+        try:
+            approver_profile = line_bot_api.get_profile(user_id)
+            approver_name = approver_profile.display_name
+        except:
+            approver_name = "管理者"
+
+        # 対象者名を取得
+        target_user_info = EconomyService.get_user_info(target_id)
+        target_name = (
+            target_user_info["display_name"] if target_user_info else "ユーザー"
+        )
+
         # 既に購入時にEXPは引かれているので、ここではステータス更新のみ
-        if ShopService.approve_request(row_id):
+        approved_item_key = ShopService.approve_request(row_id)
+        if approved_item_key:
+            # 商品名を取得
+            shop_items = ShopService.get_items()
+            item_info = shop_items.get(approved_item_key)
+            item_name = item_info["name"] if item_info else "商品"
+
             # 現在の残高を取得
             user_info = EconomyService.get_user_info(target_id)
             new_balance = user_info.get("current_exp", 0) if user_info else 0
@@ -148,7 +167,7 @@ def handle_postback(event, action, data):
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(
-                    text=f"承認しました！\n(EXPは購入申請時に消費済みです)"
+                    text=f"{target_name}さんの「{item_name}」を承認しました！\n承認者：{approver_name}\n\n(EXPは購入申請時に消費済みです)"
                 ),
             )
 
@@ -157,7 +176,7 @@ def handle_postback(event, action, data):
                 line_bot_api.push_message(
                     target_id,
                     TextSendMessage(
-                        text=f"🛍️ 買い物リクエストが承認されました！\n(現在残高: {new_balance} EXP)\n\n親に見せて使ってね！"
+                        text=f"🛍️ 買い物リクエスト「{item_name}」が承認されました！\n(現在残高: {new_balance} EXP)\n\n親に見せて使ってね！"
                     ),
                 )
             except:

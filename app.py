@@ -13,6 +13,7 @@ from bot_instance import line_bot_api, handler
 from handlers import study, shop, job, admin, status, common, help
 from services.history import HistoryService
 from services.economy import EconomyService
+from utils.debouncer import Debouncer
 
 load_dotenv()
 
@@ -55,8 +56,15 @@ def callback():
 
 @handler.add(PostbackEvent)
 def handle_postback(event):
+    user_id = event.source.user_id
+    data_str = event.postback.data
+
+    # 連打防止 (5秒間)
+    if Debouncer.is_locked(user_id, data_str):
+        return
+
     # data="action=buy&item=game_30" のような文字列が来るので分解
-    data = dict(x.split("=") for x in event.postback.data.split("&"))
+    data = dict(x.split("=") for x in data_str.split("&"))
     action = data.get("action")
 
     # 各ハンドラに委譲

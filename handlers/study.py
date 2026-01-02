@@ -119,28 +119,48 @@ def handle_postback(event, action, data):
         minutes = int(data.get("minutes"))
         row_id = data.get("row_id")
 
-        # 1. シートのステータスを更新
-        if row_id:
-            GSheetService.approve_study(int(row_id))
+        # 承認者名を取得
+        try:
+            approver_profile = line_bot_api.get_profile(user_id)
+            approver_name = approver_profile.display_name
+        except:
+            approver_name = "管理者"
 
-        # 2. EXP付与
-        new_balance = EconomyService.add_exp(target_id, minutes, "STUDY_REWARD")
-
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text=f"承認しました！\n{minutes} EXP を付与しました。"),
+        # 対象者名を取得
+        target_user_info = EconomyService.get_user_info(target_id)
+        target_name = (
+            target_user_info["display_name"] if target_user_info else "ユーザー"
         )
 
-        # 対象ユーザーへ通知（Push Message）
-        try:
-            line_bot_api.push_message(
-                target_id,
+        # 1. シートのステータスを更新
+        if row_id and GSheetService.approve_study(int(row_id)):
+            # 2. EXP付与 (承認成功時のみ)
+            new_balance = EconomyService.add_exp(target_id, minutes, "STUDY_REWARD")
+
+            line_bot_api.reply_message(
+                event.reply_token,
                 TextSendMessage(
-                    text=f"💮 勉強時間が承認されました！\n+{minutes} EXP\n(現在残高: {new_balance} EXP)"
+                    text=f"{target_name}さんの勉強時間を承認しました！\n承認者：{approver_name}\n\n{minutes} EXP を付与しました。"
                 ),
             )
-        except Exception as e:
-            print(f"Pushエラー: {e}")
+
+            # 対象ユーザーへ通知（Push Message）
+            try:
+                line_bot_api.push_message(
+                    target_id,
+                    TextSendMessage(
+                        text=f"💮 勉強時間が承認されました！\n+{minutes} EXP\n(現在残高: {new_balance} EXP)"
+                    ),
+                )
+            except Exception as e:
+                print(f"Pushエラー: {e}")
+        else:
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(
+                    text="エラー：既に承認されているか、処理に失敗しました。"
+                ),
+            )
         return True
 
     return False
