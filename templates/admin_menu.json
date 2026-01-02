@@ -1,0 +1,85 @@
+{
+  "type": "bubble",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "👑 管理メニュー",
+        "weight": "bold",
+        "color": "#ffffff",
+        "size": "lg"
+      }
+    ],
+    "backgroundColor": "#333333",
+    "paddingAll": "20px"
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "アクションを選択してください",
+        "size": "sm",
+        "color": "#aaaaaa",
+        "align": "center",
+        "margin": "md"
+      },
+      {
+        "type": "separator",
+        "margin": "lg"
+      },
+      {
+        "type": "button",
+        "action": {
+          "type": "message",
+          "label": "✅ 承認待ち確認",
+          "text": "承認確認"
+        },
+        "style": "primary",
+        "margin": "xl",
+        "height": "sm"
+      },
+      {
+        "type": "button",
+        "action": {
+          "type": "uri",
+          "label": "🛍️ 商品追加 (Form)",
+          "uri": "https://docs.google.com/forms/d/e/1FAIpQLSfFxXNFm-xuB4LMbn8Y6ePX4y46Rl0C34ouTzi7qYYuSSOXWg/viewform"
+        },
+        "style": "secondary",
+        "margin": "md",
+        "height": "sm"
+      },
+      {
+        "type": "separator",
+        "margin": "xl"
+      },
+      {
+        "type": "text",
+        "text": "👇 タスク追加コマンド例",
+        "size": "xxs",
+        "color": "#aaaaaa",
+        "align": "center",
+        "margin": "lg"
+      },
+      {
+        "type": "text",
+        "text": "「タスク追加 お風呂掃除 100」",
+        "size": "xs",
+        "color": "#333333",
+        "align": "center",
+        "weight": "bold",
+        "margin": "sm",
+        "action": {
+          "type": "message",
+          "label": "copy",
+          "text": "タスク追加 [タイトル] [報酬]"
+        }
+      }
+    ],
+    "paddingAll": "20px"
+  }
+}

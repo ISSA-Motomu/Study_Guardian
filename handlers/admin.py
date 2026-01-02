@@ -78,11 +78,24 @@ def handle_message(event, text):
             )
             return True
 
-        if text in ["管理", "承認", "admin"]:
+        if text in ["管理", "承認", "admin", "メニュー"]:
             if not EconomyService.is_admin(user_id):
                 line_bot_api.reply_message(
                     event.reply_token, TextSendMessage(text="権限がありません。")
                 )
+                return True
+
+            # 管理メニューを表示
+            menu_bubble = load_template("admin_menu.json")
+            if menu_bubble:
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    FlexSendMessage(alt_text="管理メニュー", contents=menu_bubble),
+                )
+            return True
+
+        if text == "承認確認":
+            if not EconomyService.is_admin(user_id):
                 return True
 
             pending_items = ApprovalService.get_all_pending()
