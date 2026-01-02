@@ -36,9 +36,35 @@ def admin_dashboard():
     users = EconomyService.get_all_users()
     user_map = {str(u["user_id"]): u["display_name"] for u in users}
 
+    # 詳細情報解決用のマップ
+    job_map = JobService.get_all_jobs_map()
+    shop_items = ShopService.get_items()
+
     for tx in transactions:
         uid = str(tx.get("user_id"))
         tx["user_name"] = user_map.get(uid, uid[:4])
+
+        # 取引内容の解決
+        rtype = tx.get("tx_type")
+        rid = str(tx.get("related_id", ""))
+
+        desc = rid
+        if rtype == "REWARD":
+            if rid == "STUDY_REWARD":
+                desc = "✏️ 勉強報酬"
+            elif rid.startswith("JOB_"):
+                jid = rid.replace("JOB_", "")
+                jtitle = job_map.get(jid, "不明なタスク")
+                desc = f"🧹 {jtitle}"
+        elif rtype == "SPEND":
+            if rid.startswith("BUY_"):
+                ikey = rid.replace("BUY_", "")
+                iname = shop_items.get(ikey, {}).get("name", ikey)
+                desc = f"🛒 {iname}"
+        elif rtype == "REFUND":
+            desc = "↩️ 返金"
+
+        tx["description"] = desc
 
     return render_template("admin_dashboard.html", transactions=transactions)
 

@@ -5,6 +5,19 @@ import datetime
 
 class JobService:
     @staticmethod
+    def get_all_jobs_map():
+        """全ジョブをID:Titleの辞書で取得（管理画面用）"""
+        sheet = GSheetService.get_worksheet("jobs")
+        if not sheet:
+            return {}
+
+        try:
+            records = sheet.get_all_records()
+            return {str(r.get("job_id")): r.get("title") for r in records}
+        except:
+            return {}
+
+    @staticmethod
     def get_open_jobs():
         """募集中(OPEN)のジョブを取得"""
         sheet = GSheetService.get_worksheet("jobs")

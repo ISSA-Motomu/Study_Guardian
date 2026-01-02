@@ -203,19 +203,84 @@ def handle_message(event, text):
             )
             return True
 
-        # 商品カタログFlex Messageを作成
-        shop_flex = load_template("shop_list.json")
-        items_contents = shop_flex["body"]["contents"]
-
+        # 【松】カルーセル形式（カード型）
+        bubbles = []
         for key, item in shop_items.items():
-            row = load_template(
-                "shop_row.json", name=item["name"], cost=item["cost"], key=key
-            )
-            items_contents.append(row)
+            # 説明文がない場合は空文字
+            desc = item.get("description", " ")
+            if not desc:
+                desc = " "
+
+            bubble = {
+                "type": "bubble",
+                "size": "micro",
+                "header": {
+                    "type": "box",
+                    "layout": "vertical",
+                    "backgroundColor": "#eeeeee",
+                    "contents": [
+                        {
+                            "type": "text",
+                            "text": "ITEM",
+                            "color": "#aaaaaa",
+                            "size": "xxs",
+                            "weight": "bold",
+                        }
+                    ],
+                },
+                "body": {
+                    "type": "box",
+                    "layout": "vertical",
+                    "contents": [
+                        {
+                            "type": "text",
+                            "text": item["name"],
+                            "weight": "bold",
+                            "size": "sm",
+                            "wrap": True,
+                        },
+                        {
+                            "type": "text",
+                            "text": f"{item['cost']} EXP",
+                            "weight": "bold",
+                            "size": "md",
+                            "color": "#ff8800",
+                            "margin": "md",
+                        },
+                        {
+                            "type": "text",
+                            "text": desc,
+                            "size": "xxs",
+                            "color": "#aaaaaa",
+                            "wrap": True,
+                            "margin": "xs",
+                        },
+                    ],
+                },
+                "footer": {
+                    "type": "box",
+                    "layout": "vertical",
+                    "contents": [
+                        {
+                            "type": "button",
+                            "action": {
+                                "type": "postback",
+                                "label": "購入",
+                                "data": f"action=buy&item={key}",
+                            },
+                            "style": "primary",
+                            "height": "sm",
+                        }
+                    ],
+                },
+            }
+            bubbles.append(bubble)
+
+        shop_flex = {"type": "carousel", "contents": bubbles}
 
         line_bot_api.reply_message(
             event.reply_token,
-            FlexSendMessage(alt_text="ショップメニュー", contents=shop_flex),
+            FlexSendMessage(alt_text="EXPショップ", contents=shop_flex),
         )
         return True
 
