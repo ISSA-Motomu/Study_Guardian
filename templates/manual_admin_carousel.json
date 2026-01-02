@@ -1,0 +1,240 @@
+{
+  "type": "carousel",
+  "contents": [
+    {
+      "type": "bubble",
+      "size": "micro",
+      "header": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "👑 管理者機能",
+            "weight": "bold",
+            "color": "#ffffff",
+            "size": "md"
+          }
+        ],
+        "backgroundColor": "#9C27B0",
+        "paddingAll": "12px"
+      },
+      "body": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "1. 「管理」と入力",
+            "wrap": true,
+            "size": "xs"
+          },
+          {
+            "type": "text",
+            "text": "2. 承認待ち一覧を表示",
+            "wrap": true,
+            "size": "xs",
+            "margin": "sm"
+          },
+          {
+            "type": "text",
+            "text": "3. 承認/却下を実行",
+            "wrap": true,
+            "size": "xs",
+            "margin": "sm",
+            "color": "#ff5555"
+          }
+        ],
+        "paddingAll": "12px"
+      }
+    },
+    {
+      "type": "bubble",
+      "size": "micro",
+      "header": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "📚 勉強",
+            "weight": "bold",
+            "color": "#ffffff",
+            "size": "md"
+          }
+        ],
+        "backgroundColor": "#27ACB2",
+        "paddingAll": "12px"
+      },
+      "body": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "1. 「勉強開始」でスタート",
+            "wrap": true,
+            "size": "xs"
+          },
+          {
+            "type": "text",
+            "text": "2. 終わったら「勉強終了」",
+            "wrap": true,
+            "size": "xs",
+            "margin": "sm"
+          },
+          {
+            "type": "text",
+            "text": "3. 自動で記録＆EXPゲット！",
+            "wrap": true,
+            "size": "xs",
+            "margin": "sm",
+            "color": "#ff5555"
+          }
+        ],
+        "paddingAll": "12px"
+      }
+    },
+    {
+      "type": "bubble",
+      "size": "micro",
+      "header": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "🧹 お手伝い",
+            "weight": "bold",
+            "color": "#ffffff",
+            "size": "md"
+          }
+        ],
+        "backgroundColor": "#FF6B6E",
+        "paddingAll": "12px"
+      },
+      "body": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "1. 「お手伝い」をタップ",
+            "wrap": true,
+            "size": "xs"
+          },
+          {
+            "type": "text",
+            "text": "2. 仕事を選んで受注",
+            "wrap": true,
+            "size": "xs",
+            "margin": "sm"
+          },
+          {
+            "type": "text",
+            "text": "3. 終わったら完了報告！",
+            "wrap": true,
+            "size": "xs",
+            "margin": "sm",
+            "color": "#ff5555"
+          }
+        ],
+        "paddingAll": "12px"
+      }
+    },
+    {
+      "type": "bubble",
+      "size": "micro",
+      "header": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "🛍️ ショップ",
+            "weight": "bold",
+            "color": "#ffffff",
+            "size": "md"
+          }
+        ],
+        "backgroundColor": "#FFC107",
+        "paddingAll": "12px"
+      },
+      "body": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "1. 「ショップ」をタップ",
+            "wrap": true,
+            "size": "xs"
+          },
+          {
+            "type": "text",
+            "text": "2. 貯めたEXPでアイテム購入",
+            "wrap": true,
+            "size": "xs",
+            "margin": "sm"
+          },
+          {
+            "type": "text",
+            "text": "3. 親に見せて使おう！",
+            "wrap": true,
+            "size": "xs",
+            "margin": "sm",
+            "color": "#ff5555"
+          }
+        ],
+        "paddingAll": "12px"
+      }
+    },
+    {
+      "type": "bubble",
+      "size": "micro",
+      "header": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "📊 ステータス",
+            "weight": "bold",
+            "color": "#ffffff",
+            "size": "md"
+          }
+        ],
+        "backgroundColor": "#333333",
+        "paddingAll": "12px"
+      },
+      "body": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "1. 「ステータス」をタップ",
+            "wrap": true,
+            "size": "xs"
+          },
+          {
+            "type": "text",
+            "text": "2. 現在の順位や履歴を確認",
+            "wrap": true,
+            "size": "xs",
+            "margin": "sm"
+          },
+          {
+            "type": "text",
+            "text": "3. グラフで成長を実感！",
+            "wrap": true,
+            "size": "xs",
+            "margin": "sm",
+            "color": "#ff5555"
+          }
+        ],
+        "paddingAll": "12px"
+      }
+    }
+  ]
+}
