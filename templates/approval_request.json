@@ -1,0 +1,68 @@
+{
+  "type": "bubble",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "⚠️ 承認リクエスト",
+        "color": "#ffffff",
+        "weight": "bold"
+      }
+    ],
+    "backgroundColor": "#ff5555"
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "${user_name} からの申請",
+        "weight": "bold"
+      },
+      {
+        "type": "text",
+        "text": "商品: ${item_name}",
+        "size": "lg",
+        "margin": "md"
+      },
+      {
+        "type": "text",
+        "text": "消費: ${item_cost} EXP",
+        "color": "#ff5555"
+      },
+      {
+        "type": "text",
+        "text": "現在残高: ${new_balance} EXP",
+        "size": "sm",
+        "color": "#aaaaaa"
+      }
+    ]
+  },
+  "footer": {
+    "type": "box",
+    "layout": "horizontal",
+    "contents": [
+      {
+        "type": "button",
+        "action": {
+          "type": "postback",
+          "label": "許可",
+          "data": "action=approve&target=${user_id}&item=${item_key}"
+        },
+        "style": "primary"
+      },
+      {
+        "type": "button",
+        "action": {
+          "type": "postback",
+          "label": "却下",
+          "data": "action=deny&target=${user_id}&cost=${item_cost}"
+        },
+        "style": "secondary"
+      }
+    ]
+  }
+}

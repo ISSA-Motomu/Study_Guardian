@@ -1,0 +1,41 @@
+{
+  "type": "bubble",
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "💪 お手伝い開始！",
+        "weight": "bold",
+        "size": "lg"
+      },
+      {
+        "type": "text",
+        "text": "タスク: ${job_title}",
+        "margin": "md"
+      },
+      {
+        "type": "text",
+        "text": "終わったら下のボタンを押してね",
+        "size": "sm",
+        "color": "#aaaaaa"
+      }
+    ]
+  },
+  "footer": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "button",
+        "style": "primary",
+        "action": {
+          "type": "postback",
+          "label": "完了報告",
+          "data": "action=job_finish&id=${job_id}"
+        }
+      }
+    ]
+  }
+}

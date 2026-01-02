@@ -18,6 +18,7 @@ from services.economy import EconomyService
 from services.stats import SagaStats
 from services.shop import ShopService
 from services.job import JobService
+from utils.template_loader import load_template
 
 load_dotenv()
 
@@ -28,6 +29,11 @@ LINE_ACCESS_TOKEN = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN")
 LINE_SECRET = os.environ.get("LINE_CHANNEL_SECRET")
 line_bot_api = LineBotApi(LINE_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_SECRET)
+
+
+# 簡易的な状態管理（再起動で消えます）
+# {user_id: {"state": "WAITING_TITLE", "data": {...}}}
+# user_states = {}
 
 
 @app.route("/")
@@ -117,54 +123,12 @@ def handle_postback(event):
             )
             return
 
-        confirm_flex = {
-            "type": "bubble",
-            "body": {
-                "type": "box",
-                "layout": "vertical",
-                "contents": [
-                    {
-                        "type": "text",
-                        "text": f"{item['name']} を購入しますか？",
-                        "weight": "bold",
-                        "size": "md",
-                        "wrap": True,
-                    },
-                    {
-                        "type": "text",
-                        "text": f"価格: {item['cost']} EXP",
-                        "size": "sm",
-                        "color": "#aaaaaa",
-                        "margin": "sm",
-                    },
-                ],
-            },
-            "footer": {
-                "type": "box",
-                "layout": "horizontal",
-                "spacing": "sm",
-                "contents": [
-                    {
-                        "type": "button",
-                        "style": "primary",
-                        "action": {
-                            "type": "postback",
-                            "label": "はい",
-                            "data": f"action=confirm_buy&item={item_key}",
-                        },
-                    },
-                    {
-                        "type": "button",
-                        "style": "secondary",
-                        "action": {
-                            "type": "message",
-                            "label": "いいえ",
-                            "text": "キャンセル",
-                        },
-                    },
-                ],
-            },
-        }
+        confirm_flex = load_template(
+            "buy_confirm.json",
+            item_name=item["name"],
+            item_cost=item["cost"],
+            item_key=item_key,
+        )
         line_bot_api.reply_message(
             event.reply_token,
             FlexSendMessage(alt_text="購入確認", contents=confirm_flex),
@@ -192,76 +156,15 @@ def handle_postback(event):
             # 親への承認リクエストカードを作成
             profile = line_bot_api.get_profile(user_id)
 
-            approval_flex = {
-                "type": "bubble",
-                "header": {
-                    "type": "box",
-                    "layout": "vertical",
-                    "contents": [
-                        {
-                            "type": "text",
-                            "text": "⚠️ 承認リクエスト",
-                            "color": "#ffffff",
-                            "weight": "bold",
-                        }
-                    ],
-                    "backgroundColor": "#ff5555",
-                },
-                "body": {
-                    "type": "box",
-                    "layout": "vertical",
-                    "contents": [
-                        {
-                            "type": "text",
-                            "text": f"{profile.display_name} からの申請",
-                            "weight": "bold",
-                        },
-                        {
-                            "type": "text",
-                            "text": f"商品: {item['name']}",
-                            "size": "lg",
-                            "margin": "md",
-                        },
-                        {
-                            "type": "text",
-                            "text": f"消費: {item['cost']} EXP",
-                            "color": "#ff5555",
-                        },
-                        {
-                            "type": "text",
-                            "text": f"現在残高: {new_balance} EXP",
-                            "size": "sm",
-                            "color": "#aaaaaa",
-                        },
-                    ],
-                },
-                "footer": {
-                    "type": "box",
-                    "layout": "horizontal",
-                    "contents": [
-                        # 承認ボタン（Adminのみ押せるようにするが、一旦全員押せる仕様で出す）
-                        {
-                            "type": "button",
-                            "action": {
-                                "type": "postback",
-                                "label": "許可",
-                                "data": f"action=approve&target={user_id}&item={item_key}",
-                            },
-                            "style": "primary",
-                        },
-                        # 却下ボタン（返金処理用）
-                        {
-                            "type": "button",
-                            "action": {
-                                "type": "postback",
-                                "label": "却下",
-                                "data": f"action=deny&target={user_id}&cost={item['cost']}",
-                            },
-                            "style": "secondary",
-                        },
-                    ],
-                },
-            }
+            approval_flex = load_template(
+                "approval_request.json",
+                user_name=profile.display_name,
+                item_name=item["name"],
+                item_cost=item["cost"],
+                new_balance=new_balance,
+                user_id=user_id,
+                item_key=item_key,
+            )
 
             # 購入者へのメッセージ
             line_bot_api.reply_message(
@@ -337,47 +240,30 @@ def handle_postback(event):
 
         if success:
             # 完了報告ボタン付きメッセージ
-            finish_flex = {
-                "type": "bubble",
-                "body": {
-                    "type": "box",
-                    "layout": "vertical",
-                    "contents": [
-                        {
-                            "type": "text",
-                            "text": "💪 お手伝い開始！",
-                            "weight": "bold",
-                            "size": "lg",
-                        },
-                        {"type": "text", "text": f"タスク: {result}", "margin": "md"},
-                        {
-                            "type": "text",
-                            "text": "終わったら下のボタンを押してね",
-                            "size": "sm",
-                            "color": "#aaaaaa",
-                        },
-                    ],
-                },
-                "footer": {
-                    "type": "box",
-                    "layout": "vertical",
-                    "contents": [
-                        {
-                            "type": "button",
-                            "style": "primary",
-                            "action": {
-                                "type": "postback",
-                                "label": "完了報告",
-                                "data": f"action=job_finish&id={job_id}",
-                            },
-                        }
-                    ],
-                },
-            }
+            finish_flex = load_template(
+                "job_finish.json", job_title=result, job_id=job_id
+            )
             line_bot_api.reply_message(
                 event.reply_token,
                 FlexSendMessage(alt_text="受注完了", contents=finish_flex),
             )
+
+            # Adminへの通知
+            try:
+                profile = line_bot_api.get_profile(user_id)
+                user_name = profile.display_name
+                admins = EconomyService.get_admin_users()
+                admin_ids = [u["user_id"] for u in admins if u.get("user_id")]
+
+                if admin_ids:
+                    line_bot_api.multicast(
+                        admin_ids,
+                        TextSendMessage(
+                            text=f"🔔 {user_name} が「{result}」を受注しました！"
+                        ),
+                    )
+            except Exception as e:
+                print(f"Admin通知エラー: {e}")
         else:
             line_bot_api.reply_message(
                 event.reply_token, TextSendMessage(text=f"エラー: {result}")
@@ -390,58 +276,13 @@ def handle_postback(event):
         if success:
             # 親への承認依頼
             profile = line_bot_api.get_profile(user_id)
-            approve_flex = {
-                "type": "bubble",
-                "header": {
-                    "type": "box",
-                    "layout": "vertical",
-                    "backgroundColor": "#27ACB2",
-                    "contents": [
-                        {
-                            "type": "text",
-                            "text": "✨ お手伝い完了報告",
-                            "color": "#ffffff",
-                            "weight": "bold",
-                        }
-                    ],
-                },
-                "body": {
-                    "type": "box",
-                    "layout": "vertical",
-                    "contents": [
-                        {
-                            "type": "text",
-                            "text": f"{profile.display_name} が完了しました！",
-                        },
-                        {
-                            "type": "text",
-                            "text": f"タスク: {result['title']}",
-                            "weight": "bold",
-                            "margin": "md",
-                        },
-                        {
-                            "type": "text",
-                            "text": f"報酬: {result['reward']} EXP",
-                            "color": "#ff5555",
-                        },
-                    ],
-                },
-                "footer": {
-                    "type": "box",
-                    "layout": "vertical",
-                    "contents": [
-                        {
-                            "type": "button",
-                            "style": "primary",
-                            "action": {
-                                "type": "postback",
-                                "label": "承認する",
-                                "data": f"action=job_approve&id={job_id}",
-                            },
-                        }
-                    ],
-                },
-            }
+            approve_flex = load_template(
+                "job_approve_request.json",
+                user_name=profile.display_name,
+                job_title=result["title"],
+                job_reward=result["reward"],
+                job_id=job_id,
+            )
             line_bot_api.reply_message(
                 event.reply_token,
                 [
@@ -478,11 +319,108 @@ def handle_postback(event):
                 event.reply_token, TextSendMessage(text=f"エラー: {result}")
             )
 
+    # --- 5. ジョブ追加 (Admin) ---
+    # elif action == "job_create_start":
+    #     if not EconomyService.is_admin(user_id):
+    #         return
+    #
+    #     # 状態を保存して会話モードへ
+    #     user_states[user_id] = {"state": "WAITING_JOB_TITLE", "data": {}}
+    #     line_bot_api.reply_message(
+    #         event.reply_token,
+    #         TextSendMessage(
+    #             text="新しいお手伝いを追加します。\nまずは「タスク名」を入力してください。\n(例: お風呂掃除)"
+    #         ),
+    #     )
+
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     msg = event.message.text
     user_id = event.source.user_id
+
+    # --- 0. 会話モード (状態がある場合) ---
+    # if user_id in user_states:
+    #     state_info = user_states[user_id]
+    #     current_state = state_info["state"]
+    #
+    #     if msg == "キャンセル":
+    #         del user_states[user_id]
+    #         line_bot_api.reply_message(
+    #             event.reply_token, TextSendMessage(text="キャンセルしました。")
+    #         )
+    #         return
+    #
+    #     if current_state == "WAITING_JOB_TITLE":
+    #         state_info["data"]["title"] = msg
+    #         state_info["state"] = "WAITING_JOB_REWARD"
+    #         line_bot_api.reply_message(
+    #             event.reply_token,
+    #             TextSendMessage(
+    #                 text=f"タスク名: {msg}\n次は「報酬(EXP)」を数字で入力してください。\n(例: 300)"
+    #             ),
+    #         )
+    #         return
+
+    #     elif current_state == "WAITING_JOB_REWARD":
+    #         if not msg.isdigit():
+    #             line_bot_api.reply_message(
+    #                 event.reply_token, TextSendMessage(text="数字で入力してください。")
+    #             )
+    #             return
+    #
+    #         state_info["data"]["reward"] = int(msg)
+    #         state_info["state"] = "WAITING_JOB_DEADLINE"
+    #         line_bot_api.reply_message(
+    #             event.reply_token,
+    #             TextSendMessage(
+    #                 text=f"報酬: {msg} EXP\n最後に「期限」を入力してください。\n(例: 今日中, 2026-01-05, なし)"
+    #             ),
+    #         )
+    #         return
+    #
+    #     elif current_state == "WAITING_JOB_DEADLINE":
+    #         title = state_info["data"]["title"]
+    #         reward = state_info["data"]["reward"]
+    #         deadline = msg
+    #
+    #         # ジョブ作成実行
+    #         success, result = JobService.create_job(title, reward, deadline, user_id)
+    #
+    #         del user_states[user_id]  # 状態クリア
+    #
+    #         if success:
+    #             line_bot_api.reply_message(
+    #                 event.reply_token,
+    #                 TextSendMessage(
+    #                     text=f"✅ お手伝いを追加しました！\n\n{title}\n報酬: {reward} EXP\n期限: {deadline}"
+    #                 ),
+    #             )
+    #
+    #             # 全ユーザーへの通知
+    #             try:
+    #                 all_users = EconomyService.get_all_users()
+    #                 recipient_ids = [
+    #                     u["user_id"]
+    #                     for u in all_users
+    #                     if u.get("user_id") and u.get("user_id") != user_id
+    #                 ]
+    #
+    #                 if recipient_ids:
+    #                     line_bot_api.multicast(
+    #                         recipient_ids,
+    #                         TextSendMessage(
+    #                             text=f"🆕 新しいお手伝いが追加されました！\n\n「{title}」\n報酬: {reward} EXP\n期限: {deadline}\n\nメニューの「お手伝い一覧」から確認してね！"
+    #                         ),
+    #                     )
+    #             except Exception as e:
+    #                 print(f"Job通知エラー: {e}")
+    #         else:
+    #             line_bot_api.reply_message(
+    #                 event.reply_token,
+    #                 TextSendMessage(text=f"エラーが発生しました: {result}"),
+    #             )
+    #         return
 
     # ユーザー情報を取得して登録（なければ作成）
     try:
@@ -504,47 +442,11 @@ def handle_message(event):
 
     # --- 1. 勉強開始 (確認) ---
     if msg == "勉強開始":
-        confirm_flex = {
-            "type": "bubble",
-            "body": {
-                "type": "box",
-                "layout": "vertical",
-                "contents": [
-                    {
-                        "type": "text",
-                        "text": "勉強を始めますか？",
-                        "weight": "bold",
-                        "size": "lg",
-                        "align": "center",
-                    }
-                ],
-            },
-            "footer": {
-                "type": "box",
-                "layout": "horizontal",
-                "spacing": "sm",
-                "contents": [
-                    {
-                        "type": "button",
-                        "style": "primary",
-                        "action": {
-                            "type": "postback",
-                            "label": "はい",
-                            "data": "action=start_study",
-                        },
-                    },
-                    {
-                        "type": "button",
-                        "style": "secondary",
-                        "action": {
-                            "type": "message",
-                            "label": "いいえ",
-                            "text": "キャンセル",
-                        },
-                    },
-                ],
-            },
-        }
+        confirm_flex = load_template(
+            "confirm_dialog.json",
+            text="勉強を始めますか？",
+            action_data="action=start_study",
+        )
         line_bot_api.reply_message(
             event.reply_token,
             FlexSendMessage(alt_text="勉強開始確認", contents=confirm_flex),
@@ -552,47 +454,11 @@ def handle_message(event):
 
     # --- 2. 勉強終了 (確認) ---
     elif msg == "勉強終了":
-        confirm_flex = {
-            "type": "bubble",
-            "body": {
-                "type": "box",
-                "layout": "vertical",
-                "contents": [
-                    {
-                        "type": "text",
-                        "text": "勉強を終わりますか？",
-                        "weight": "bold",
-                        "size": "lg",
-                        "align": "center",
-                    }
-                ],
-            },
-            "footer": {
-                "type": "box",
-                "layout": "horizontal",
-                "spacing": "sm",
-                "contents": [
-                    {
-                        "type": "button",
-                        "style": "primary",
-                        "action": {
-                            "type": "postback",
-                            "label": "はい",
-                            "data": "action=end_study",
-                        },
-                    },
-                    {
-                        "type": "button",
-                        "style": "secondary",
-                        "action": {
-                            "type": "message",
-                            "label": "いいえ",
-                            "text": "キャンセル",
-                        },
-                    },
-                ],
-            },
-        }
+        confirm_flex = load_template(
+            "confirm_dialog.json",
+            text="勉強を終わりますか？",
+            action_data="action=end_study",
+        )
         line_bot_api.reply_message(
             event.reply_token,
             FlexSendMessage(alt_text="勉強終了確認", contents=confirm_flex),
@@ -697,6 +563,22 @@ def handle_message(event):
                         ],
                     }
                 )
+
+        # 3. Admin用メニュー (仕事追加ボタン)
+        if EconomyService.is_admin(user_id):
+            contents.append({"type": "separator", "margin": "md"})
+            contents.append(
+                {
+                    "type": "button",
+                    "style": "link",
+                    "margin": "md",
+                    "action": {
+                        "type": "uri",
+                        "label": "➕ 新しい仕事を追加",
+                        "uri": "https://docs.google.com/forms/u/0/",
+                    },
+                }
+            )
 
         job_flex = {
             "type": "bubble",

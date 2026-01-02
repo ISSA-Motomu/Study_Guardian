@@ -40,6 +40,21 @@ class EconomyService:
         return None
 
     @staticmethod
+    def get_all_users():
+        """全ユーザー情報を取得"""
+        sheet = GSheetService.get_worksheet("users")
+        if not sheet:
+            return []
+        return sheet.get_all_records()
+
+    @staticmethod
+    def get_admin_users():
+        """Admin権限を持つユーザーのリストを取得"""
+        users = EconomyService.get_all_users()
+        admins = [u for u in users if u.get("role") == "ADMIN"]
+        return admins
+
+    @staticmethod
     def register_user(user_id, display_name):
         """新規ユーザー登録（口座開設）"""
         sheet = GSheetService.get_worksheet("users")

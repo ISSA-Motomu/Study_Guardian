@@ -1,0 +1,52 @@
+{
+  "type": "bubble",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "backgroundColor": "#27ACB2",
+    "contents": [
+      {
+        "type": "text",
+        "text": "✨ お手伝い完了報告",
+        "color": "#ffffff",
+        "weight": "bold"
+      }
+    ]
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "${user_name} が完了しました！"
+      },
+      {
+        "type": "text",
+        "text": "タスク: ${job_title}",
+        "weight": "bold",
+        "margin": "md"
+      },
+      {
+        "type": "text",
+        "text": "報酬: ${job_reward} EXP",
+        "color": "#ff5555"
+      }
+    ]
+  },
+  "footer": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "button",
+        "style": "primary",
+        "action": {
+          "type": "postback",
+          "label": "承認する",
+          "data": "action=job_approve&id=${job_id}"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "type": "bubble",
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "${item_name} を購入しますか？",
+        "weight": "bold",
+        "size": "md",
+        "wrap": true
+      },
+      {
+        "type": "text",
+        "text": "価格: ${item_cost} EXP",
+        "size": "sm",
+        "color": "#aaaaaa",
+        "margin": "sm"
+      }
+    ]
+  },
+  "footer": {
+    "type": "box",
+    "layout": "horizontal",
+    "spacing": "sm",
+    "contents": [
+      {
+        "type": "button",
+        "style": "primary",
+        "action": {
+          "type": "postback",
+          "label": "はい",
+          "data": "action=confirm_buy&item=${item_key}"
+        }
+      },
+      {
+        "type": "button",
+        "style": "secondary",
+        "action": {
+          "type": "message",
+          "label": "いいえ",
+          "text": "キャンセル"
+        }
+      }
+    ]
+  }
+}
