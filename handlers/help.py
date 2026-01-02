@@ -5,6 +5,15 @@ from services.economy import EconomyService
 
 
 def handle_message(event, text):
+    if text == "説明":
+        philosophy_flex = load_template("system_philosophy.json")
+        if philosophy_flex:
+            line_bot_api.reply_message(
+                event.reply_token,
+                FlexSendMessage(alt_text="システム理念", contents=philosophy_flex),
+            )
+            return True
+
     if text in ["ヘルプ", "help", "使い方", "説明書", "manual"]:
         user_id = event.source.user_id
 

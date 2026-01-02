@@ -1,0 +1,174 @@
+{
+  "type": "bubble",
+  "size": "mega",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "PROJECT: STUDY GUARDIAN",
+        "color": "#ffffff",
+        "weight": "bold",
+        "size": "md"
+      },
+      {
+        "type": "text",
+        "text": "Autonomous Education Support System",
+        "color": "#ffffff",
+        "size": "xxs",
+        "margin": "sm",
+        "alpha": 0.8
+      }
+    ],
+    "backgroundColor": "#003366",
+    "paddingAll": "20px"
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "行動経済学 × クラウド技術",
+        "weight": "bold",
+        "size": "xl",
+        "color": "#333333"
+      },
+      {
+        "type": "text",
+        "text": "本システムは、家庭内教育における「動機付けの欠如」と「成果の不可視性」を、エンジニアリングのアプローチで解決するために設計されました。",
+        "wrap": true,
+        "size": "sm",
+        "color": "#666666",
+        "margin": "md"
+      },
+      {
+        "type": "separator",
+        "margin": "xl"
+      },
+      {
+        "type": "box",
+        "layout": "vertical",
+        "margin": "xl",
+        "spacing": "sm",
+        "contents": [
+          {
+            "type": "box",
+            "layout": "horizontal",
+            "contents": [
+              {
+                "type": "text",
+                "text": "📊",
+                "size": "lg",
+                "flex": 1
+              },
+              {
+                "type": "box",
+                "layout": "vertical",
+                "flex": 9,
+                "contents": [
+                  {
+                    "type": "text",
+                    "text": "努力の定量化 (Data Acquisition)",
+                    "weight": "bold",
+                    "size": "sm",
+                    "color": "#333333"
+                  },
+                  {
+                    "type": "text",
+                    "text": "学習時間や貢献をリアルタイムでデータベースに記録し、曖昧な「頑張り」を可視化します。",
+                    "wrap": true,
+                    "size": "xs",
+                    "color": "#888888"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "box",
+            "layout": "horizontal",
+            "contents": [
+              {
+                "type": "text",
+                "text": "💰",
+                "size": "lg",
+                "flex": 1
+              },
+              {
+                "type": "box",
+                "layout": "vertical",
+                "flex": 9,
+                "contents": [
+                  {
+                    "type": "text",
+                    "text": "トークンエコノミー (Incentive Design)",
+                    "weight": "bold",
+                    "size": "sm",
+                    "color": "#333333"
+                  },
+                  {
+                    "type": "text",
+                    "text": "EXP（通貨）を用いた経済圏を構築し、自発的な学習行動を促すインセンティブ設計を実装。",
+                    "wrap": true,
+                    "size": "xs",
+                    "color": "#888888"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "box",
+            "layout": "horizontal",
+            "contents": [
+              {
+                "type": "text",
+                "text": "☁️",
+                "size": "lg",
+                "flex": 1
+              },
+              {
+                "type": "box",
+                "layout": "vertical",
+                "flex": 9,
+                "contents": [
+                  {
+                    "type": "text",
+                    "text": "システムアーキテクチャ (Engineering)",
+                    "weight": "bold",
+                    "size": "sm",
+                    "color": "#333333"
+                  },
+                  {
+                    "type": "text",
+                    "text": "Python/Flaskによるバックエンド構築、Google Cloud Platform連携、LINE Messaging API活用。",
+                    "wrap": true,
+                    "size": "xs",
+                    "color": "#888888"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "paddingAll": "20px"
+  },
+  "footer": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "Practical Application of Data Science & Engineering",
+        "size": "xxs",
+        "color": "#aaaaaa",
+        "align": "center"
+      }
+    ],
+    "paddingAll": "20px"
+  }
+}
