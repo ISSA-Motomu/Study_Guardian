@@ -268,7 +268,7 @@ class StatusService:
                         "type": "image",
                         "url": img_url,
                         "flex": 2,
-                        "size": "lg",
+                        "size": "xl",
                         "aspectRatio": "1:1",
                         "aspectMode": "fit",
                         "align": "end",
