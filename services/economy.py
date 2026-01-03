@@ -66,10 +66,45 @@ class EconomyService:
         if EconomyService.get_user_info(user_id):
             return True  # 登録済み
 
-        # 新規登録 (初期EXP: 0, Role: USER, Inventory: {})
-        # 列順: user_id, display_name, current_exp, total_study_time, role, inventory_json
-        sheet.append_row([user_id, display_name, 0, 0, "USER", "{}"])
+        # 新規登録 (初期EXP: 0, Role: USER, Inventory: {}, Rank: E)
+        # 列順: user_id, display_name, current_exp, total_study_time, role, inventory_json, rank
+        sheet.append_row([user_id, display_name, 0, 0, "USER", "{}", "E"])
         return True
+
+    @staticmethod
+    def update_user_rank(user_id, rank):
+        """ユーザーのランクを更新"""
+        sheet = GSheetService.get_worksheet("users")
+        if not sheet:
+            return False
+
+        try:
+            cell = sheet.find(user_id)
+            if cell:
+                # Rank is column 7
+                sheet.update_cell(cell.row, 7, rank)
+                return True
+            return False
+        except Exception as e:
+            print(f"Update Rank Error: {e}")
+            return False
+
+    @staticmethod
+    def reset_user(user_id):
+        """ユーザー情報をリセット（削除）"""
+        sheet = GSheetService.get_worksheet("users")
+        if not sheet:
+            return False
+
+        try:
+            cell = sheet.find(user_id)
+            if cell:
+                sheet.delete_rows(cell.row)
+                return True
+            return False
+        except Exception as e:
+            print(f"Reset User Error: {e}")
+            return False
 
     @staticmethod
     def get_user_inventory(user_id):

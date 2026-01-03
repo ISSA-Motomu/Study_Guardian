@@ -61,6 +61,23 @@ def handle_message(event, text):
     try:
         user_id = event.source.user_id
 
+        # 開発用リセットコマンド
+        if text == "!reset" or text == "!init":
+            if EconomyService.is_admin(user_id):
+                if EconomyService.reset_user(user_id):
+                    line_bot_api.reply_message(
+                        event.reply_token,
+                        TextSendMessage(
+                            text="【初期化完了】\nユーザーデータをリセットしました。\n何か発言して再登録してください。"
+                        ),
+                    )
+                else:
+                    line_bot_api.reply_message(
+                        event.reply_token,
+                        TextSendMessage(text="リセットに失敗しました。"),
+                    )
+                return True
+
         # 状態チェック (ポイント付与フロー中かどうか)
         if user_id in admin_states:
             state_data = admin_states[user_id]

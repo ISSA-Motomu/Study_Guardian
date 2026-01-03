@@ -51,7 +51,7 @@
         "alignItems": "flex-end"
       }
     ],
-    "backgroundColor": "#27ACB2",
+    "backgroundColor": "${rank_color}",
     "paddingAll": "20px"
   },
   "body": {

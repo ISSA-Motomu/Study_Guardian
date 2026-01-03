@@ -138,6 +138,12 @@ def handle_postback(event, action, data):
             new_rank_info = StatusService.get_rank_info(new_total)
             is_rank_up = new_rank_info["name"] != old_rank_info["name"]
 
+            # ランクをユーザーシートに保存
+            rank_letter = (
+                new_rank_info["name"].split(":")[0].replace("Rank ", "").strip()
+            )
+            EconomyService.update_user_rank(target_id, rank_letter)
+
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(

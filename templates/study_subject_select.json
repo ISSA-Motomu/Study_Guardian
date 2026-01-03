@@ -20,28 +20,62 @@
     "layout": "vertical",
     "contents": [
       {
+        "type": "text",
+        "text": "科目ごとの色を確認してね！",
+        "size": "xs",
+        "color": "#aaaaaa",
+        "align": "center",
+        "margin": "md"
+      },
+      {
         "type": "box",
         "layout": "horizontal",
         "contents": [
           {
-            "type": "button",
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+              {
+                "type": "text",
+                "text": "国語",
+                "color": "#ffffff",
+                "weight": "bold",
+                "align": "center"
+              }
+            ],
+            "backgroundColor": "#FF6B6B",
+            "cornerRadius": "md",
+            "paddingAll": "12px",
             "action": {
               "type": "postback",
               "label": "国語",
               "data": "action=start_study&subject=国語"
             },
-            "style": "secondary",
-            "margin": "xs"
+            "margin": "xs",
+            "flex": 1
           },
           {
-            "type": "button",
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+              {
+                "type": "text",
+                "text": "数学",
+                "color": "#ffffff",
+                "weight": "bold",
+                "align": "center"
+              }
+            ],
+            "backgroundColor": "#4D96FF",
+            "cornerRadius": "md",
+            "paddingAll": "12px",
             "action": {
               "type": "postback",
               "label": "数学",
               "data": "action=start_study&subject=数学"
             },
-            "style": "secondary",
-            "margin": "xs"
+            "margin": "xs",
+            "flex": 1
           }
         ],
         "margin": "md"
@@ -51,24 +85,50 @@
         "layout": "horizontal",
         "contents": [
           {
-            "type": "button",
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+              {
+                "type": "text",
+                "text": "英語",
+                "color": "#ffffff",
+                "weight": "bold",
+                "align": "center"
+              }
+            ],
+            "backgroundColor": "#FFD93D",
+            "cornerRadius": "md",
+            "paddingAll": "12px",
             "action": {
               "type": "postback",
               "label": "英語",
               "data": "action=start_study&subject=英語"
             },
-            "style": "secondary",
-            "margin": "xs"
+            "margin": "xs",
+            "flex": 1
           },
           {
-            "type": "button",
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+              {
+                "type": "text",
+                "text": "理科",
+                "color": "#ffffff",
+                "weight": "bold",
+                "align": "center"
+              }
+            ],
+            "backgroundColor": "#6BCB77",
+            "cornerRadius": "md",
+            "paddingAll": "12px",
             "action": {
               "type": "postback",
               "label": "理科",
               "data": "action=start_study&subject=理科"
             },
-            "style": "secondary",
-            "margin": "xs"
+            "margin": "xs",
+            "flex": 1
           }
         ],
         "margin": "md"
@@ -78,24 +138,50 @@
         "layout": "horizontal",
         "contents": [
           {
-            "type": "button",
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+              {
+                "type": "text",
+                "text": "社会",
+                "color": "#ffffff",
+                "weight": "bold",
+                "align": "center"
+              }
+            ],
+            "backgroundColor": "#9D4EDD",
+            "cornerRadius": "md",
+            "paddingAll": "12px",
             "action": {
               "type": "postback",
               "label": "社会",
               "data": "action=start_study&subject=社会"
             },
-            "style": "secondary",
-            "margin": "xs"
+            "margin": "xs",
+            "flex": 1
           },
           {
-            "type": "button",
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+              {
+                "type": "text",
+                "text": "その他",
+                "color": "#ffffff",
+                "weight": "bold",
+                "align": "center"
+              }
+            ],
+            "backgroundColor": "#95A5A6",
+            "cornerRadius": "md",
+            "paddingAll": "12px",
             "action": {
               "type": "postback",
               "label": "その他",
               "data": "action=start_study&subject=その他"
             },
-            "style": "secondary",
-            "margin": "xs"
+            "margin": "xs",
+            "flex": 1
           }
         ],
         "margin": "md"

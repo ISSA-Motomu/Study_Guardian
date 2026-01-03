@@ -233,7 +233,7 @@ class StatusService:
             "type": "bubble",
             "size": "giga",
             "styles": {
-                "header": {"backgroundColor": "#1a1a1a"},
+                "header": {"backgroundColor": rank_data["color"]},
                 "body": {"backgroundColor": "#202020"},
                 "footer": {"backgroundColor": "#1a1a1a"},
             },
