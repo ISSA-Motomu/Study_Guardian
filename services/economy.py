@@ -125,25 +125,40 @@ class EconomyService:
         # 辞書からリスト形式に変換 (表示用)
         # 定義マスタ (本来は別ファイルやDBで管理すべきだが一旦ここに記述)
         item_master = {
-            "ticket_1.5x": {"name": "ポイント 1.5倍", "icon": "🎟"},
-            "shield_chores": {"name": "絶対防御", "icon": "🛡"},
-            "supple_focus": {"name": "集中サプリ", "icon": "💊"},
-            "bonus_100": {"name": "臨時ボーナス", "icon": "💸"},
+            "ticket_1.5x": {"name": "ポイント 1.5倍", "icon": "🎟", "type": "item"},
+            "shield_chores": {"name": "絶対防御", "icon": "🛡", "type": "item"},
+            "supple_focus": {"name": "集中サプリ", "icon": "💊", "type": "item"},
+            "bonus_100": {"name": "臨時ボーナス", "icon": "💸", "type": "item"},
+            # Badges
+            "badge_bath": {"name": "お風呂博士", "icon": "🛁", "type": "badge"},
+            "badge_print": {"name": "暗記王", "icon": "🧠", "type": "badge"},
+            "badge_early": {"name": "早起き名人", "icon": "☀️", "type": "badge"},
+            "badge_clean": {"name": "お掃除隊長", "icon": "🧹", "type": "badge"},
+            "badge_cook": {"name": "料理の鉄人", "icon": "🍳", "type": "badge"},
         }
 
         items = []
         for item_key, count in inventory_dict.items():
             if count > 0:
-                master = item_master.get(item_key, {"name": item_key, "icon": "📦"})
+                master = item_master.get(
+                    item_key, {"name": item_key, "icon": "📦", "type": "item"}
+                )
                 items.append(
                     {
                         "key": item_key,
                         "name": master["name"],
                         "icon": master["icon"],
+                        "type": master.get("type", "item"),
                         "count": count,
                     }
                 )
         return items
+
+    @staticmethod
+    def get_user_badges(user_id):
+        """ユーザーの所持バッジのみを取得"""
+        inventory = EconomyService.get_user_inventory(user_id)
+        return [item for item in inventory if item.get("type") == "badge"]
 
     @staticmethod
     def add_inventory_item(user_id, item_key, count=1):

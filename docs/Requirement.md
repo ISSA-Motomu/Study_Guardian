@@ -8,7 +8,7 @@
 | C | current_exp | Integer | 所持EXP (残高) | 1500 |
 | D | total_study_time | Integer | 累計勉強時間(分) | 1200 |
 | E | role | String | 権限 (ADMIN/USER) | USER |
-| F | inventory_json | JSON | 所持アイテム | {"ticket_1.5x": 1} |
+| F | inventory_json | JSON | 所持アイテム・勲章 | {"ticket_1.5x": 1, "badge_bath": 1} |
 | G | rank | String | ランク (S-E) | A |
 
 ### Sheet 2: `study_log` (学習記録)

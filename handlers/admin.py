@@ -54,6 +54,39 @@ def handle_postback(event, action, data):
         )
         return True
 
+    elif action == "admin_give_badge":
+        target_user_id = data.get("target_id")
+        badge_key = data.get("badge_key")
+
+        # バッジ付与実行
+        if EconomyService.add_inventory_item(target_user_id, badge_key, 1):
+            # ユーザー名取得
+            user_info = EconomyService.get_user_info(target_user_id)
+            user_name = user_info["display_name"] if user_info else "ユーザー"
+
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(
+                    text=f"【勲章授与】\n{user_name}さんに勲章を授与しました！"
+                ),
+            )
+
+            # 対象者へ通知
+            try:
+                line_bot_api.push_message(
+                    target_user_id,
+                    TextSendMessage(
+                        text=f"🎖 特別な勲章を授与されました！\nステータス画面を確認してみよう！"
+                    ),
+                )
+            except:
+                pass
+        else:
+            line_bot_api.reply_message(
+                event.reply_token, TextSendMessage(text="勲章の授与に失敗しました。")
+            )
+        return True
+
     return False
 
 
@@ -206,6 +239,87 @@ def handle_message(event, text):
                 event.reply_token,
                 TextSendMessage(
                     text=f"交換アイテム追加はこちらのフォームから行ってください：\n{form_url}"
+                ),
+            )
+            return True
+
+        if text == "勲章授与" or text == "バッジ":
+            if not EconomyService.is_admin(user_id):
+                line_bot_api.reply_message(
+                    event.reply_token, TextSendMessage(text="権限がありません。")
+                )
+                return True
+
+            # ユーザー選択用のカルーセルを表示
+            users = EconomyService.get_all_users()
+            targets = [u for u in users if str(u["user_id"]) != user_id]
+
+            if not targets:
+                line_bot_api.reply_message(
+                    event.reply_token, TextSendMessage(text="対象ユーザーがいません。")
+                )
+                return True
+
+            bubbles = []
+            for u in targets:
+                # バッジ選択ボタン
+                badges = [
+                    {"label": "お風呂博士", "key": "badge_bath"},
+                    {"label": "暗記王", "key": "badge_print"},
+                    {"label": "早起き名人", "key": "badge_early"},
+                    {"label": "お掃除隊長", "key": "badge_clean"},
+                ]
+
+                badge_buttons = []
+                for b in badges:
+                    badge_buttons.append(
+                        {
+                            "type": "button",
+                            "style": "secondary",
+                            "height": "sm",
+                            "action": {
+                                "type": "postback",
+                                "label": b["label"],
+                                "data": f"action=admin_give_badge&target={u['user_id']}&badge_key={b['key']}",
+                            },
+                        }
+                    )
+
+                bubbles.append(
+                    {
+                        "type": "bubble",
+                        "body": {
+                            "type": "box",
+                            "layout": "vertical",
+                            "contents": [
+                                {
+                                    "type": "text",
+                                    "text": u["display_name"],
+                                    "weight": "bold",
+                                    "size": "xl",
+                                },
+                                {
+                                    "type": "text",
+                                    "text": "授与する勲章を選んでください",
+                                    "size": "sm",
+                                    "color": "#aaaaaa",
+                                },
+                            ],
+                        },
+                        "footer": {
+                            "type": "box",
+                            "layout": "vertical",
+                            "spacing": "sm",
+                            "contents": badge_buttons,
+                        },
+                    }
+                )
+
+            line_bot_api.reply_message(
+                event.reply_token,
+                FlexSendMessage(
+                    alt_text="勲章授与",
+                    contents={"type": "carousel", "contents": bubbles},
                 ),
             )
             return True

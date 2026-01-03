@@ -336,11 +336,23 @@ class HistoryService:
 
             # ユーザー情報と結合してフィルタリング
             all_users = EconomyService.get_all_users()
+
+            # Admin IDを特定 (重複エントリ対策: どこかにADMINがあればそのIDはAdminとみなす)
+            admin_ids = set()
+            for u in all_users:
+                if str(u.get("role", "")).strip().upper() == "ADMIN":
+                    admin_ids.add(str(u.get("user_id")))
+
             ranking = []
 
             for u in all_users:
                 uid = str(u.get("user_id"))
-                role = u.get("role")
+
+                # Adminとして特定されたIDはスキップ
+                if uid in admin_ids:
+                    continue
+
+                role = str(u.get("role", "")).strip().upper()
                 if role != "USER":
                     continue
 

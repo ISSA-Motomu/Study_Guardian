@@ -127,6 +127,48 @@ class StatusService:
                 }
             )
 
+        # バッジ（勲章）の取得
+        from services.economy import EconomyService
+
+        badges = EconomyService.get_user_badges(str(user_data.get("user_id")))
+
+        badge_contents = []
+        if badges:
+            for b in badges:
+                badge_contents.append(
+                    {
+                        "type": "box",
+                        "layout": "vertical",
+                        "width": "60px",
+                        "alignItems": "center",
+                        "contents": [
+                            {
+                                "type": "box",
+                                "layout": "vertical",
+                                "width": "40px",
+                                "height": "40px",
+                                "backgroundColor": "#FFD700",  # Gold background for badges
+                                "cornerRadius": "50px",  # Circle
+                                "justifyContent": "center",
+                                "alignItems": "center",
+                                "contents": [
+                                    {"type": "text", "text": b["icon"], "size": "xl"}
+                                ],
+                            },
+                            {
+                                "type": "text",
+                                "text": b["name"],
+                                "size": "xxs",
+                                "color": "#aaaaaa",
+                                "align": "center",
+                                "margin": "xs",
+                                "wrap": True,
+                            },
+                        ],
+                        "margin": "xs",
+                    }
+                )
+
         # ランキングセクションの構築
         ranking_contents = []
         if weekly_ranking:
@@ -347,6 +389,30 @@ class StatusService:
                         "margin": "lg",
                         "justifyContent": "center",
                     },
+                    # バッジ表示エリア
+                    *(
+                        [
+                            {
+                                "type": "text",
+                                "text": "SPECIAL BADGES",
+                                "color": "#FFD700",
+                                "size": "xxs",
+                                "weight": "bold",
+                                "margin": "lg",
+                                "align": "center",
+                            },
+                            {
+                                "type": "box",
+                                "layout": "horizontal",
+                                "contents": badge_contents,
+                                "margin": "md",
+                                "justifyContent": "center",
+                                "wrap": True,
+                            },
+                        ]
+                        if badge_contents
+                        else []
+                    ),
                     # ランキング表示エリア
                     {
                         "type": "box",
@@ -368,8 +434,8 @@ class StatusService:
                         "action": {
                             "type": "postback",
                             "label": "履歴",
-                            "data": "action=show_history"
-                        }
+                            "data": "action=show_history",
+                        },
                     },
                     {
                         "type": "button",
@@ -378,62 +444,13 @@ class StatusService:
                         "action": {
                             "type": "postback",
                             "label": "掲載中のジョブ",
-                            "data": "action=job_list"
-                        }
-                    }
-                ]
-            }
+                            "data": "action=job_list",
+                        },
+                    },
+                ],
+            },
         }
 
-        return bubble
-                    {
-                        "type": "box",
-                        "layout": "vertical",
-                        "contents": ranking_contents,
-                        "margin": "md",
-                    },
-                ],
-            },
-            "footer": {
-                "type": "box",
-                "layout": "horizontal",
-                "spacing": "sm",
-                "contents": [
-                    {
-                        "type": "button",
-                        "style": "primary",
-                        "color": "#bbbbbb",
-                        "height": "sm",
-                        "action": {
-                            "type": "message",
-                            "label": "勉強する",
-                            "text": "勉強開始",
-                        },
-                    },
-                    {
-                        "type": "button",
-                        "style": "secondary",
-                        "height": "sm",
-                        "action": {
-                            "type": "message",
-                            "label": "データ",
-                            "text": "詳細ステータス",
-                        },
-                    },
-                    {
-                        "type": "button",
-                        "style": "primary",
-                        "color": "#ff5555",
-                        "height": "sm",
-                        "action": {
-                            "type": "message",
-                            "label": "ガチャ",
-                            "text": "ガチャ",
-                        },
-                    },
-                ],
-            },
-        }
         return bubble
 
     @staticmethod
