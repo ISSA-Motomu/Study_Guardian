@@ -26,12 +26,32 @@ class JobService:
 
         jobs = []
         try:
-            records = sheet.get_all_records()
-            for row in records:
-                # ステータスチェック (大文字小文字、空白無視)
-                status = str(row.get("status", "")).strip().upper()
-                if status == "OPEN":
-                    jobs.append(row)
+            # ヘッダー依存を避けるため、全値を取得してインデックスでアクセス
+            # 列: A:job_id, B:title, C:reward, D:status, E:client_id, F:worker_id, G:deadline
+            rows = sheet.get_all_values()
+
+            # ヘッダー行(1行目)をスキップ
+            if len(rows) > 1:
+                for r in rows[1:]:
+                    # 列数が足りない場合はスキップ
+                    if len(r) < 4:
+                        continue
+
+                    # D列 (Index 3) が Status
+                    status = str(r[3]).strip().upper()
+
+                    if status == "OPEN":
+                        # 辞書形式に変換してリストに追加
+                        job_data = {
+                            "job_id": r[0],
+                            "title": r[1],
+                            "reward": r[2],
+                            "status": status,
+                            "client_id": r[4] if len(r) > 4 else "",
+                            "worker_id": r[5] if len(r) > 5 else "",
+                            "deadline": r[6] if len(r) > 6 else "",
+                        }
+                        jobs.append(job_data)
         except Exception as e:
             print(f"Job List Error: {e}")
         return jobs
@@ -45,13 +65,26 @@ class JobService:
 
         jobs = []
         try:
-            records = sheet.get_all_records()
-            for row in records:
-                status = str(row.get("status", "")).strip().upper()
-                worker = str(row.get("worker_id", ""))
+            rows = sheet.get_all_values()
+            if len(rows) > 1:
+                for r in rows[1:]:
+                    if len(r) < 6:
+                        continue
 
-                if status == "ASSIGNED" and worker == str(user_id):
-                    jobs.append(row)
+                    status = str(r[3]).strip().upper()
+                    worker = str(r[5]).strip()
+
+                    if status == "ASSIGNED" and worker == str(user_id):
+                        job_data = {
+                            "job_id": r[0],
+                            "title": r[1],
+                            "reward": r[2],
+                            "status": status,
+                            "client_id": r[4],
+                            "worker_id": worker,
+                            "deadline": r[6] if len(r) > 6 else "",
+                        }
+                        jobs.append(job_data)
         except Exception as e:
             print(f"My Job Error: {e}")
         return jobs
@@ -65,11 +98,23 @@ class JobService:
 
         reviews = []
         try:
-            records = sheet.get_all_records()
-            for row in records:
-                status = str(row.get("status", "")).strip().upper()
-                if status == "REVIEW":
-                    reviews.append(row)
+            rows = sheet.get_all_values()
+            if len(rows) > 1:
+                for r in rows[1:]:
+                    if len(r) < 4:
+                        continue
+
+                    status = str(r[3]).strip().upper()
+                    if status == "REVIEW":
+                        job_data = {
+                            "job_id": r[0],
+                            "title": r[1],
+                            "reward": r[2],
+                            "status": status,
+                            "client_id": r[4] if len(r) > 4 else "",
+                            "worker_id": r[5] if len(r) > 5 else "",
+                        }
+                        reviews.append(job_data)
         except Exception as e:
             print(f"Review List Error: {e}")
         return reviews

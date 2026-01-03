@@ -449,8 +449,8 @@ class StatusService:
                                 "height": "sm",
                                 "action": {
                                     "type": "message",
-                                    "label": "ショップ",
-                                    "text": "ショップ",
+                                    "label": "詳細",
+                                    "text": "詳細ステータス",
                                 },
                                 "color": "#FFD93D",
                             },
