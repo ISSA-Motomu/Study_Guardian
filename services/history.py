@@ -162,6 +162,87 @@ class HistoryService:
                     "subjects": data["subjects"],
                 }
             )
+        return result
+
+    @staticmethod
+    def get_user_monthly_weekly_stats(user_id):
+        """ユーザーの直近4週間の週別学習時間（教科別）"""
+        sheet = GSheetService.get_worksheet("study_log")
+        if not sheet:
+            return []
+
+        now = datetime.datetime.now()
+        # 過去4週間 (28日間)
+        # 4つの期間を作る: [3週間前, 2週間前, 1週間前, 今週]
+        weeks = []
+        for i in range(3, -1, -1):
+            # i=3: 21-27日前, i=0: 0-6日前
+            end_d = now - datetime.timedelta(days=i * 7)
+            start_d = end_d - datetime.timedelta(days=6)
+
+            # 日付比較用にdateオブジェクトにする
+            weeks.append(
+                {
+                    "start_date": start_d.date(),
+                    "end_date": end_d.date(),
+                    "label": f"{start_d.month}/{start_d.day}~",
+                    "total": 0,
+                    "subjects": {},
+                }
+            )
+
+        try:
+            records = sheet.get_all_values()
+            for row in records[1:]:
+                if len(row) < 6:
+                    continue
+                if row[0] != user_id:
+                    continue
+                if row[5] != "APPROVED":
+                    continue
+
+                date_str = row[2]
+                try:
+                    log_date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+
+                    # どの週に該当するかチェック
+                    target_week = None
+                    for w in weeks:
+                        if w["start_date"] <= log_date <= w["end_date"]:
+                            target_week = w
+                            break
+
+                    if target_week:
+                        start_str = row[3]
+                        end_str = row[4]
+                        subject = row[8] if len(row) >= 9 else "その他"
+                        if not subject:
+                            subject = "その他"
+
+                        s = datetime.datetime.strptime(start_str, "%H:%M:%S")
+                        e = datetime.datetime.strptime(end_str, "%H:%M:%S")
+                        if e < s:
+                            e += datetime.timedelta(days=1)
+                        minutes = int((e - s).total_seconds() / 60)
+
+                        target_week["total"] += minutes
+                        if subject not in target_week["subjects"]:
+                            target_week["subjects"][subject] = 0
+                        target_week["subjects"][subject] += minutes
+
+                except:
+                    pass
+        except Exception as e:
+            print(f"Monthly Stats Error: {e}")
+
+        # 結果整形
+        result = []
+        for w in weeks:
+            result.append(
+                {"label": w["label"], "minutes": w["total"], "subjects": w["subjects"]}
+            )
+
+        return result
 
     @staticmethod
     def get_user_job_history(user_id, limit=5):

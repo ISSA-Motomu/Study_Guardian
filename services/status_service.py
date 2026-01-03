@@ -371,11 +371,35 @@ class StatusService:
         return bubble
 
     @staticmethod
-    def create_weekly_graph_gui(user_data, weekly_history, inventory_items):
-        """週間学習記録の棒グラフ画面を生成（積み上げグラフ）"""
+    def create_report_carousel(
+        user_data, weekly_history, monthly_history, inventory_items
+    ):
+        """週間・月間レポートのカルーセルを生成"""
+
+        # 週間レポートバブル
+        weekly_bubble = StatusService._create_graph_bubble(
+            "WEEKLY REPORT", user_data, weekly_history, inventory_items, is_weekly=True
+        )
+
+        # 月間レポートバブル
+        monthly_bubble = StatusService._create_graph_bubble(
+            "MONTHLY REPORT",
+            user_data,
+            monthly_history,
+            None,  # 月間にはアイテム表示しない（スペース節約）
+            is_weekly=False,
+        )
+
+        return {"type": "carousel", "contents": [weekly_bubble, monthly_bubble]}
+
+    @staticmethod
+    def _create_graph_bubble(
+        title, user_data, history_data, inventory_items, is_weekly=True
+    ):
+        """グラフバブル生成の共通ロジック"""
 
         # 最大値を求めてスケーリング (最低でも60分を最大とする)
-        max_min = max([d["minutes"] for d in weekly_history] + [60])
+        max_min = max([d["minutes"] for d in history_data] + [60])
 
         # 科目別カラー定義
         subject_colors = {
@@ -389,7 +413,7 @@ class StatusService:
         }
 
         bars = []
-        for day in weekly_history:
+        for day in history_data:
             total_minutes = day["minutes"]
             subjects = day.get("subjects", {})
 
@@ -401,13 +425,9 @@ class StatusService:
             # 積み上げバーの構成要素
             stack_contents = []
             if total_minutes > 0:
-                # 各科目の割合を計算して積み上げる
-                # 順序を固定するためにキーをソート、あるいは特定の順序にする
-                # ここでは単純に辞書順
                 for subj, mins in subjects.items():
                     if mins <= 0:
                         continue
-                    # その日の合計に対する割合
                     ratio = int((mins / total_minutes) * 100)
                     if ratio < 1:
                         ratio = 1
@@ -424,7 +444,6 @@ class StatusService:
                         }
                     )
             else:
-                # 0分の場合は表示なし（あるいは極小のグレーバー）
                 stack_contents.append(
                     {
                         "type": "box",
@@ -434,7 +453,17 @@ class StatusService:
                         "backgroundColor": "#333333",
                     }
                 )
-                total_height_percent = 1  # 見えるように少しだけ高さを確保
+                total_height_percent = 1
+
+            # ラベル処理
+            label_text = day["label"]
+            if is_weekly:
+                # (月) -> 月
+                if "(" in label_text:
+                    label_text = label_text.split("(")[1][:-1]
+            else:
+                # 12/1~ -> 12/1
+                label_text = label_text.replace("~", "")
 
             bars.append(
                 {
@@ -464,7 +493,7 @@ class StatusService:
                         },
                         {
                             "type": "text",
-                            "text": day["label"].split("(")[1][:-1],  # (月) -> 月
+                            "text": label_text,
                             "size": "xxs",
                             "align": "center",
                             "color": "#aaaaaa",
@@ -477,54 +506,75 @@ class StatusService:
             )
 
         # インベントリ（所持品）のカルーセル作成
-        inventory_bubbles = []
-        if not inventory_items:
-            inventory_bubbles.append(
-                {
-                    "type": "text",
-                    "text": "所持品はありません",
-                    "color": "#aaaaaa",
-                    "size": "xs",
-                    "align": "center",
-                }
-            )
-        else:
-            for item in inventory_items:
+        inventory_section = []
+        if inventory_items is not None:
+            inventory_bubbles = []
+            if not inventory_items:
                 inventory_bubbles.append(
                     {
-                        "type": "box",
-                        "layout": "vertical",
-                        "backgroundColor": "#333333",
-                        "cornerRadius": "md",
-                        "paddingAll": "sm",
-                        "width": "80px",
-                        "contents": [
-                            {
-                                "type": "text",
-                                "text": item.get("icon", "📦"),
-                                "size": "xl",
-                                "align": "center",
-                            },
-                            {
-                                "type": "text",
-                                "text": item.get("name", "Item"),
-                                "size": "xxs",
-                                "align": "center",
-                                "wrap": True,
-                                "margin": "sm",
-                                "color": "#ffffff",
-                            },
-                            {
-                                "type": "text",
-                                "text": f"x{item.get('count', 1)}",
-                                "size": "xs",
-                                "align": "center",
-                                "color": "#FFD700",
-                                "weight": "bold",
-                            },
-                        ],
+                        "type": "text",
+                        "text": "所持品はありません",
+                        "color": "#aaaaaa",
+                        "size": "xs",
+                        "align": "center",
                     }
                 )
+            else:
+                for item in inventory_items:
+                    inventory_bubbles.append(
+                        {
+                            "type": "box",
+                            "layout": "vertical",
+                            "backgroundColor": "#333333",
+                            "cornerRadius": "md",
+                            "paddingAll": "sm",
+                            "width": "80px",
+                            "contents": [
+                                {
+                                    "type": "text",
+                                    "text": item.get("icon", "📦"),
+                                    "size": "xl",
+                                    "align": "center",
+                                },
+                                {
+                                    "type": "text",
+                                    "text": item.get("name", "Item"),
+                                    "size": "xxs",
+                                    "align": "center",
+                                    "wrap": True,
+                                    "margin": "sm",
+                                    "color": "#ffffff",
+                                },
+                                {
+                                    "type": "text",
+                                    "text": f"x{item.get('count', 1)}",
+                                    "size": "xs",
+                                    "align": "center",
+                                    "color": "#FFD700",
+                                    "weight": "bold",
+                                },
+                            ],
+                        }
+                    )
+
+            inventory_section = [
+                {"type": "separator", "margin": "md", "color": "#444444"},
+                {
+                    "type": "text",
+                    "text": "🎒 ITEMS",
+                    "weight": "bold",
+                    "size": "sm",
+                    "margin": "md",
+                    "color": "#aaaaaa",
+                },
+                {
+                    "type": "box",
+                    "layout": "horizontal",
+                    "contents": inventory_bubbles,
+                    "spacing": "sm",
+                    "margin": "sm",
+                },
+            ]
 
         bubble = {
             "type": "bubble",
@@ -540,7 +590,7 @@ class StatusService:
                 "contents": [
                     {
                         "type": "text",
-                        "text": "WEEKLY REPORT",
+                        "text": title,
                         "color": "#888888",
                         "size": "xxs",
                         "weight": "bold",
@@ -569,29 +619,14 @@ class StatusService:
                     {"type": "separator", "margin": "md", "color": "#444444"},
                     {
                         "type": "text",
-                        "text": f"Total: {sum([d['minutes'] for d in weekly_history])} min",
+                        "text": f"Total: {sum([d['minutes'] for d in history_data])} min",
                         "size": "sm",
                         "color": "#ffffff",
                         "align": "end",
                         "margin": "md",
                     },
-                    {"type": "separator", "margin": "md", "color": "#444444"},
-                    {
-                        "type": "text",
-                        "text": "🎒 ITEMS",
-                        "weight": "bold",
-                        "size": "sm",
-                        "margin": "md",
-                        "color": "#aaaaaa",
-                    },
-                    {
-                        "type": "box",
-                        "layout": "horizontal",
-                        "contents": inventory_bubbles,
-                        "spacing": "sm",
-                        "margin": "sm",
-                    },
-                ],
+                ]
+                + inventory_section,
             },
             "footer": {
                 "type": "box",
@@ -611,3 +646,10 @@ class StatusService:
             },
         }
         return bubble
+
+    @staticmethod
+    def create_weekly_graph_gui(user_data, weekly_history, inventory_items):
+        """週間学習記録の棒グラフ画面を生成（積み上げグラフ）"""
+        return StatusService._create_graph_bubble(
+            "WEEKLY REPORT", user_data, weekly_history, inventory_items, is_weekly=True
+        )

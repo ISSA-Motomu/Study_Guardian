@@ -112,21 +112,28 @@ def handle_message(event, text):
             user_data["total_jobs"] = job_count
 
             if text == "詳細ステータス":
-                # 週間学習グラフ表示
+                # 週間・月間学習グラフ表示
                 weekly_history = HistoryService.get_user_weekly_daily_stats(user_id)
-                bubble = StatusService.create_weekly_graph_gui(
-                    user_data, weekly_history, inventory
+                monthly_history = HistoryService.get_user_monthly_weekly_stats(user_id)
+
+                carousel = StatusService.create_report_carousel(
+                    user_data, weekly_history, monthly_history, inventory
                 )
-                alt_text = "週間学習レポート"
+                alt_text = "学習レポート"
+
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    FlexSendMessage(alt_text=alt_text, contents=carousel),
+                )
             else:
                 # 勲章ホーム画面表示
                 bubble = StatusService.create_medal_home_gui(user_data, weekly_ranking)
                 alt_text = "ステータス"
 
-            line_bot_api.reply_message(
-                event.reply_token,
-                FlexSendMessage(alt_text=alt_text, contents=bubble),
-            )
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    FlexSendMessage(alt_text=alt_text, contents=bubble),
+                )
             return True
 
     return False

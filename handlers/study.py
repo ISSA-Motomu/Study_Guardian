@@ -276,11 +276,19 @@ def finalize_study(event, user_id, state_data, concentration):
 
     subject_str = f"\n教科: {subject}" if subject else ""
 
+    # 統計情報の再計算（表示用）
+    stats = SagaStats.calculate(minutes)
+    stats_msg = ""
+    if stats:
+        stats_msg = f"\n\n📊 佐賀県統計モデル\n偏差値: {stats['deviation']}\n判定: {stats['school_level']}"
+        if stats["is_saganishi"]:
+            stats_msg += "\n🌸 佐賀西合格圏内！"
+
     # ユーザーへの返信
     line_bot_api.reply_message(
         event.reply_token,
         TextSendMessage(
-            text=f"記録しました！\n勉強時間: {hours}時間{mins}分{subject_str}\n成果: {comment}\n集中度: {concentration}/5\n\n親に承認依頼を送りました。"
+            text=f"記録しました！\n勉強時間: {hours}時間{mins}分{subject_str}\n成果: {comment}\n集中度: {concentration}/5{stats_msg}\n\n親に承認依頼を送りました。"
         ),
     )
 
