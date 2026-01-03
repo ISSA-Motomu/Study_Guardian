@@ -25,6 +25,12 @@ def home():
     return "Saga Guardian Active"
 
 
+# app.py の一番上あたりに追加
+@app.route("/")
+def wake_up():
+    return "I am awake!", 200
+
+
 @app.route("/admin/dashboard")
 def admin_dashboard():
     # 本来は認証が必要だが、簡易的にURLを知っている人のみアクセス可能とする

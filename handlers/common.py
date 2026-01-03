@@ -29,14 +29,15 @@ def handle_postback(event, action, data):
         # ユーザー切り替えメニューを表示
         users = EconomyService.get_all_users()
 
-        # 自分自身（LINE ID）も選択肢に含める
-        # usersリストには既に含まれているはずだが、表示名をわかりやすくする
-
         bubbles = []
         for u in users:
             uid = str(u.get("user_id"))
             name = u.get("display_name")
             role = u.get("role")
+
+            # ADMINユーザーはリストに表示しない（切り替え不可）
+            if role == "ADMIN":
+                continue
 
             # 現在選択中のユーザーかどうか
             current_uid = get_current_user_id(line_user_id)
