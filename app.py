@@ -94,6 +94,8 @@ def handle_postback(event):
     action = data.get("action")
 
     # 各ハンドラに委譲
+    if common.handle_postback(event, action, data):
+        return
     if study.handle_postback(event, action, data):
         return
     if shop.handle_postback(event, action, data):
@@ -101,6 +103,8 @@ def handle_postback(event):
     if admin.handle_postback(event, action, data):
         return
     if job.handle_postback(event, action, data):
+        return
+    if status.handle_postback(event, action, data):
         return
 
     # どのハンドラも処理しなかった場合
