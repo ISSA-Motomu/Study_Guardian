@@ -6,6 +6,83 @@ from services.status_service import StatusService
 from utils.template_loader import load_template
 
 
+def handle_postback(event, action, data):
+    user_id = event.source.user_id
+
+    if action == "show_history":
+        # ユーザー自身の履歴を表示
+        # HistoryService.get_all_transactions() は全履歴なので、ユーザーでフィルタリングが必要
+        # または HistoryService に get_user_history を追加するのが良いが、
+        # ここでは既存の get_all_transactions を使ってフィルタリングする
+
+        all_tx = HistoryService.get_all_transactions()
+        user_tx = [tx for tx in all_tx if str(tx.get("user_id")) == user_id]
+
+        # 直近10件
+        history = user_tx[:10]
+
+        bubble = load_template("status_admin_view.json")
+        # タイトル変更
+        bubble["header"]["contents"][0]["text"] = "HISTORY"
+        bubble["header"]["backgroundColor"] = "#444444"
+
+        # body -> contents[2] is the list container
+        list_container = bubble["body"]["contents"][2]["contents"]
+        # Clear existing placeholder if any (though template usually has empty list or placeholder)
+        # The template loader loads the JSON. Let's assume it's empty or we append.
+        # Actually status_admin_view.json might have some structure.
+        # Let's just clear and append.
+        list_container.clear()
+
+        if not history:
+            list_container.append(
+                {
+                    "type": "text",
+                    "text": "履歴なし",
+                    "size": "sm",
+                    "color": "#aaaaaa",
+                    "align": "center",
+                }
+            )
+        else:
+            for tx in history:
+                amount = int(tx.get("amount", 0))
+                color = "#ff5555" if amount > 0 else "#5555ff"
+                amount_str = f"+{amount}" if amount > 0 else str(amount)
+
+                # Description resolution
+                desc = str(tx.get("related_id", ""))
+                rtype = tx.get("tx_type")
+
+                if rtype == "REWARD":
+                    if desc == "STUDY_REWARD":
+                        desc = "勉強報酬"
+                    elif desc.startswith("JOB_"):
+                        desc = "お手伝い報酬"
+                    elif desc.startswith("ADMIN_GRANT"):
+                        desc = "ボーナス"
+                elif rtype == "SPEND":
+                    if desc.startswith("BUY_"):
+                        desc = "アイテム購入"
+
+                row = load_template(
+                    "status_row_transaction.json",
+                    date=str(tx.get("timestamp"))[5:-3],
+                    user=desc,  # Reuse 'user' field for description
+                    amount=amount_str,
+                    color=color,
+                )
+                list_container.append(row)
+
+        line_bot_api.reply_message(
+            event.reply_token,
+            FlexSendMessage(alt_text="履歴", contents=bubble),
+        )
+        return True
+
+    return False
+
+
 def handle_message(event, text):
     user_id = event.source.user_id
 

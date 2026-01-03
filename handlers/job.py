@@ -5,8 +5,76 @@ from services.economy import EconomyService
 from utils.template_loader import load_template
 
 
+def send_job_list(reply_token, user_id):
+    # 1. 自分の担当中タスクを表示
+    active_jobs = JobService.get_user_active_jobs(user_id)
+
+    # ベースのテンプレートを読み込み
+    job_flex = load_template("job_list.json")
+    contents = job_flex["body"]["contents"]
+
+    if active_jobs:
+        header = load_template(
+            "job_section_header.json", text="🔥 進行中のタスク", color="#ff5555"
+        )
+        contents.append(header)
+
+        for job in active_jobs:
+            row = load_template(
+                "job_row_active.json", title=job["title"], job_id=job["job_id"]
+            )
+            contents.append(row)
+
+        contents.append({"type": "separator", "margin": "md"})
+
+    # 2. 募集中のタスクを表示
+    open_jobs = JobService.get_open_jobs()
+
+    header_open = load_template(
+        "job_section_header.json", text="📋 募集中のタスク", color="#333333"
+    )
+    contents.append(header_open)
+
+    if not open_jobs:
+        contents.append(
+            {
+                "type": "text",
+                "text": "現在募集中のタスクはありません",
+                "size": "sm",
+                "color": "#aaaaaa",
+                "margin": "sm",
+            }
+        )
+    else:
+        for job in open_jobs:
+            row = load_template(
+                "job_row_open.json",
+                title=job["title"],
+                reward=job["reward"],
+                job_id=job["job_id"],
+            )
+            contents.append(row)
+
+    # 3. Admin用メニュー (仕事追加ボタン)
+    if EconomyService.is_admin(user_id):
+        contents.append({"type": "separator", "margin": "md"})
+        # GoogleフォームのURLを設定してください
+        form_url = "https://docs.google.com/forms/d/e/1FAIpQLSclo5UBPPyzLBuY1mukZfDOn7wEWt6fLNIdkQVPAL9IZxSTsQ/viewform?usp=header"
+        button = load_template("job_create_button.json", form_url=form_url)
+        contents.append(button)
+
+    line_bot_api.reply_message(
+        reply_token,
+        FlexSendMessage(alt_text="お手伝いリスト", contents=job_flex),
+    )
+
+
 def handle_postback(event, action, data):
     user_id = event.source.user_id
+
+    if action == "job_list":
+        send_job_list(event.reply_token, user_id)
+        return True
 
     if action == "job_accept":
         # 管理者は受注不可
@@ -125,67 +193,7 @@ def handle_message(event, text):
     user_id = event.source.user_id
 
     if text == "ジョブ" or text == "お手伝い":
-        # 1. 自分の担当中タスクを表示
-        active_jobs = JobService.get_user_active_jobs(user_id)
-
-        # ベースのテンプレートを読み込み
-        job_flex = load_template("job_list.json")
-        contents = job_flex["body"]["contents"]
-
-        if active_jobs:
-            header = load_template(
-                "job_section_header.json", text="🔥 進行中のタスク", color="#ff5555"
-            )
-            contents.append(header)
-
-            for job in active_jobs:
-                row = load_template(
-                    "job_row_active.json", title=job["title"], job_id=job["job_id"]
-                )
-                contents.append(row)
-
-            contents.append({"type": "separator", "margin": "md"})
-
-        # 2. 募集中のタスクを表示
-        open_jobs = JobService.get_open_jobs()
-
-        header_open = load_template(
-            "job_section_header.json", text="📋 募集中のタスク", color="#333333"
-        )
-        contents.append(header_open)
-
-        if not open_jobs:
-            contents.append(
-                {
-                    "type": "text",
-                    "text": "現在募集中のタスクはありません",
-                    "size": "sm",
-                    "color": "#aaaaaa",
-                    "margin": "sm",
-                }
-            )
-        else:
-            for job in open_jobs:
-                row = load_template(
-                    "job_row_open.json",
-                    title=job["title"],
-                    reward=job["reward"],
-                    job_id=job["job_id"],
-                )
-                contents.append(row)
-
-        # 3. Admin用メニュー (仕事追加ボタン)
-        if EconomyService.is_admin(user_id):
-            contents.append({"type": "separator", "margin": "md"})
-            # GoogleフォームのURLを設定してください
-            form_url = "https://docs.google.com/forms/d/e/1FAIpQLSclo5UBPPyzLBuY1mukZfDOn7wEWt6fLNIdkQVPAL9IZxSTsQ/viewform?usp=header"
-            button = load_template("job_create_button.json", form_url=form_url)
-            contents.append(button)
-
-        line_bot_api.reply_message(
-            event.reply_token,
-            FlexSendMessage(alt_text="お手伝いリスト", contents=job_flex),
-        )
+        send_job_list(event.reply_token, user_id)
         return True
 
     return False

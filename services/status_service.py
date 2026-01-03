@@ -52,7 +52,7 @@ class StatusService:
         else:
             return {
                 "name": "Rank E: 見習い",
-                "color": "#555555",
+                "color": "#607D8B",
                 "next": 180,
                 "base": 0,
                 "img": "rank_e.png",
@@ -284,7 +284,7 @@ class StatusService:
                             {
                                 "type": "text",
                                 "text": rank_data["name"],
-                                "color": rank_data["color"],
+                                "color": "#ffffff",
                                 "size": "lg",
                                 "weight": "bold",
                                 "margin": "sm",
@@ -348,6 +348,44 @@ class StatusService:
                         "justifyContent": "center",
                     },
                     # ランキング表示エリア
+                    {
+                        "type": "box",
+                        "layout": "vertical",
+                        "contents": ranking_contents,
+                        "margin": "xl",
+                    },
+                ],
+            },
+            "footer": {
+                "type": "box",
+                "layout": "horizontal",
+                "spacing": "sm",
+                "contents": [
+                    {
+                        "type": "button",
+                        "style": "secondary",
+                        "height": "sm",
+                        "action": {
+                            "type": "postback",
+                            "label": "履歴",
+                            "data": "action=show_history"
+                        }
+                    },
+                    {
+                        "type": "button",
+                        "style": "secondary",
+                        "height": "sm",
+                        "action": {
+                            "type": "postback",
+                            "label": "掲載中のジョブ",
+                            "data": "action=job_list"
+                        }
+                    }
+                ]
+            }
+        }
+
+        return bubble
                     {
                         "type": "box",
                         "layout": "vertical",
