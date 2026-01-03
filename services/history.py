@@ -350,6 +350,7 @@ class HistoryService:
                         "user_id": uid,
                         "display_name": u.get("display_name"),
                         "weekly_exp": earned,
+                        "total_study_time": u.get("total_study_time", 0),
                     }
                 )
 

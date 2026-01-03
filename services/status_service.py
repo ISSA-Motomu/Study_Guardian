@@ -148,11 +148,17 @@ class StatusService:
                 weight = "bold" if is_me else "regular"
                 rank_icon = "👑" if i == 0 else f"{i + 1}."
 
+                # ランク画像の取得
+                r_total = int(r.get("total_study_time", 0))
+                r_rank_info = StatusService.get_rank_info(r_total)
+                r_img_url = f"{app_url}/static/medals/{r_rank_info['img']}"
+
                 ranking_contents.append(
                     {
                         "type": "box",
                         "layout": "horizontal",
                         "margin": "sm",
+                        "alignItems": "center",
                         "contents": [
                             {
                                 "type": "text",
@@ -163,12 +169,20 @@ class StatusService:
                                 "align": "center",
                             },
                             {
+                                "type": "image",
+                                "url": r_img_url,
+                                "size": "xs",
+                                "aspectMode": "fit",
+                                "flex": 1,
+                            },
+                            {
                                 "type": "text",
                                 "text": r["display_name"],
                                 "color": color,
                                 "size": "sm",
                                 "flex": 4,
                                 "weight": weight,
+                                "margin": "sm",
                             },
                             {
                                 "type": "text",
@@ -192,6 +206,10 @@ class StatusService:
                 None,
             )
             if my_rank_data and my_rank_data["rank"] > 3:
+                m_total = int(my_rank_data.get("total_study_time", 0))
+                m_rank_info = StatusService.get_rank_info(m_total)
+                m_img_url = f"{app_url}/static/medals/{m_rank_info['img']}"
+
                 ranking_contents.append(
                     {"type": "separator", "margin": "sm", "color": "#444444"}
                 )
@@ -200,6 +218,7 @@ class StatusService:
                         "type": "box",
                         "layout": "horizontal",
                         "margin": "sm",
+                        "alignItems": "center",
                         "contents": [
                             {
                                 "type": "text",
@@ -210,12 +229,20 @@ class StatusService:
                                 "align": "center",
                             },
                             {
+                                "type": "image",
+                                "url": m_img_url,
+                                "size": "xs",
+                                "aspectMode": "fit",
+                                "flex": 1,
+                            },
+                            {
                                 "type": "text",
                                 "text": "You",
                                 "color": "#ffffff",
                                 "size": "sm",
                                 "flex": 4,
                                 "weight": "bold",
+                                "margin": "sm",
                             },
                             {
                                 "type": "text",
