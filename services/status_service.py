@@ -1,5 +1,6 @@
 import urllib.parse
 import json
+from services.stats import SagaStats
 
 
 class StatusService:
@@ -486,7 +487,7 @@ class StatusService:
                             "height": f"{total_height_percent}%",
                             "backgroundColor": "#333333"
                             if total_minutes == 0
-                            else "transparent",
+                            else "#00000000",
                             "cornerRadius": "sm",
                             "margin": "xs",
                             "contents": stack_contents,
@@ -576,6 +577,58 @@ class StatusService:
                 },
             ]
 
+        # 統計情報の生成
+        total_min = sum([d["minutes"] for d in history_data])
+        stats_section = []
+        if total_min > 0:
+            if is_weekly:
+                stats = SagaStats.calculate_weekly(total_min)
+                period_label = "週間偏差値"
+            else:
+                stats = SagaStats.calculate_monthly(total_min)
+                period_label = "月間偏差値"
+
+            if stats:
+                school_color = "#FFD700" if stats["is_saganishi"] else "#ffffff"
+                stats_section = [
+                    {"type": "separator", "margin": "md", "color": "#444444"},
+                    {
+                        "type": "box",
+                        "layout": "vertical",
+                        "margin": "md",
+                        "spacing": "sm",
+                        "contents": [
+                            {
+                                "type": "text",
+                                "text": "📊 佐賀県統計モデル",
+                                "size": "xxs",
+                                "color": "#aaaaaa",
+                                "weight": "bold",
+                            },
+                            {
+                                "type": "box",
+                                "layout": "horizontal",
+                                "contents": [
+                                    {
+                                        "type": "text",
+                                        "text": f"{period_label}: {stats['deviation']}",
+                                        "size": "sm",
+                                        "color": "#ffffff",
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": stats["school_level"],
+                                        "size": "sm",
+                                        "color": school_color,
+                                        "align": "end",
+                                        "weight": "bold",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                ]
+
         bubble = {
             "type": "bubble",
             "size": "mega",
@@ -619,13 +672,14 @@ class StatusService:
                     {"type": "separator", "margin": "md", "color": "#444444"},
                     {
                         "type": "text",
-                        "text": f"Total: {sum([d['minutes'] for d in history_data])} min",
+                        "text": f"Total: {total_min} min",
                         "size": "sm",
                         "color": "#ffffff",
                         "align": "end",
                         "margin": "md",
                     },
                 ]
+                + stats_section
                 + inventory_section,
             },
             "footer": {
