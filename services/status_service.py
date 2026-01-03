@@ -477,10 +477,11 @@ class StatusService:
                                 "style": "secondary",
                                 "height": "sm",
                                 "action": {
-                                    "type": "postback",
-                                    "label": "履歴",
-                                    "data": "action=show_history",
+                                    "type": "message",
+                                    "label": "ショップ",
+                                    "text": "ショップ",
                                 },
+                                "color": "#FF9800",
                             },
                             {
                                 "type": "button",
@@ -490,6 +491,23 @@ class StatusService:
                                     "type": "postback",
                                     "label": "掲載中のジョブ",
                                     "data": "action=job_list",
+                                },
+                            },
+                        ],
+                    },
+                    {
+                        "type": "box",
+                        "layout": "horizontal",
+                        "spacing": "sm",
+                        "contents": [
+                            {
+                                "type": "button",
+                                "style": "secondary",
+                                "height": "sm",
+                                "action": {
+                                    "type": "postback",
+                                    "label": "履歴",
+                                    "data": "action=show_history",
                                 },
                             },
                             {

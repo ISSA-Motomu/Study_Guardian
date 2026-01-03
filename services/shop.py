@@ -84,17 +84,35 @@ class ShopService:
             return {}
 
         try:
-            records = sheet.get_all_records()
+            # get_all_records はヘッダー重複などでエラーになりやすいため get_all_values を使用
+            # 列: A:item_key, B:name, C:cost, D:description, E:is_active
+            rows = sheet.get_all_values()
             items = {}
-            for row in records:
-                # is_activeがTRUEのものだけ抽出
-                if str(row.get("is_active")).upper() == "TRUE":
-                    key = row.get("item_key")
-                    items[key] = {
-                        "name": row.get("name"),
-                        "cost": int(row.get("cost")),
-                        "description": row.get("description", ""),
-                    }
+
+            if len(rows) > 1:
+                for r in rows[1:]:
+                    if len(r) < 5:
+                        continue
+
+                    is_active = str(r[4]).strip().upper()
+                    if is_active == "TRUE":
+                        key = r[0]
+                        name = r[1]
+
+                        # 名前が空の場合はスキップ (LINE Flex Messageでエラーになるため)
+                        if not name:
+                            continue
+
+                        try:
+                            cost = int(r[2])
+                        except:
+                            cost = 999999  # エラー時は高額にしておく
+
+                        items[key] = {
+                            "name": name,
+                            "cost": cost,
+                            "description": r[3] if len(r) > 3 else "",
+                        }
             return items
         except Exception as e:
             print(f"【Error】商品リスト取得エラー: {e}")

@@ -12,8 +12,13 @@ class JobService:
             return {}
 
         try:
-            records = sheet.get_all_records()
-            return {str(r.get("job_id")): r.get("title") for r in records}
+            rows = sheet.get_all_values()
+            job_map = {}
+            if len(rows) > 1:
+                for r in rows[1:]:
+                    if len(r) > 1:
+                        job_map[str(r[0])] = r[1]
+            return job_map
         except:
             return {}
 
