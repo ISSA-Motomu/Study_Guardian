@@ -372,20 +372,69 @@ class StatusService:
 
     @staticmethod
     def create_weekly_graph_gui(user_data, weekly_history, inventory_items):
-        """週間学習記録の棒グラフ画面を生成"""
+        """週間学習記録の棒グラフ画面を生成（積み上げグラフ）"""
 
         # 最大値を求めてスケーリング (最低でも60分を最大とする)
         max_min = max([d["minutes"] for d in weekly_history] + [60])
 
+        # 科目別カラー定義
+        subject_colors = {
+            "国語": "#ff5555",  # Red
+            "算数": "#5555ff",  # Blue
+            "数学": "#5555ff",  # Blue
+            "英語": "#ffd700",  # Yellow
+            "理科": "#55ff55",  # Green
+            "社会": "#ffa500",  # Orange
+            "その他": "#aaaaaa",  # Gray
+        }
+
         bars = []
         for day in weekly_history:
-            minutes = day["minutes"]
-            height_percent = int((minutes / max_min) * 100)
-            if height_percent < 1:
-                height_percent = 1  # 最低1%
+            total_minutes = day["minutes"]
+            subjects = day.get("subjects", {})
 
-            # 棒の色 (勉強した日は青、0はグレー)
-            bar_color = "#5555ff" if minutes > 0 else "#333333"
+            # 全体の高さ（最大値に対する割合）
+            total_height_percent = int((total_minutes / max_min) * 100)
+            if total_height_percent < 1 and total_minutes > 0:
+                total_height_percent = 1
+
+            # 積み上げバーの構成要素
+            stack_contents = []
+            if total_minutes > 0:
+                # 各科目の割合を計算して積み上げる
+                # 順序を固定するためにキーをソート、あるいは特定の順序にする
+                # ここでは単純に辞書順
+                for subj, mins in subjects.items():
+                    if mins <= 0:
+                        continue
+                    # その日の合計に対する割合
+                    ratio = int((mins / total_minutes) * 100)
+                    if ratio < 1:
+                        ratio = 1
+
+                    color = subject_colors.get(subj, "#aaaaaa")
+
+                    stack_contents.append(
+                        {
+                            "type": "box",
+                            "layout": "vertical",
+                            "width": "100%",
+                            "height": f"{ratio}%",
+                            "backgroundColor": color,
+                        }
+                    )
+            else:
+                # 0分の場合は表示なし（あるいは極小のグレーバー）
+                stack_contents.append(
+                    {
+                        "type": "box",
+                        "layout": "vertical",
+                        "width": "100%",
+                        "height": "100%",
+                        "backgroundColor": "#333333",
+                    }
+                )
+                total_height_percent = 1  # 見えるように少しだけ高さを確保
 
             bars.append(
                 {
@@ -395,7 +444,7 @@ class StatusService:
                     "contents": [
                         {
                             "type": "text",
-                            "text": str(minutes),
+                            "text": str(total_minutes),
                             "size": "xxs",
                             "align": "center",
                             "color": "#ffffff",
@@ -405,10 +454,13 @@ class StatusService:
                             "type": "box",
                             "layout": "vertical",
                             "width": "12px",
-                            "height": f"{height_percent}%",
-                            "backgroundColor": bar_color,
+                            "height": f"{total_height_percent}%",
+                            "backgroundColor": "#333333"
+                            if total_minutes == 0
+                            else "transparent",
                             "cornerRadius": "sm",
                             "margin": "xs",
+                            "contents": stack_contents,
                         },
                         {
                             "type": "text",
@@ -548,12 +600,12 @@ class StatusService:
                     {
                         "type": "button",
                         "action": {
-                            "type": "message",
-                            "label": "🎲 ガチャ",
-                            "text": "ガチャ",
+                            "type": "uri",
+                            "label": "📊 詳細レポート (Looker)",
+                            "uri": "https://lookerstudio.google.com/",
                         },
                         "style": "primary",
-                        "color": "#ff5555",
+                        "color": "#4285F4",
                     }
                 ],
             },
