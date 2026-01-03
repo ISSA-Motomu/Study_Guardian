@@ -218,6 +218,28 @@ def handle_message(event, text):
     # (毎回APIを叩くのはコストが高いが、現状のアーキテクチャでは許容)
     user_info = EconomyService.get_user_info(user_id)
 
+    # --- 開発用: 権限変更コマンド ---
+    # 通常のユーザーには見えない隠しコマンド
+    if text == "デバッグモード有効":
+        if EconomyService.update_user_role(user_id, "ADMIN"):
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(
+                    text="🔧 管理者権限(ADMIN)を付与しました。\n「コマンド」と入力すると管理メニューが見れます。"
+                ),
+            )
+            return True
+    elif text == "デバッグモード無効":
+        if EconomyService.update_user_role(user_id, "USER"):
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(
+                    text="🔧 管理者権限を解除し、一般ユーザー(USER)に戻りました。"
+                ),
+            )
+            return True
+    # ------------------------------
+
     if user_info:
         # 既に登録済みなら何もしない（他のハンドラへ）
         return False

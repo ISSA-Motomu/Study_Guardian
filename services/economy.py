@@ -90,6 +90,24 @@ class EconomyService:
             return False
 
     @staticmethod
+    def update_user_role(user_id, role):
+        """ユーザーの権限(Role)を更新"""
+        sheet = GSheetService.get_worksheet("users")
+        if not sheet:
+            return False
+
+        try:
+            cell = sheet.find(user_id)
+            if cell:
+                # Role is column 5
+                sheet.update_cell(cell.row, 5, role)
+                return True
+            return False
+        except Exception as e:
+            print(f"Update Role Error: {e}")
+            return False
+
+    @staticmethod
     def reset_user(user_id):
         """ユーザー情報をリセット（削除）"""
         sheet = GSheetService.get_worksheet("users")

@@ -422,112 +422,139 @@ class StatusService:
                     },
                 ],
             },
-            "footer": {
+        # フッターボタンの構築
+        footer_contents = [
+            {
                 "type": "box",
-                "layout": "vertical",
+                "layout": "horizontal",
                 "spacing": "sm",
                 "contents": [
                     {
-                        "type": "box",
-                        "layout": "horizontal",
-                        "spacing": "sm",
-                        "contents": [
-                            {
-                                "type": "button",
-                                "style": "primary",
-                                "height": "sm",
-                                "action": {
-                                    "type": "message",
-                                    "label": "勉強",
-                                    "text": "勉強開始",
-                                },
-                                "color": "#4D96FF",
-                            },
-                            {
-                                "type": "button",
-                                "style": "primary",
-                                "height": "sm",
-                                "action": {
-                                    "type": "message",
-                                    "label": "詳細",
-                                    "text": "詳細ステータス",
-                                },
-                                "color": "#FFD93D",
-                            },
-                            {
-                                "type": "button",
-                                "style": "primary",
-                                "height": "sm",
-                                "action": {
-                                    "type": "message",
-                                    "label": "ガチャ",
-                                    "text": "ガチャ",
-                                },
-                                "color": "#FF6B6B",
-                            },
-                        ],
+                        "type": "button",
+                        "style": "primary",
+                        "height": "sm",
+                        "action": {
+                            "type": "message",
+                            "label": "勉強",
+                            "text": "勉強開始",
+                        },
+                        "color": "#4D96FF",
                     },
                     {
-                        "type": "box",
-                        "layout": "horizontal",
-                        "spacing": "sm",
-                        "contents": [
-                            {
-                                "type": "button",
-                                "style": "secondary",
-                                "height": "sm",
-                                "action": {
-                                    "type": "message",
-                                    "label": "ショップ",
-                                    "text": "ショップ",
-                                },
-                                "color": "#FF9800",
-                            },
-                            {
-                                "type": "button",
-                                "style": "secondary",
-                                "height": "sm",
-                                "action": {
-                                    "type": "postback",
-                                    "label": "掲載中のジョブ",
-                                    "data": "action=job_list",
-                                },
-                            },
-                        ],
+                        "type": "button",
+                        "style": "primary",
+                        "height": "sm",
+                        "action": {
+                            "type": "message",
+                            "label": "詳細",
+                            "text": "詳細ステータス",
+                        },
+                        "color": "#FFD93D",
                     },
                     {
-                        "type": "box",
-                        "layout": "horizontal",
-                        "spacing": "sm",
-                        "contents": [
-                            {
-                                "type": "button",
-                                "style": "secondary",
-                                "height": "sm",
-                                "action": {
-                                    "type": "postback",
-                                    "label": "履歴",
-                                    "data": "action=show_history",
-                                },
-                            },
-                            {
-                                "type": "button",
-                                "style": "secondary",
-                                "height": "sm",
-                                "action": {
-                                    "type": "postback",
-                                    "label": "切替",
-                                    "data": "action=switch_user_menu",
-                                },
-                                "color": "#90A4AE",
-                            },
-                        ],
+                        "type": "button",
+                        "style": "primary",
+                        "height": "sm",
+                        "action": {
+                            "type": "message",
+                            "label": "ガチャ",
+                            "text": "ガチャ",
+                        },
+                        "color": "#FF6B6B",
                     },
                 ],
             },
-        }
+            {
+                "type": "box",
+                "layout": "horizontal",
+                "spacing": "sm",
+                "contents": [
+                    {
+                        "type": "button",
+                        "style": "secondary",
+                        "height": "sm",
+                        "action": {
+                            "type": "message",
+                            "label": "ショップ",
+                            "text": "ショップ",
+                        },
+                        "color": "#FF9800",
+                    },
+                    {
+                        "type": "button",
+                        "style": "secondary",
+                        "height": "sm",
+                        "action": {
+                            "type": "postback",
+                            "label": "掲載中のジョブ",
+                            "data": "action=job_list",
+                        },
+                    },
+                ],
+            },
+        ]
 
-        return bubble
+        # 3段目: 履歴 | 切替 | (Adminのみ) 管理
+        row3_contents = [
+            {
+                "type": "button",
+                "style": "secondary",
+                "height": "sm",
+                "action": {
+                    "type": "postback",
+                    "label": "履歴",
+                    "data": "action=show_history",
+                },
+            },
+            {
+                "type": "button",
+                "style": "secondary",
+                "height": "sm",
+                "action": {
+                    "type": "postback",
+                    "label": "切替",
+                    "data": "action=switch_user_menu",
+                },
+                "color": "#90A4AE",
+            },
+        ]
+
+        if is_admin:
+            row3_contents.append({
+                "type": "button",
+                "style": "secondary",
+                "height": "sm",
+                "action": {
+                    "type": "message",
+                    "label": "管理",
+                    "text": "コマンド",
+                },
+                "color": "#333333",
+            })
+
+        footer_contents.append({
+            "type": "box",
+            "layout": "horizontal",
+            "spacing": "sm",
+            "contents": row3_contents,
+        })
+
+        bubble = {
+            "type": "bubble",
+            "header": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                    {
+                        "type": "text",
+                        "text": "Study Guardian",
+                        "weight": "bold",
+                        "color": "#1DB446",
+                        "size": "sm",
+                    }
+                ],
+            },
+            # ... (以下略) ...
 
     @staticmethod
     def create_report_carousel(
