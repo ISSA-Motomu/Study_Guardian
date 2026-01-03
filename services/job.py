@@ -28,7 +28,9 @@ class JobService:
         try:
             records = sheet.get_all_records()
             for row in records:
-                if row.get("status") == "OPEN":
+                # ステータスチェック (大文字小文字、空白無視)
+                status = str(row.get("status", "")).strip().upper()
+                if status == "OPEN":
                     jobs.append(row)
         except Exception as e:
             print(f"Job List Error: {e}")
@@ -45,10 +47,10 @@ class JobService:
         try:
             records = sheet.get_all_records()
             for row in records:
-                if (
-                    row.get("status") == "ASSIGNED"
-                    and str(row.get("worker_id")) == user_id
-                ):
+                status = str(row.get("status", "")).strip().upper()
+                worker = str(row.get("worker_id", ""))
+
+                if status == "ASSIGNED" and worker == str(user_id):
                     jobs.append(row)
         except Exception as e:
             print(f"My Job Error: {e}")
@@ -65,7 +67,8 @@ class JobService:
         try:
             records = sheet.get_all_records()
             for row in records:
-                if row.get("status") == "REVIEW":
+                status = str(row.get("status", "")).strip().upper()
+                if status == "REVIEW":
                     reviews.append(row)
         except Exception as e:
             print(f"Review List Error: {e}")
