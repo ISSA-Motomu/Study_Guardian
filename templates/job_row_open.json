@@ -11,7 +11,7 @@
     },
     {
       "type": "text",
-      "text": "${reward} EXP",
+      "text": "${reward} pt",
       "flex": 1,
       "align": "end",
       "gravity": "center",

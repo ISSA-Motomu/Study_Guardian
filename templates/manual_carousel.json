@@ -104,7 +104,7 @@
         "contents": [
           {
             "type": "text",
-            "text": "🛍️ ショップ",
+            "text": "🛍️ ポイント交換",
             "weight": "bold",
             "color": "#ffffff",
             "size": "md"
@@ -119,13 +119,13 @@
         "contents": [
           {
             "type": "text",
-            "text": "1. 「ショップ」をタップ",
+            "text": "1. 「ポイント交換」をタップ",
             "wrap": true,
             "size": "xs"
           },
           {
             "type": "text",
-            "text": "2. 貯めたEXPでアイテム購入",
+            "text": "2. 貯めたポイントでアイテム購入",
             "wrap": true,
             "size": "xs",
             "margin": "sm"
@@ -180,6 +180,53 @@
           {
             "type": "text",
             "text": "3. グラフで成長を実感！",
+            "wrap": true,
+            "size": "xs",
+            "margin": "sm",
+            "color": "#ff5555"
+          }
+        ],
+        "paddingAll": "12px"
+      }
+    },
+    {
+      "type": "bubble",
+      "size": "micro",
+      "header": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": " ガチャ",
+            "weight": "bold",
+            "color": "#ffffff",
+            "size": "md"
+          }
+        ],
+        "backgroundColor": "#9C27B0",
+        "paddingAll": "12px"
+      },
+      "body": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "1. 「ガチャ」と入力",
+            "wrap": true,
+            "size": "xs"
+          },
+          {
+            "type": "text",
+            "text": "2. 500ptで運試し！",
+            "wrap": true,
+            "size": "xs",
+            "margin": "sm"
+          },
+          {
+            "type": "text",
+            "text": "3. レアアイテムをゲット",
             "wrap": true,
             "size": "xs",
             "margin": "sm",

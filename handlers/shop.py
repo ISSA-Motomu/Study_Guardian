@@ -15,7 +15,7 @@ def handle_postback(event, action, data):
 
         if not item:
             line_bot_api.reply_message(
-                event.reply_token, TextSendMessage(text="商品が見つかりません。")
+                event.reply_token, TextSendMessage(text="アイテムが見つかりません。")
             )
             return True
 
@@ -27,7 +27,7 @@ def handle_postback(event, action, data):
         )
         line_bot_api.reply_message(
             event.reply_token,
-            FlexSendMessage(alt_text="購入確認", contents=confirm_flex),
+            FlexSendMessage(alt_text="交換確認", contents=confirm_flex),
         )
         return True
 
@@ -38,7 +38,7 @@ def handle_postback(event, action, data):
 
         if not item:
             line_bot_api.reply_message(
-                event.reply_token, TextSendMessage(text="商品が見つかりません。")
+                event.reply_token, TextSendMessage(text="アイテムが見つかりません。")
             )
             return True
 
@@ -70,7 +70,7 @@ def handle_postback(event, action, data):
                 event.reply_token,
                 [
                     TextSendMessage(
-                        text=f"✅ {item['name']} を申請しました。\n(残高: {new_balance} EXP)\n親の承認をお待ちください..."
+                        text=f"[ポイント交換申請]\n✅ {item['name']} を申請しました。\n(残高: {new_balance} pt)\n親の承認をお待ちください..."
                     ),
                     FlexSendMessage(alt_text="承認リクエスト", contents=approval_flex),
                 ],
@@ -78,7 +78,7 @@ def handle_postback(event, action, data):
         else:
             line_bot_api.reply_message(
                 event.reply_token,
-                TextSendMessage(text="🚫 EXPが足りません！もっと勉強しよう。"),
+                TextSendMessage(text="🚫 ポイントが足りません！もっと勉強しよう。"),
             )
         return True
 
@@ -97,7 +97,7 @@ def handle_postback(event, action, data):
         shop_items = ShopService.get_items()
         item = shop_items.get(item_key)
 
-        item_name = item["name"] if item else "商品"
+        item_name = item["name"] if item else "アイテム"
 
         line_bot_api.reply_message(
             event.reply_token,
@@ -123,7 +123,7 @@ def handle_postback(event, action, data):
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(
-                text=f"🙅‍♀️ 却下されました。\n{cost} EXP を返金しました。ドンマイ！"
+                text=f"🙅‍♀️ 却下されました。\n{cost} pt を返金しました。ドンマイ！"
             ),
         )
         return True
@@ -167,7 +167,7 @@ def handle_postback(event, action, data):
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(
-                    text=f"{target_name}さんの「{item_name}」を承認しました！\n承認者：{approver_name}\n\n(EXPは購入申請時に消費済みです)"
+                    text=f"{target_name}さんの「{item_name}」を承認しました！\n承認者：{approver_name}\n\n(ポイントは交換申請時に消費済みです)"
                 ),
             )
 
@@ -176,7 +176,7 @@ def handle_postback(event, action, data):
                 line_bot_api.push_message(
                     target_id,
                     TextSendMessage(
-                        text=f"🛍️ 買い物リクエスト「{item_name}」が承認されました！\n(現在残高: {new_balance} EXP)\n\n親に見せて使ってね！"
+                        text=f"🛍️ ポイント交換リクエスト「{item_name}」が承認されました！\n(現在残高: {new_balance} pt)\n\n親に見せて使ってね！"
                     ),
                 )
             except:
@@ -194,7 +194,7 @@ def handle_postback(event, action, data):
 
 
 def handle_message(event, text):
-    if text == "ショップ" or text == "使う":
+    if text in ["ショップ", "使う", "ポイント交換"]:
         shop_items = ShopService.get_items()
         if not shop_items:
             line_bot_api.reply_message(
@@ -280,7 +280,7 @@ def handle_message(event, text):
 
         line_bot_api.reply_message(
             event.reply_token,
-            FlexSendMessage(alt_text="EXPショップ", contents=shop_flex),
+            FlexSendMessage(alt_text="ポイント交換", contents=shop_flex),
         )
         return True
 

@@ -34,7 +34,7 @@
       },
       {
         "type": "text",
-        "text": "報酬: ${reward} EXP",
+        "text": "報酬: ${reward} pt",
         "margin": "md",
         "color": "#ff5555",
         "weight": "bold"

@@ -6,14 +6,14 @@
     "contents": [
       {
         "type": "text",
-        "text": "${item_name} を購入しますか？",
+        "text": "${item_name} を交換しますか？",
         "weight": "bold",
         "size": "md",
         "wrap": true
       },
       {
         "type": "text",
-        "text": "価格: ${item_cost} EXP",
+        "text": "必要ポイント: ${item_cost} pt",
         "size": "sm",
         "color": "#aaaaaa",
         "margin": "sm"

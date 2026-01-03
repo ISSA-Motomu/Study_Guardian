@@ -30,12 +30,12 @@
       },
       {
         "type": "text",
-        "text": "消費: ${item_cost} EXP",
+        "text": "消費: ${item_cost} pt",
         "color": "#ff5555"
       },
       {
         "type": "text",
-        "text": "現在残高: ${new_balance} EXP",
+        "text": "現在残高: ${new_balance} pt",
         "size": "sm",
         "color": "#aaaaaa"
       }

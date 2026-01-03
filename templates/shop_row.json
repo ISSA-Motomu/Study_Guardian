@@ -15,7 +15,7 @@
     },
     {
       "type": "text",
-      "text": "${cost} EXP",
+      "text": "${cost} pt",
       "flex": 2,
       "size": "sm",
       "align": "end",
@@ -26,7 +26,7 @@
       "type": "button",
       "action": {
         "type": "postback",
-        "label": "購入",
+        "label": "交換",
         "data": "action=buy&item=${key}"
       },
       "style": "primary",

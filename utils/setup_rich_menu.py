@@ -52,10 +52,10 @@ def create_rich_menu(image_path):
                 bounds=RichMenuBounds(x=0, y=843, width=833, height=843),
                 action=MessageAction(label="ジョブ", text="ジョブ"),
             ),
-            # 下段中: ショップ
+            # 下段中: ポイント交換
             RichMenuArea(
                 bounds=RichMenuBounds(x=833, y=843, width=834, height=843),
-                action=MessageAction(label="ショップ", text="ショップ"),
+                action=MessageAction(label="ポイント交換", text="ポイント交換"),
             ),
             # 下段右: 管理
             RichMenuArea(

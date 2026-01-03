@@ -85,7 +85,7 @@
           },
           {
             "type": "text",
-            "text": "3. 自動で記録＆EXPゲット！",
+            "text": "3. 自動で記録＆ポイントゲット！",
             "wrap": true,
             "size": "xs",
             "margin": "sm",
@@ -151,7 +151,7 @@
         "contents": [
           {
             "type": "text",
-            "text": "🛍️ ショップ",
+            "text": "🛍️ ポイント交換",
             "weight": "bold",
             "color": "#ffffff",
             "size": "md"
@@ -166,13 +166,13 @@
         "contents": [
           {
             "type": "text",
-            "text": "1. 「ショップ」をタップ",
+            "text": "1. 「ポイント交換」をタップ",
             "wrap": true,
             "size": "xs"
           },
           {
             "type": "text",
-            "text": "2. 貯めたEXPでアイテム購入",
+            "text": "2. 貯めたポイントでアイテム購入",
             "wrap": true,
             "size": "xs",
             "margin": "sm"
@@ -231,6 +231,108 @@
             "size": "xs",
             "margin": "sm",
             "color": "#ff5555"
+          }
+        ],
+        "paddingAll": "12px"
+      }
+    },
+    {
+      "type": "bubble",
+      "size": "micro",
+      "header": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": " ガチャ",
+            "weight": "bold",
+            "color": "#ffffff",
+            "size": "md"
+          }
+        ],
+        "backgroundColor": "#9C27B0",
+        "paddingAll": "12px"
+      },
+      "body": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "1. 「ガチャ」と入力",
+            "wrap": true,
+            "size": "xs"
+          },
+          {
+            "type": "text",
+            "text": "2. 500ptで運試し！",
+            "wrap": true,
+            "size": "xs",
+            "margin": "sm"
+          },
+          {
+            "type": "text",
+            "text": "3. レアアイテムをゲット",
+            "wrap": true,
+            "size": "xs",
+            "margin": "sm",
+            "color": "#ff5555"
+          }
+        ],
+        "paddingAll": "12px"
+      }
+    },
+    {
+      "type": "bubble",
+      "size": "micro",
+      "header": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": " 管理コマンド",
+            "weight": "bold",
+            "color": "#ffffff",
+            "size": "md"
+          }
+        ],
+        "backgroundColor": "#607D8B",
+        "paddingAll": "12px"
+      },
+      "body": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "ポイント付与",
+            "wrap": true,
+            "size": "xs",
+            "weight": "bold"
+          },
+          {
+            "type": "text",
+            "text": "ユーザーにptを付与します",
+            "wrap": true,
+            "size": "xxs",
+            "color": "#aaaaaa"
+          },
+          {
+            "type": "text",
+            "text": "タスク追加 [名] [pt]",
+            "wrap": true,
+            "size": "xs",
+            "weight": "bold",
+            "margin": "sm"
+          },
+          {
+            "type": "text",
+            "text": "新しいお手伝いを作成します",
+            "wrap": true,
+            "size": "xxs",
+            "color": "#aaaaaa"
           }
         ],
         "paddingAll": "12px"

@@ -7,7 +7,7 @@
     "contents": [
       {
         "type": "text",
-        "text": "🛍️ 買い物リクエスト",
+        "text": "🛍️ ポイント交換リクエスト",
         "color": "#ffffff",
         "weight": "bold"
       }
@@ -34,7 +34,7 @@
       },
       {
         "type": "text",
-        "text": "価格: ${cost} EXP",
+        "text": "価格: ${cost} pt",
         "margin": "md",
         "color": "#ff5555",
         "weight": "bold"

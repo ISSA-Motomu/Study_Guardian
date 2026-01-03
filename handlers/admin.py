@@ -35,7 +35,7 @@ def handle_postback(event, action, data):
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(
-                text=f"ユーザーへの付与ポイント: {amount}pt\n付与する理由を入力してください。\n(例: お手伝い、テスト満点、臨時ボーナス)"
+                text=f"[ポイント付与]\n付与ポイント: {amount}pt\n理由を入力してください。\n(例: お手伝い、テスト満点、臨時ボーナス)"
             ),
         )
         return True
@@ -76,7 +76,7 @@ def handle_message(event, text):
                     line_bot_api.reply_message(
                         event.reply_token,
                         TextSendMessage(
-                            text=f"ユーザーへの付与ポイント: {amount}pt\n付与する理由を入力してください。"
+                            text=f"[ポイント付与]\n付与ポイント: {amount}pt\n理由を入力してください。"
                         ),
                     )
                     return True
@@ -96,12 +96,21 @@ def handle_message(event, text):
 
                 # 実行
                 # related_id に理由を含める
-                EconomyService.add_exp(
+                result = EconomyService.add_exp(
                     target_user_id, amount, related_id=f"ADMIN_GRANT:{reason}"
                 )
 
                 # 状態クリア
                 del admin_states[user_id]
+
+                if result is False:
+                    line_bot_api.reply_message(
+                        event.reply_token,
+                        TextSendMessage(
+                            text="[ポイント付与]\n❌ システムエラーが発生しました。\n処理が正常に完了しなかった可能性があります。"
+                        ),
+                    )
+                    return True
 
                 # ユーザー名取得（表示用）
                 user_info = EconomyService.get_user_info(target_user_id)
@@ -112,7 +121,7 @@ def handle_message(event, text):
                 line_bot_api.reply_message(
                     event.reply_token,
                     TextSendMessage(
-                        text=f"✅ ポイント付与完了\n対象: {user_name}\n金額: {amount}pt\n理由: {reason}"
+                        text=f"[ポイント付与]\n✅ 完了しました\n対象: {user_name}\n金額: {amount}pt\n理由: {reason}"
                     ),
                 )
                 return True
@@ -146,13 +155,15 @@ def handle_message(event, text):
 
             success, result = JobService.create_job(title, reward, "", user_id)
             if success:
-                msg = f"タスク「{title}」を作成しました。(報酬: {reward})"
+                msg = f"[タスク追加]\nタスク「{title}」を作成しました。\n(報酬: {reward} pt)"
                 line_bot_api.reply_message(event.reply_token, TextSendMessage(text=msg))
 
-                # Notify Users
+                # Notify Users (USER権限のみ)
                 all_users = EconomyService.get_all_users()
                 target_ids = [
-                    str(u["user_id"]) for u in all_users if str(u["user_id"]) != user_id
+                    str(u["user_id"])
+                    for u in all_users
+                    if str(u["user_id"]) != user_id and u.get("role") == "USER"
                 ]
 
                 if target_ids:
@@ -160,7 +171,7 @@ def handle_message(event, text):
                         line_bot_api.multicast(
                             target_ids,
                             TextSendMessage(
-                                text=f"🆕 新しいお手伝いが追加されました！\n\n「{title}」\n報酬: {reward} EXP\n\n早い者勝ちだよ！"
+                                text=f"🆕 新しいお手伝いが追加されました！\n\n「{title}」\n報酬: {reward} pt\n\n早い者勝ちだよ！"
                             ),
                         )
                     except Exception as e:
@@ -177,7 +188,7 @@ def handle_message(event, text):
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(
-                    text=f"商品追加はこちらのフォームから行ってください：\n{form_url}"
+                    text=f"交換アイテム追加はこちらのフォームから行ってください：\n{form_url}"
                 ),
             )
             return True
@@ -217,7 +228,7 @@ def handle_message(event, text):
                                 },
                                 {
                                     "type": "text",
-                                    "text": f"現在のEXP: {u['current_exp']}",
+                                    "text": f"現在のポイント: {u['current_exp']}",
                                     "size": "sm",
                                     "color": "#aaaaaa",
                                 },
@@ -233,17 +244,26 @@ def handle_message(event, text):
                                     "style": "primary",
                                     "action": {
                                         "type": "postback",
-                                        "label": "100 EXP",
-                                        "data": f"action=admin_give_exp&target={u['user_id']}&amount=100",
+                                        "label": "30 pt",
+                                        "data": f"action=admin_give_exp&target={u['user_id']}&amount=30",
                                     },
                                 },
                                 {
                                     "type": "button",
-                                    "style": "secondary",
+                                    "style": "primary",
                                     "action": {
                                         "type": "postback",
-                                        "label": "500 EXP",
-                                        "data": f"action=admin_give_exp&target={u['user_id']}&amount=500",
+                                        "label": "50 pt",
+                                        "data": f"action=admin_give_exp&target={u['user_id']}&amount=50",
+                                    },
+                                },
+                                {
+                                    "type": "button",
+                                    "style": "primary",
+                                    "action": {
+                                        "type": "postback",
+                                        "label": "100 pt",
+                                        "data": f"action=admin_give_exp&target={u['user_id']}&amount=100",
                                     },
                                 },
                                 {
@@ -310,7 +330,7 @@ def handle_message(event, text):
 
             bubbles = carousel["contents"]
 
-            # ショップアイテムを一度だけ取得（最適化）
+            # 交換アイテムを一度だけ取得（最適化）
             shop_items_cache = None
 
             for item in pending_items:

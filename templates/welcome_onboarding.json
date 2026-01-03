@@ -1,0 +1,82 @@
+{
+  "type": "bubble",
+  "hero": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "🎮 GAME START",
+        "weight": "bold",
+        "size": "xl",
+        "color": "#ffffff",
+        "align": "center"
+      }
+    ],
+    "backgroundColor": "#27ACB2",
+    "paddingAll": "20px"
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "Study Guardianへようこそ！",
+        "weight": "bold",
+        "size": "md",
+        "align": "center"
+      },
+      {
+        "type": "separator",
+        "margin": "md"
+      },
+      {
+        "type": "box",
+        "layout": "vertical",
+        "margin": "lg",
+        "spacing": "sm",
+        "contents": [
+          {
+            "type": "text",
+            "text": "✏️ 勉強してポイントGET",
+            "size": "sm",
+            "color": "#555555"
+          },
+          {
+            "type": "text",
+            "text": "🛍️ 貯めたポイントでアイテム交換",
+            "size": "sm",
+            "color": "#555555"
+          },
+          {
+            "type": "text",
+            "text": "📈 ランクアップで最強を目指せ",
+            "size": "sm",
+            "color": "#555555"
+          }
+        ]
+      },
+      {
+        "type": "separator",
+        "margin": "lg"
+      },
+      {
+        "type": "text",
+        "text": "まずはプレイヤー名を登録しよう！",
+        "margin": "lg",
+        "align": "center",
+        "weight": "bold",
+        "color": "#ff5555"
+      },
+      {
+        "type": "text",
+        "text": "下の入力欄に名前を入れて送信してね 👇",
+        "margin": "sm",
+        "size": "xs",
+        "color": "#aaaaaa",
+        "align": "center"
+      }
+    ]
+  }
+}

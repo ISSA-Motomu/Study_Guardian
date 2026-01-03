@@ -30,7 +30,7 @@ def handle_message(event, text):
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(
-                    text=f"EXPが足りません。\nガチャを引くには {COST} EXP必要です。"
+                    text=f"ポイントが足りません。\nガチャを引くには {COST} pt必要です。"
                 ),
             )
             return True
@@ -44,7 +44,7 @@ def handle_message(event, text):
         if rand < 5:
             item = {
                 "key": "ticket_1.5x",
-                "name": "EXP 1.5倍チケット",
+                "name": "ポイント 1.5倍チケット",
                 "rarity": "SSR",
                 "color": "#FFD700",
                 "icon": "🎟",
@@ -60,11 +60,12 @@ def handle_message(event, text):
         elif rand < 45:
             item = {
                 "key": "bonus_100",
-                "name": "臨時ボーナス (100EXP)",
+                "name": "臨時ボーナス (100pt)",
                 "rarity": "R",
                 "color": "#CD7F32",
                 "icon": "💸",
             }
+
         else:
             item = {
                 "key": "supple_focus",

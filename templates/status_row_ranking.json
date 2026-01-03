@@ -19,7 +19,7 @@
     },
     {
       "type": "text",
-      "text": "${exp} EXP",
+      "text": "${exp} pt",
       "size": "sm",
       "align": "end",
       "gravity": "center",

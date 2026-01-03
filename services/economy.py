@@ -90,7 +90,7 @@ class EconomyService:
         # 辞書からリスト形式に変換 (表示用)
         # 定義マスタ (本来は別ファイルやDBで管理すべきだが一旦ここに記述)
         item_master = {
-            "ticket_1.5x": {"name": "EXP 1.5倍", "icon": "🎟"},
+            "ticket_1.5x": {"name": "ポイント 1.5倍", "icon": "🎟"},
             "shield_chores": {"name": "絶対防御", "icon": "🛡"},
             "supple_focus": {"name": "集中サプリ", "icon": "💊"},
             "bonus_100": {"name": "臨時ボーナス", "icon": "💸"},
@@ -156,17 +156,32 @@ class EconomyService:
         user_name = users_sheet.cell(row_num, 2).value
         current_exp_cell = users_sheet.cell(row_num, 3)
 
-        new_exp = int(current_exp_cell.value) + amount
-        users_sheet.update_cell(row_num, 3, new_exp)
+        try:
+            current_val = int(current_exp_cell.value)
+        except:
+            current_val = 0
+        new_exp = current_val + amount
 
-        # 2. 取引履歴(Transaction)を記録
+        # 2. 取引履歴(Transaction)を記録 (原子性担保のため先にログ)
         # 列: tx_id, user_id, amount, tx_type, related_id, timestamp, user_name
         tx_id = f"tx_{int(datetime.datetime.now().timestamp())}"
         tx_type = "REWARD" if amount > 0 else "SPEND"
         now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        tx_sheet.append_row(
-            [tx_id, user_id, amount, tx_type, related_id, now_str, user_name]
-        )
+        try:
+            tx_sheet.append_row(
+                [tx_id, user_id, amount, tx_type, related_id, now_str, user_name]
+            )
+        except Exception as e:
+            print(f"Transaction Log Error: {e}")
+            return False
+
+        # 3. 残高更新
+        try:
+            users_sheet.update_cell(row_num, 3, new_exp)
+        except Exception as e:
+            print(f"Balance Update Error: {e}")
+            # ログは書けたが残高更新に失敗。不整合だがログ優先。
+            return False
 
         return new_exp
