@@ -12,6 +12,14 @@ def handle_message(event, text):
     user_id = common.get_current_user_id(line_user_id)
 
     if text == "ガチャ":
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(
+                text="ガチャは現在実装されていません。解禁まで待ってください。"
+            ),
+        )
+        return True
+
         # 0. ランク確認 (Rank Eは不可)
         study_stats = HistoryService.get_user_study_stats(user_id)
         total_minutes = study_stats["total"]

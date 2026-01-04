@@ -98,21 +98,29 @@ class HistoryService:
     @staticmethod
     def get_user_weekly_daily_stats(user_id):
         """ユーザーの直近7日間の日別学習時間（教科別）"""
-        sheet = GSheetService.get_worksheet("study_log")
-        if not sheet:
-            return []
-
         now = datetime.datetime.now()
         # 今日を含む過去7日間
         dates = [(now - datetime.timedelta(days=i)) for i in range(6, -1, -1)]
+        weekdays = ["月", "火", "水", "木", "金", "土", "日"]
+
+        sheet = GSheetService.get_worksheet("study_log")
+        if not sheet:
+            # シートがない場合でも空のデータを返す
+            return [
+                {
+                    "date": d.strftime("%Y-%m-%d"),
+                    "label": f"{d.month}/{d.day}({weekdays[d.weekday()]})",
+                    "minutes": 0,
+                    "subjects": {},
+                }
+                for d in dates
+            ]
+
         # date_str keys: "YYYY-MM-DD"
         # Value structure: {"total": 0, "subjects": {"math": 0, "eng": 0, ...}}
         daily_map = {
             d.strftime("%Y-%m-%d"): {"total": 0, "subjects": {}} for d in dates
         }
-
-        # 曜日ラベル用
-        weekdays = ["月", "火", "水", "木", "金", "土", "日"]
 
         try:
             records = sheet.get_all_values()
@@ -167,10 +175,6 @@ class HistoryService:
     @staticmethod
     def get_user_monthly_weekly_stats(user_id):
         """ユーザーの直近4週間の週別学習時間（教科別）"""
-        sheet = GSheetService.get_worksheet("study_log")
-        if not sheet:
-            return []
-
         now = datetime.datetime.now()
         # 過去4週間 (28日間)
         # 4つの期間を作る: [3週間前, 2週間前, 1週間前, 今週]
@@ -190,6 +194,14 @@ class HistoryService:
                     "subjects": {},
                 }
             )
+
+        sheet = GSheetService.get_worksheet("study_log")
+        if not sheet:
+            # シートがない場合でも空のデータを返す
+            result = []
+            for w in weeks:
+                result.append({"label": w["label"], "minutes": 0, "subjects": {}})
+            return result
 
         try:
             records = sheet.get_all_values()

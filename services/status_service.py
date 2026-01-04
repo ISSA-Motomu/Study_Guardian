@@ -348,34 +348,7 @@ class StatusService:
                     },
                 ],
             },
-            {
-                "type": "box",
-                "layout": "horizontal",
-                "spacing": "sm",
-                "contents": [
-                    {
-                        "type": "button",
-                        "style": "secondary",
-                        "height": "sm",
-                        "action": {
-                            "type": "message",
-                            "label": "ショップ",
-                            "text": "ショップ",
-                        },
-                        "color": "#FF9800",
-                    },
-                    {
-                        "type": "button",
-                        "style": "secondary",
-                        "height": "sm",
-                        "action": {
-                            "type": "postback",
-                            "label": "掲載中のジョブ",
-                            "data": "action=job_list",
-                        },
-                    },
-                ],
-            },
+            # ショップとジョブは削除
         ]
 
         # 3段目: 履歴 | 切替 | (Adminのみ) 管理
@@ -610,8 +583,8 @@ class StatusService:
 
             # 全体の高さ（最大値に対する割合）
             total_height_percent = int((total_minutes / max_min) * 100)
-            if total_height_percent < 1 and total_minutes > 0:
-                total_height_percent = 1
+            if total_height_percent < 2 and total_minutes > 0:
+                total_height_percent = 2
 
             # 積み上げバーの構成要素
             stack_contents = []
@@ -644,7 +617,7 @@ class StatusService:
                         "backgroundColor": "#333333",
                     }
                 )
-                total_height_percent = 1
+                total_height_percent = 2
 
             # ラベル処理
             label_text = day["label"]
