@@ -253,17 +253,29 @@ class HistoryService:
 
         jobs = []
         try:
-            records = sheet.get_all_records()
-            user_jobs = [
-                r
-                for r in records
-                if str(r.get("worker_id")) == user_id and r.get("status") == "CLOSED"
-            ]
-            # ID(timestamp)で降順ソートと仮定
-            # job_id = job_1234567890
-            sorted_jobs = sorted(
-                user_jobs, key=lambda x: x.get("job_id", ""), reverse=True
-            )
+            rows = sheet.get_all_values()
+            if len(rows) > 1:
+                # Header: job_id, title, reward, status, client_id, worker_id, deadline
+                for r in rows[1:]:
+                    if len(r) < 6:
+                        continue
+
+                    # Check worker_id (F=5) and status (D=3)
+                    if str(r[5]) == user_id and str(r[3]) == "CLOSED":
+                        jobs.append(
+                            {
+                                "job_id": r[0],
+                                "title": r[1],
+                                "reward": r[2],
+                                "status": r[3],
+                                "client_id": r[4],
+                                "worker_id": r[5],
+                                "deadline": r[6] if len(r) > 6 else "",
+                            }
+                        )
+
+            # Sort by job_id desc
+            sorted_jobs = sorted(jobs, key=lambda x: x.get("job_id", ""), reverse=True)
             return sorted_jobs[:limit]
         except Exception as e:
             print(f"Job History Error: {e}")
@@ -277,13 +289,15 @@ class HistoryService:
             return 0
 
         try:
-            records = sheet.get_all_records()
-            user_jobs = [
-                r
-                for r in records
-                if str(r.get("worker_id")) == user_id and r.get("status") == "CLOSED"
-            ]
-            return len(user_jobs)
+            rows = sheet.get_all_values()
+            count = 0
+            if len(rows) > 1:
+                for r in rows[1:]:
+                    if len(r) < 6:
+                        continue
+                    if str(r[5]) == user_id and str(r[3]) == "CLOSED":
+                        count += 1
+            return count
         except Exception as e:
             print(f"Job Count Error: {e}")
             return 0
