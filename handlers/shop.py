@@ -352,12 +352,21 @@ def handle_message(event, text):
             }
             bubbles.append(bubble)
 
-        shop_flex = {"type": "carousel", "contents": bubbles}
+        # LINEの制限対応: カルーセルは最大12個まで
+        # 12個を超える場合は複数のメッセージに分割して送信する (最大5通まで = 60個)
+        reply_messages = []
+        chunk_size = 12
 
-        line_bot_api.reply_message(
-            event.reply_token,
-            FlexSendMessage(alt_text="ポイント交換", contents=shop_flex),
-        )
+        for i in range(0, len(bubbles), chunk_size):
+            chunk = bubbles[i : i + chunk_size]
+            shop_flex = {"type": "carousel", "contents": chunk}
+            reply_messages.append(
+                FlexSendMessage(alt_text="ポイント交換", contents=shop_flex)
+            )
+            if len(reply_messages) >= 5:
+                break
+
+        line_bot_api.reply_message(event.reply_token, reply_messages)
         return True
 
     return False

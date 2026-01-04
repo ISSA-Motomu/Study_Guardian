@@ -47,8 +47,8 @@ def cached(cache_instance, key_func=None):
             if key_func:
                 key = key_func(*args, **kwargs)
             else:
-                # 引数がない、または固定キーでよい場合
-                key = "default_key"
+                # 引数がない場合は関数名を含めてユニークにする
+                key = f"{func.__module__}.{func.__name__}"
 
             cached_val = cache_instance.get(key)
             if cached_val is not None:
