@@ -1,6 +1,7 @@
 import urllib.parse
 import json
 from services.stats import SagaStats
+from utils.achievements import AchievementManager
 
 
 class StatusService:
@@ -88,49 +89,9 @@ class StatusService:
             progress_percent = 100
             next_text = "最高ランク到達！"
 
-        # リボン（スキル）の判定
-        ribbons = []
-        # 赤リボン: 早起き
-        ribbons.append({"color": "#ff5555", "text": "早起き", "icon": "⏰"})
-        # 青リボン: 家事 (ジョブ数 > 10)
-        if int(user_data.get("total_jobs", 0)) >= 10:
-            ribbons.append({"color": "#5555ff", "text": "家事王", "icon": "🧹"})
-        # 緑リボン: 継続 (仮)
-        ribbons.append({"color": "#55ff55", "text": "継続", "icon": "🔥"})
-
-        ribbon_contents = []
-        for r in ribbons:
-            ribbon_contents.append(
-                {
-                    "type": "box",
-                    "layout": "vertical",
-                    "width": "60px",
-                    "alignItems": "center",
-                    "contents": [
-                        {
-                            "type": "box",
-                            "layout": "vertical",
-                            "width": "40px",
-                            "height": "40px",
-                            "backgroundColor": r["color"],
-                            "cornerRadius": "md",
-                            "justifyContent": "center",
-                            "alignItems": "center",
-                            "contents": [
-                                {"type": "text", "text": r["icon"], "size": "xl"}
-                            ],
-                        },
-                        {
-                            "type": "text",
-                            "text": r["text"],
-                            "size": "xxs",
-                            "color": "#aaaaaa",
-                            "align": "center",
-                            "margin": "xs",
-                        },
-                    ],
-                }
-            )
+        # 実績グリッドの生成
+        achievements_str = str(user_data.get("unlocked_achievements", ""))
+        achievements_grid = AchievementManager.generate_flex_component(achievements_str)
 
         # バッジ（勲章）の取得
         from services.economy import EconomyService
@@ -483,14 +444,15 @@ class StatusService:
                         "align": "end",
                         "margin": "sm",
                     },
-                    # リボン表示エリア
+                    # 実績表示エリア
                     {
-                        "type": "box",
-                        "layout": "horizontal",
-                        "contents": ribbon_contents,
+                        "type": "text",
+                        "text": "ACHIEVEMENTS",
+                        "color": "#aaaaaa",
+                        "size": "xxs",
                         "margin": "lg",
-                        "justifyContent": "center",
                     },
+                    achievements_grid,
                     # バッジ表示エリア
                     *(
                         [

@@ -14,6 +14,7 @@ from services.history import HistoryService
 from services.status_service import StatusService
 from utils.template_loader import load_template
 from handlers import common
+from utils.achievements import AchievementManager, ACHIEVEMENT_MASTER
 
 # 簡易的な状態管理 (メモリ上)
 user_states = {}
@@ -195,6 +196,7 @@ def handle_postback(event, action, data):
                     "row_index": result["row_index"],
                     "minutes": minutes,
                     "subject": result.get("subject", ""),
+                    "start_time": start_time_str,  # 実績判定用に開始時間を保存
                 }
 
                 line_bot_api.reply_message(
@@ -444,10 +446,50 @@ def finalize_study(event, user_id, state_data, concentration):
 
     # デイリーボーナス判定
     bonus_msg = ""
-    if minutes >= 5 and HistoryService.is_first_study_today(user_id):
+    is_first_today = HistoryService.is_first_study_today(user_id)
+    if minutes >= 5 and is_first_today:
         bonus = 30
         earned_exp += bonus
         bonus_msg = f"\n🎁 初回ボーナス: +{bonus}pt"
+
+    # --- 実績判定 (Achievement) ---
+    achievement_msg = ""
+    try:
+        user_info = EconomyService.get_user_info(user_id)
+        if user_info:
+            # セッション情報
+            current_session = {
+                "start_time": state_data.get("start_time", ""),
+                "minutes": minutes,
+                "is_first_ever": int(user_info.get("total_study_time", 0))
+                == 0,  # 簡易判定
+            }
+
+            new_achievements = AchievementManager.check_achievements(
+                user_info, current_session
+            )
+
+            if new_achievements:
+                # DB更新
+                current_str = str(user_info.get("unlocked_achievements", ""))
+                new_ids = [a.value for a in new_achievements]
+
+                # 重複排除しつつ結合
+                current_set = set(current_str.split(",")) if current_str else set()
+                for nid in new_ids:
+                    current_set.add(nid)
+
+                updated_str = ",".join(list(current_set))
+                EconomyService.update_user_achievements(user_id, updated_str)
+
+                # メッセージ生成
+                ach_titles = [ACHIEVEMENT_MASTER[a].title for a in new_achievements]
+                achievement_msg = f"\n\n🎉 実績解除！\n" + "\n".join(
+                    [f"・{t}" for t in ach_titles]
+                )
+    except Exception as e:
+        print(f"Achievement Error: {e}")
+    # ------------------------------
 
     subject_str = f"\n教科: {subject}" if subject else ""
 
@@ -463,7 +505,7 @@ def finalize_study(event, user_id, state_data, concentration):
     line_bot_api.reply_message(
         event.reply_token,
         TextSendMessage(
-            text=f"記録しました！\n勉強時間: {hours}時間{mins}分{subject_str}\n成果: {comment}\n集中度: {concentration}/5{bonus_msg}{stats_msg}\n\n親に承認依頼を送りました。"
+            text=f"記録しました！\n勉強時間: {hours}時間{mins}分{subject_str}\n成果: {comment}\n集中度: {concentration}/5{bonus_msg}{achievement_msg}{stats_msg}\n\n親に承認依頼を送りました。"
         ),
     )
 

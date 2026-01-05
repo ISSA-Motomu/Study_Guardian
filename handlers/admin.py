@@ -300,7 +300,9 @@ def handle_message(event, text):
                     "・ガチャ\n\n"
                     "【開発者用】\n\n"
                     "・!reset / !init\n"
-                    "  (自分自身のデータをリセット)"
+                    "  (自分自身のデータをリセット)\n\n"
+                    "・!admin\n"
+                    "  (管理者アカウントへの切り替え)"
                 )
                 line_bot_api.reply_message(
                     event.reply_token, TextSendMessage(text=help_text)

@@ -90,6 +90,28 @@ class EconomyService:
             return False
 
     @staticmethod
+    def update_user_achievements(user_id, achievements_str):
+        """ユーザーの実績リストを更新"""
+        sheet = GSheetService.get_worksheet("users")
+        if not sheet:
+            return False
+
+        try:
+            cell = sheet.find(user_id)
+            if cell:
+                # Achievements is column 8 (H)
+                # もし列が足りない場合は自動拡張されるかエラーになるが、
+                # gspreadのupdate_cellは範囲外だとエラーになる可能性がある。
+                # 安全のため、行データを取得して長さを確認しても良いが、
+                # ここでは列8を指定して更新を試みる。
+                sheet.update_cell(cell.row, 8, achievements_str)
+                return True
+            return False
+        except Exception as e:
+            print(f"Update Achievements Error: {e}")
+            return False
+
+    @staticmethod
     def update_user_role(user_id, role):
         """ユーザーの権限(Role)を更新"""
         sheet = GSheetService.get_worksheet("users")
