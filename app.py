@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 # 新しい構成のインポート
 from bot_instance import line_bot_api, handler
-from handlers import study, shop, job, admin, status, common, help, gacha
+from handlers import study, shop, job, admin, status, common, help, gacha, mission
 from services.history import HistoryService
 from services.economy import EconomyService
 from utils.debouncer import Debouncer
@@ -117,6 +117,8 @@ def handle_postback(event):
 
     if job.handle_postback(event, action, data):
         return
+    if mission.handle_postback(event, action, data):
+        return
     if status.handle_postback(event, action, data):
         return
 
@@ -143,6 +145,8 @@ def handle_message(event):
     if shop.handle_message(event, msg):
         return
     if job.handle_message(event, msg):
+        return
+    if mission.handle_message(event, msg):
         return
 
     # グループでは管理機能を使えないようにする

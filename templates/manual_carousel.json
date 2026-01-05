@@ -235,6 +235,53 @@
         ],
         "paddingAll": "12px"
       }
+    },
+    {
+      "type": "bubble",
+      "size": "micro",
+      "header": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "📜 ミッション",
+            "weight": "bold",
+            "color": "#ffffff",
+            "size": "md"
+          }
+        ],
+        "backgroundColor": "#673AB7",
+        "paddingAll": "12px"
+      },
+      "body": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "1. 「ミッション」と入力",
+            "wrap": true,
+            "size": "xs"
+          },
+          {
+            "type": "text",
+            "text": "2. 親からの指令を確認",
+            "wrap": true,
+            "size": "xs",
+            "margin": "sm"
+          },
+          {
+            "type": "text",
+            "text": "3. 達成して報酬ゲット！",
+            "wrap": true,
+            "size": "xs",
+            "margin": "sm",
+            "color": "#ff5555"
+          }
+        ],
+        "paddingAll": "12px"
+      }
     }
   ]
 }

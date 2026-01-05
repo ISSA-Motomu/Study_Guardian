@@ -2,6 +2,7 @@ from services.gsheet import GSheetService
 from services.job import JobService
 from services.shop import ShopService
 from services.economy import EconomyService
+from services.mission import MissionService
 
 
 class ApprovalService:
@@ -56,5 +57,23 @@ class ApprovalService:
                 "time": s.get("time"),
             }
             results.append({"type": "shop", "data": data})
+
+        # 4. ミッション完了報告
+        missions = MissionService.get_pending_reviews()
+        for m in missions:
+            uid = str(m.get("user_id"))
+            uname = user_map.get(uid, uid)
+
+            data = {
+                "mission_id": m.get("mission_id"),
+                "user_id": uid,
+                "user_name": uname,
+                "title": m.get("title"),
+                "reward": m.get("reward"),
+                "time": m.get(
+                    "created_at"
+                ),  # or completed_at if available, but created_at is what we have in get_pending_reviews
+            }
+            results.append({"type": "mission", "data": data})
 
         return results

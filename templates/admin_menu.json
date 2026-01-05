@@ -45,6 +45,17 @@
       {
         "type": "button",
         "action": {
+          "type": "postback",
+          "label": "📜 ミッション付与",
+          "data": "action=prompt_mission"
+        },
+        "style": "primary",
+        "margin": "md",
+        "height": "sm"
+      },
+      {
+        "type": "button",
+        "action": {
           "type": "message",
           "label": "💰 ポイント付与",
           "text": "ポイント付与"

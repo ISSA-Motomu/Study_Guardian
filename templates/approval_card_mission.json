@@ -1,0 +1,76 @@
+{
+  "type": "bubble",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "backgroundColor": "#673AB7",
+    "contents": [
+      {
+        "type": "text",
+        "text": "📜 ミッション報告",
+        "color": "#ffffff",
+        "weight": "bold"
+      }
+    ]
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "${user_name}",
+        "weight": "bold",
+        "size": "lg"
+      },
+      {
+        "type": "text",
+        "text": "申請: ${time}",
+        "size": "xs",
+        "color": "#aaaaaa"
+      },
+      {
+        "type": "text",
+        "text": "${title}",
+        "margin": "md",
+        "wrap": true
+      },
+      {
+        "type": "separator",
+        "margin": "md"
+      },
+      {
+        "type": "text",
+        "text": "報酬: ${reward} pt",
+        "margin": "md",
+        "color": "#ff5555",
+        "weight": "bold"
+      }
+    ]
+  },
+  "footer": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "button",
+        "style": "primary",
+        "action": {
+          "type": "postback",
+          "label": "承認",
+          "data": "action=mission_approve&id=${mission_id}&target=${user_id}"
+        }
+      },
+      {
+        "type": "button",
+        "style": "secondary",
+        "margin": "sm",
+        "action": {
+          "type": "postback",
+          "label": "却下",
+          "data": "action=mission_reject&id=${mission_id}&target=${user_id}"
+        }
+      }
+    ]
+  }
+}

@@ -12,6 +12,7 @@ from services.economy import EconomyService
 from services.approval import ApprovalService
 from services.shop import ShopService
 from services.job import JobService
+from services.mission import MissionService
 from utils.template_loader import load_template
 from handlers import common
 
@@ -119,6 +120,102 @@ def handle_postback(event, action, data):
         )
         return True
 
+    elif action == "prompt_mission":
+        # ユーザー選択へ
+        users = EconomyService.get_all_users()
+        items = []
+        for u in users:
+            label = u.get("display_name", "Unknown")[:20]
+            uid = u.get("user_id")
+            items.append(
+                QuickReplyButton(
+                    action=PostbackAction(
+                        label=label, data=f"action=mission_user_selected&target={uid}"
+                    )
+                )
+            )
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(
+                text="誰にミッションを付与しますか？",
+                quick_reply=QuickReply(items=items),
+            ),
+        )
+        return True
+
+    elif action == "mission_user_selected":
+        target_id = data.get("target")
+        admin_states[line_user_id] = {
+            "state": "WAITING_MISSION_TITLE",
+            "data": {"target": target_id},
+        }
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(
+                text="ミッションのタイトルを入力してください。\n(例: 今週中に本を1冊読む)"
+            ),
+        )
+        return True
+
+    elif action == "mission_approve":
+        mission_id = data.get("id")
+        target_id = data.get("target")
+
+        success, result = MissionService.approve_mission(mission_id)
+        if success:
+            title = result["title"]
+            reward = result["reward"]
+
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(
+                    text=f"✅ ミッション「{title}」を承認しました。\n{reward} pt を付与しました。"
+                ),
+            )
+
+            # Notify User
+            try:
+                line_bot_api.push_message(
+                    target_id,
+                    TextSendMessage(
+                        text=f"🎉 ミッション「{title}」が承認されました！\n報酬 {reward} pt と勲章を獲得しました！"
+                    ),
+                )
+            except:
+                pass
+        else:
+            line_bot_api.reply_message(
+                event.reply_token, TextSendMessage(text=f"承認に失敗しました: {result}")
+            )
+        return True
+
+    elif action == "mission_reject":
+        mission_id = data.get("id")
+        target_id = data.get("target")
+
+        if MissionService.reject_mission(mission_id):
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(
+                    text="ミッションを却下しました。(ステータスをOPENに戻しました)"
+                ),
+            )
+            # Notify User
+            try:
+                line_bot_api.push_message(
+                    target_id,
+                    TextSendMessage(
+                        text="⚠️ ミッションの完了報告が却下されました。\n内容を確認して再挑戦してください。"
+                    ),
+                )
+            except:
+                pass
+        else:
+            line_bot_api.reply_message(
+                event.reply_token, TextSendMessage(text="却下に失敗しました。")
+            )
+        return True
+
     return False
 
 
@@ -163,6 +260,78 @@ def handle_message(event, text):
                         ),
                     )
                     return True
+
+            elif state["state"] == "WAITING_MISSION_TITLE":
+                state["data"]["title"] = text
+                state["state"] = "WAITING_MISSION_REWARD"
+                admin_states[line_user_id] = state
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(
+                        text="達成時の報酬ポイントを入力してください。(半角数字)"
+                    ),
+                )
+                return True
+
+            elif state["state"] == "WAITING_MISSION_REWARD":
+                try:
+                    reward = int(text)
+                    state["data"]["reward"] = reward
+                    state["state"] = "WAITING_MISSION_DESC"
+                    admin_states[line_user_id] = state
+                    line_bot_api.reply_message(
+                        event.reply_token,
+                        TextSendMessage(
+                            text="達成条件や詳細を入力してください。\n(これがミッションの説明になります)"
+                        ),
+                    )
+                    return True
+                except ValueError:
+                    line_bot_api.reply_message(
+                        event.reply_token,
+                        TextSendMessage(text="数字を入力してください。"),
+                    )
+                    return True
+
+            elif state["state"] == "WAITING_MISSION_DESC":
+                description = text
+                data = state["data"]
+                target_id = data["target"]
+                title = data["title"]
+                reward = data["reward"]
+
+                # ミッション作成
+                success, result = MissionService.create_mission(
+                    target_id, title, description, reward, user_id
+                )
+                del admin_states[line_user_id]
+
+                if success:
+                    target_info = EconomyService.get_user_info(target_id)
+                    name = target_info.get("display_name", "ユーザー")
+
+                    line_bot_api.reply_message(
+                        event.reply_token,
+                        TextSendMessage(
+                            text=f"✅ ミッションを作成しました！\n対象: {name}\nタイトル: {title}\n報酬: {reward} pt"
+                        ),
+                    )
+                    # ユーザーへ通知
+                    try:
+                        line_bot_api.push_message(
+                            target_id,
+                            TextSendMessage(
+                                text=f"📜 新しいミッションが届きました！\n\n「{title}」\n報酬: {reward} pt\n\n達成条件:\n{description}\n\n「ミッション」と入力して確認しよう！"
+                            ),
+                        )
+                    except:
+                        pass
+                else:
+                    line_bot_api.reply_message(
+                        event.reply_token,
+                        TextSendMessage(text=f"作成に失敗しました: {result}"),
+                    )
+                return True
 
             elif state["state"] == "WAITING_EDIT_AMOUNT":
                 try:
@@ -745,6 +914,19 @@ def handle_message(event, text):
                         cost=data["cost"],
                         row_index=data["request_id"],
                         user_id=data["user_id"],
+                        time=data.get("time", ""),
+                    )
+                    if bubble:
+                        bubbles.append(bubble)
+
+                elif p_type == "mission":
+                    bubble = load_template(
+                        "approval_card_mission.json",
+                        user_name=user_name,
+                        title=data.get("title", "ミッション"),
+                        reward=data.get("reward", 0),
+                        mission_id=data.get("mission_id"),
+                        user_id=data.get("user_id"),
                         time=data.get("time", ""),
                     )
                     if bubble:
