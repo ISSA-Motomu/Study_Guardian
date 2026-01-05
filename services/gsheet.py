@@ -1,5 +1,6 @@
 import os
 import json
+import datetime
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
@@ -219,3 +220,75 @@ class GSheetService:
             return True
         except:
             return False
+
+    @staticmethod
+    def check_timeout_sessions(timeout_minutes=90):
+        """制限時間を超えた学習セッションを強制終了する"""
+        sheet = GSheetService.get_worksheet("study_log")
+        if not sheet:
+            return []
+
+        try:
+            all_records = sheet.get_all_values()
+            expired_sessions = []
+
+            # 現在時刻 (JST)
+            now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
+
+            # ヘッダーを除く
+            for i in range(1, len(all_records)):
+                row = all_records[i]
+                # A:ID, B:Name, C:Date, D:Start, E:End, F:Status
+                if len(row) < 6:
+                    continue
+
+                status = row[5]
+                end_time = row[4]
+
+                if status == "STARTED" and end_time == "":
+                    # 開始日時を構築
+                    date_str = row[2]  # YYYY-MM-DD
+                    start_time_str = row[3]  # HH:MM:SS
+
+                    try:
+                        start_dt = datetime.datetime.strptime(
+                            f"{date_str} {start_time_str}", "%Y-%m-%d %H:%M:%S"
+                        )
+                        # JST timezone info might be missing in strptime result, assume it is JST because 'now' is JST
+                        start_dt = start_dt.replace(
+                            tzinfo=datetime.timezone(datetime.timedelta(hours=9))
+                        )
+
+                        duration = now - start_dt
+                        duration_minutes = int(duration.total_seconds() / 60)
+
+                        if duration_minutes >= timeout_minutes:
+                            # 強制終了時刻 (開始 + 90分)
+                            force_end_dt = start_dt + datetime.timedelta(
+                                minutes=timeout_minutes
+                            )
+                            force_end_time_str = force_end_dt.strftime("%H:%M:%S")
+
+                            # シート更新 (行番号は i + 1)
+                            row_index = i + 1
+                            sheet.update_cell(row_index, 5, force_end_time_str)
+                            sheet.update_cell(row_index, 6, "PENDING")
+
+                            expired_sessions.append(
+                                {
+                                    "user_id": row[0],
+                                    "row_index": row_index,
+                                    "minutes": timeout_minutes,
+                                    "subject": row[8] if len(row) > 8 else "",
+                                    "start_time": start_time_str,
+                                }
+                            )
+                    except Exception as e:
+                        print(f"Date Parse Error: {e}")
+                        continue
+
+            return expired_sessions
+
+        except Exception as e:
+            print(f"Check Timeout Error: {e}")
+            return []

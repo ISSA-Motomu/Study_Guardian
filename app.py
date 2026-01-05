@@ -31,6 +31,22 @@ def wake_up():
     return "I am awake!", 200
 
 
+from services.gsheet import GSheetService
+
+
+@app.route("/cron/check_timeout")
+def cron_check_timeout():
+    # タイムアウトしたセッションを確認
+    expired_sessions = GSheetService.check_timeout_sessions(timeout_minutes=90)
+
+    if expired_sessions:
+        # 通知と状態更新
+        study.process_timeout_sessions(expired_sessions)
+        return f"Processed {len(expired_sessions)} sessions.", 200
+
+    return "No expired sessions.", 200
+
+
 @app.route("/admin/dashboard")
 def admin_dashboard():
     # 本来は認証が必要だが、簡易的にURLを知っている人のみアクセス可能とする

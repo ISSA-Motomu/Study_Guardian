@@ -566,3 +566,38 @@ def finalize_study(event, user_id, state_data, concentration):
             )
     except Exception as e:
         print(f"Admin通知エラー: {e}")
+
+
+def process_timeout_sessions(sessions):
+    """タイムアウトしたセッションの事後処理（通知＆状態更新）"""
+    for session in sessions:
+        user_id = session["user_id"]
+        minutes = session["minutes"]
+        row_index = session["row_index"]
+        subject = session["subject"]
+        start_time = session["start_time"]
+
+        # ランク計算と保存
+        stats = SagaStats.calculate(minutes)
+        if stats:
+            GSheetService.update_study_stats(row_index, minutes, stats["rank"])
+
+        # 状態を保存して、成果報告を促す
+        user_states[user_id] = {
+            "state": "WAITING_COMMENT",
+            "row_index": row_index,
+            "minutes": minutes,
+            "subject": subject,
+            "start_time": start_time,
+        }
+
+        # 通知送信
+        try:
+            line_bot_api.push_message(
+                user_id,
+                TextSendMessage(
+                    text=f"⏰ 上限記録時間の1時間半が経過しました。\n自動で終了フェーズに移行します。\n\n今日の成果を一言で教えてね。"
+                ),
+            )
+        except Exception as e:
+            print(f"Push Error: {e}")
