@@ -41,6 +41,38 @@ class HistoryService:
             return []
 
     @staticmethod
+    def is_first_study_today(user_id):
+        """その日の最初の勉強かどうか判定"""
+        sheet = GSheetService.get_worksheet("study_log")
+        if not sheet:
+            return False
+
+        now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
+        today_str = now.strftime("%Y-%m-%d")
+
+        try:
+            records = sheet.get_all_values()
+            # Header skip
+            count = 0
+            for row in records[1:]:
+                # row: [id, name, date, start, end, status]
+                if len(row) < 6:
+                    continue
+                if str(row[0]) != str(user_id):
+                    continue
+                if row[2] == today_str:
+                    status = row[5]
+                    if status not in ["CANCELLED", "REJECTED"]:
+                        count += 1
+
+            # 今のセッションも含まれるため、1なら初回
+            return count == 1
+
+        except Exception as e:
+            print(f"First Study Check Error: {e}")
+            return False
+
+    @staticmethod
     def get_user_study_stats(user_id):
         """ユーザーの学習履歴統計（週間・月間）"""
         sheet = GSheetService.get_worksheet("study_log")

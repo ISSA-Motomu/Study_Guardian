@@ -66,6 +66,19 @@ def handle_postback(event, action, data):
             )
         return True
 
+    elif action == "cancel_study":
+        if GSheetService.cancel_study(user_id):
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text="勉強記録を取り消しました。"),
+            )
+        else:
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text="取り消し可能な記録が見つかりませんでした。"),
+            )
+        return True
+
     elif action == "pause_study":
         now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
         current_time = now.strftime("%H:%M:%S")
@@ -254,6 +267,7 @@ def handle_postback(event, action, data):
 
         target_id = data.get("target")
         minutes = int(data.get("minutes"))
+        exp = int(data.get("exp", minutes))
         row_id = data.get("row_id")
 
         # 承認者名を取得
@@ -277,7 +291,7 @@ def handle_postback(event, action, data):
         # 1. シートのステータスを更新
         if row_id and GSheetService.approve_study(int(row_id)):
             # 2. EXP付与 (承認成功時のみ)
-            new_balance = EconomyService.add_exp(target_id, minutes, "STUDY_REWARD")
+            new_balance = EconomyService.add_exp(target_id, exp, "STUDY_REWARD")
 
             # ランクアップ判定
             new_total = old_total + minutes
@@ -293,7 +307,7 @@ def handle_postback(event, action, data):
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(
-                    text=f"{target_name}さんの勉強時間を承認しました！\n承認者：{approver_name}\n\n{minutes} EXP を付与しました。"
+                    text=f"{target_name}さんの勉強時間を承認しました！\n承認者：{approver_name}\n\n{exp} EXP を付与しました。"
                 ),
             )
 
@@ -302,7 +316,7 @@ def handle_postback(event, action, data):
                 messages = []
                 messages.append(
                     TextSendMessage(
-                        text=f"💮 勉強時間が承認されました！\n承認者：{approver_name}\n+{minutes} EXP\n(現在残高: {new_balance} EXP)"
+                        text=f"💮 勉強時間が承認されました！\n承認者：{approver_name}\n+{exp} EXP\n(現在残高: {new_balance} EXP)"
                     )
                 )
 
@@ -428,6 +442,13 @@ def finalize_study(event, user_id, state_data, concentration):
     hours, mins = divmod(minutes, 60)
     earned_exp = minutes
 
+    # デイリーボーナス判定
+    bonus_msg = ""
+    if minutes >= 5 and HistoryService.is_first_study_today(user_id):
+        bonus = 30
+        earned_exp += bonus
+        bonus_msg = f"\n🎁 初回ボーナス: +{bonus}pt"
+
     subject_str = f"\n教科: {subject}" if subject else ""
 
     # 統計情報の再計算（表示用）
@@ -442,7 +463,7 @@ def finalize_study(event, user_id, state_data, concentration):
     line_bot_api.reply_message(
         event.reply_token,
         TextSendMessage(
-            text=f"記録しました！\n勉強時間: {hours}時間{mins}分{subject_str}\n成果: {comment}\n集中度: {concentration}/5{stats_msg}\n\n親に承認依頼を送りました。"
+            text=f"記録しました！\n勉強時間: {hours}時間{mins}分{subject_str}\n成果: {comment}\n集中度: {concentration}/5{bonus_msg}{stats_msg}\n\n親に承認依頼を送りました。"
         ),
     )
 
@@ -460,9 +481,10 @@ def finalize_study(event, user_id, state_data, concentration):
                 user_name=user_name,
                 hours=hours,
                 mins=mins,
+                minutes=minutes,
                 earned_exp=earned_exp,
                 user_id=user_id,
-                comment=comment,
+                comment=comment + bonus_msg,
                 concentration=concentration,
             )
             line_bot_api.multicast(

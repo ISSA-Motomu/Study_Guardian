@@ -65,6 +65,35 @@ class GSheetService:
             return False
 
     @staticmethod
+    def cancel_study(user_id):
+        """学習記録をキャンセル（削除またはステータス変更）"""
+        sheet = GSheetService.get_worksheet("study_log")
+        if not sheet:
+            return False
+
+        all_records = sheet.get_all_values()
+        target_row = None
+
+        # 後ろから検索して、まだ終了していない(STARTED)記録を探す
+        for i in range(len(all_records), 0, -1):
+            row = all_records[i - 1]
+            # ID一致 かつ 終了時刻(E列=index4)が空
+            if len(row) >= 5 and row[0] == user_id and row[4] == "":
+                target_row = i
+                break
+
+        if target_row:
+            try:
+                # 行ごと削除するのが一番きれいだが、行番号がずれるリスクがあるため
+                # ステータスを "CANCELLED" に変更する
+                sheet.update_cell(target_row, 6, "CANCELLED")
+                return True
+            except Exception as e:
+                print(f"Cancel Study Error: {e}")
+                return False
+        return False
+
+    @staticmethod
     def update_end_time(user_id, end_time):
         """終了時刻を study_log シートに更新"""
         sheet = GSheetService.get_worksheet("study_log")

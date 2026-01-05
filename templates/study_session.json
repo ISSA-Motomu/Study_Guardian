@@ -65,6 +65,18 @@
           }
         ],
         "margin": "lg"
+      },
+      {
+        "type": "button",
+        "action": {
+          "type": "postback",
+          "label": "取消",
+          "data": "action=cancel_study"
+        },
+        "style": "primary",
+        "color": "#ff5555",
+        "margin": "md",
+        "height": "sm"
       }
     ]
   }
