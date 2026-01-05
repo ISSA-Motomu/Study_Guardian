@@ -46,6 +46,17 @@
         "type": "button",
         "action": {
           "type": "postback",
+          "label": "🧹 タスク追加",
+          "data": "action=prompt_job_create"
+        },
+        "style": "primary",
+        "margin": "md",
+        "height": "sm"
+      },
+      {
+        "type": "button",
+        "action": {
+          "type": "postback",
           "label": "📜 ミッション付与",
           "data": "action=prompt_mission"
         },

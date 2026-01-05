@@ -25,8 +25,15 @@ def send_job_list(reply_token, user_id):
         contents.append(header)
 
         for job in active_jobs:
+            deadline_text = job.get("deadline", "")
+            if not deadline_text:
+                deadline_text = "期限なし"
+
             row = load_template(
-                "job_row_active.json", title=job["title"], job_id=job["job_id"]
+                "job_row_active.json",
+                title=job["title"],
+                job_id=job["job_id"],
+                deadline=deadline_text,
             )
             contents.append(row)
 
@@ -52,11 +59,16 @@ def send_job_list(reply_token, user_id):
         )
     else:
         for job in open_jobs:
+            deadline_text = job.get("deadline", "")
+            if not deadline_text:
+                deadline_text = "期限なし"
+
             row = load_template(
                 "job_row_open.json",
                 title=job["title"],
                 reward=job["reward"],
                 job_id=job["job_id"],
+                deadline=deadline_text,
             )
             contents.append(row)
 

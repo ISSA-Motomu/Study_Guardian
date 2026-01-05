@@ -120,6 +120,16 @@ def handle_postback(event, action, data):
         )
         return True
 
+    elif action == "prompt_job_create":
+        admin_states[line_user_id] = {"state": "WAITING_JOB_TITLE", "data": {}}
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(
+                text="タスクのタイトルを入力してください。\n(例: お風呂掃除、玄関掃除)"
+            ),
+        )
+        return True
+
     elif action == "prompt_mission":
         # ユーザー選択へ
         users = EconomyService.get_all_users()
@@ -258,6 +268,62 @@ def handle_message(event, text):
                         TextSendMessage(
                             text="数字を入力してください。キャンセルするには「キャンセル」と入力してください。"
                         ),
+                    )
+                    return True
+
+            elif state["state"] == "WAITING_JOB_TITLE":
+                state["data"]["title"] = text
+                state["state"] = "WAITING_JOB_REWARD"
+                admin_states[line_user_id] = state
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text="報酬ポイントを入力してください。(半角数字)"),
+                )
+                return True
+
+            elif state["state"] == "WAITING_JOB_REWARD":
+                try:
+                    reward = int(text)
+                    title = state["data"]["title"]
+
+                    success, result = JobService.create_job(title, reward, "", user_id)
+                    del admin_states[line_user_id]
+
+                    if success:
+                        line_bot_api.reply_message(
+                            event.reply_token,
+                            TextSendMessage(
+                                text=f"✅ タスク「{title}」を作成しました！\n報酬: {reward} pt"
+                            ),
+                        )
+
+                        # Notify Users
+                        all_users = EconomyService.get_all_users()
+                        target_ids = [
+                            str(u["user_id"])
+                            for u in all_users
+                            if str(u["user_id"]) != user_id and u.get("role") == "USER"
+                        ]
+                        if target_ids:
+                            try:
+                                line_bot_api.multicast(
+                                    target_ids,
+                                    TextSendMessage(
+                                        text=f"🆕 新しいお手伝いが追加されました！\n\n「{title}」\n報酬: {reward} pt\n\n早い者勝ちだよ！"
+                                    ),
+                                )
+                            except:
+                                pass
+                    else:
+                        line_bot_api.reply_message(
+                            event.reply_token,
+                            TextSendMessage(text=f"作成失敗: {result}"),
+                        )
+                    return True
+                except ValueError:
+                    line_bot_api.reply_message(
+                        event.reply_token,
+                        TextSendMessage(text="数字を入力してください。"),
                     )
                     return True
 

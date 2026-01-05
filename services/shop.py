@@ -1,4 +1,5 @@
 import datetime
+from collections import OrderedDict
 from services.gsheet import GSheetService
 from utils.cache import shop_items_cache, cached
 
@@ -94,7 +95,7 @@ class ShopService:
             # get_all_records はヘッダー重複などでエラーになりやすいため get_all_values を使用
             # 列: A:item_key, B:name, C:cost, D:description, E:is_active
             rows = sheet.get_all_values()
-            items = {}
+            items = OrderedDict()
 
             if len(rows) > 1:
                 for r in rows[1:]:

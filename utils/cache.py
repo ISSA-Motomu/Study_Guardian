@@ -24,8 +24,8 @@ class SimpleCache:
 
 
 # グローバルキャッシュインスタンス
-# 商品リストはあまり変わらないので長め (10分)
-shop_items_cache = SimpleCache(ttl=600)
+# 商品リストはあまり変わらないので長め (10分) -> 変更頻度を考慮して1分に短縮
+shop_items_cache = SimpleCache(ttl=60)
 
 # ジョブリストはステータスが変わるので短め (1分)
 job_list_cache = SimpleCache(ttl=60)

@@ -1,18 +1,37 @@
 {
   "type": "box",
   "layout": "horizontal",
-  "margin": "sm",
+  "margin": "md",
+  "spacing": "sm",
+  "align": "center",
   "contents": [
     {
-      "type": "text",
-      "text": "${title}",
-      "flex": 2,
-      "gravity": "center"
+      "type": "box",
+      "layout": "vertical",
+      "flex": 4,
+      "contents": [
+        {
+          "type": "text",
+          "text": "${title}",
+          "weight": "bold",
+          "size": "sm",
+          "wrap": true,
+          "color": "#333333"
+        },
+        {
+          "type": "text",
+          "text": "📅 ${deadline}",
+          "size": "xxs",
+          "color": "#aaaaaa",
+          "margin": "xs"
+        }
+      ]
     },
     {
       "type": "button",
       "style": "primary",
-      "flex": 1,
+      "flex": 2,
+      "height": "sm",
       "action": {
         "type": "postback",
         "label": "完了",
