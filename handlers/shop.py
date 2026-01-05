@@ -177,7 +177,7 @@ def handle_postback(event, action, data):
             approver_profile = line_bot_api.get_profile(user_id)
             approver_name = approver_profile.display_name
         except:
-            approver_name = "管理者"
+            approver_name = "ADMIN"
 
         # 対象者名を取得
         target_user_info = EconomyService.get_user_info(target_id)
@@ -200,7 +200,7 @@ def handle_postback(event, action, data):
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(
-                    text=f"{target_name}さんの「{item_name}」を承認しました！\n承認者：{approver_name}\n\n(ポイントは交換申請時に消費済みです)"
+                    text=f"{target_name}さんの「{item_name}」を承認しました。\n(ユーザーへ通知を送信しました)"
                 ),
             )
 

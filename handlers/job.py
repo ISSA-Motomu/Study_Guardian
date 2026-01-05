@@ -200,7 +200,7 @@ def handle_postback(event, action, data):
             approver_profile = line_bot_api.get_profile(user_id)
             approver_name = approver_profile.display_name
         except:
-            approver_name = "管理者"
+            approver_name = "ADMIN"
 
         if success:
             # 対象者名を取得
@@ -211,7 +211,7 @@ def handle_postback(event, action, data):
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(
-                    text=f"💮 {worker_name}さんの「{result['title']}」を承認しました！\n承認者：{approver_name}\n\n報酬 {result['reward']} EXP を付与しました。\n(現在残高: {result['balance']} EXP)"
+                    text=f"💮 {worker_name}さんの「{result['title']}」を承認しました。\n(ユーザーへ通知を送信しました)"
                 ),
             )
 

@@ -67,6 +67,18 @@ def handle_postback(event, action, data):
             )
         return True
 
+    elif action == "confirm_cancel_study":
+        confirm_flex = load_template(
+            "confirm_dialog.json",
+            text="本当に勉強記録を取り消しますか？",
+            action_data="action=cancel_study",
+        )
+        line_bot_api.reply_message(
+            event.reply_token,
+            FlexSendMessage(alt_text="取消確認", contents=confirm_flex),
+        )
+        return True
+
     elif action == "cancel_study":
         if GSheetService.cancel_study(user_id):
             line_bot_api.reply_message(
@@ -277,7 +289,7 @@ def handle_postback(event, action, data):
             approver_profile = line_bot_api.get_profile(user_id)
             approver_name = approver_profile.display_name
         except:
-            approver_name = "管理者"
+            approver_name = "ADMIN"
 
         # 対象者名を取得
         target_user_info = EconomyService.get_user_info(target_id)
@@ -309,7 +321,7 @@ def handle_postback(event, action, data):
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(
-                    text=f"{target_name}さんの勉強時間を承認しました！\n承認者：{approver_name}\n\n{exp} EXP を付与しました。"
+                    text=f"{target_name}さんの勉強時間を承認しました。\n(ユーザーへ通知を送信しました)"
                 ),
             )
 
@@ -414,7 +426,7 @@ def handle_message(event, text):
         # Check for daily bonus opportunity
         study_count = HistoryService.get_today_study_count(user_id)
         if study_count == 0:
-            header_msg = "🔥 今日の5分ボーナス未獲得！がんばろう！"
+            header_msg = "🔥 今日の5分ボーナス(30pt)未獲得！"
             header_color = "#FF6B6B"
         else:
             header_msg = "科目ごとの色を確認してね！"

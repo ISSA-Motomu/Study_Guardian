@@ -71,7 +71,7 @@
         "action": {
           "type": "postback",
           "label": "取消",
-          "data": "action=cancel_study"
+          "data": "action=confirm_cancel_study"
         },
         "style": "primary",
         "color": "#ff5555",

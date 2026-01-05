@@ -281,6 +281,10 @@ def handle_message(event, text):
                 help_text = (
                     "🛠 コマンド一覧\n\n"
                     "【管理者(親用)】\n\n"
+                    "・管理 / 承認\n"
+                    "  承認待ち一覧を直接表示します。\n\n"
+                    "・admin / メニュー\n"
+                    "  管理メニュー(ボタン)を表示します。\n\n"
                     "・タスク追加 [タイトル] [報酬]\n"
                     "  例: タスク追加 風呂掃除 300\n\n"
                     "・商品追加\n"
@@ -605,7 +609,7 @@ def handle_message(event, text):
             )
             return True
 
-        if text in ["admin", "メニュー"]:
+        if text in ["admin", "メニュー", "管理"]:
             if not EconomyService.is_admin(user_id):
                 line_bot_api.reply_message(
                     event.reply_token, TextSendMessage(text="権限がありません。")
@@ -621,7 +625,7 @@ def handle_message(event, text):
                 )
             return True
 
-        if text in ["承認確認", "管理", "承認"]:
+        if text in ["承認確認", "承認"]:
             if not EconomyService.is_admin(user_id):
                 line_bot_api.reply_message(
                     event.reply_token, TextSendMessage(text="権限がありません。")
