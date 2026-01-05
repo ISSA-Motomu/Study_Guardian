@@ -73,6 +73,33 @@ class HistoryService:
             return False
 
     @staticmethod
+    def get_today_study_count(user_id):
+        """今日の勉強回数を取得"""
+        sheet = GSheetService.get_worksheet("study_log")
+        if not sheet:
+            return 0
+
+        now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
+        today_str = now.strftime("%Y-%m-%d")
+
+        try:
+            records = sheet.get_all_values()
+            count = 0
+            for row in records[1:]:
+                if len(row) < 6:
+                    continue
+                if str(row[0]) != str(user_id):
+                    continue
+                if row[2] == today_str:
+                    status = row[5]
+                    if status not in ["CANCELLED", "REJECTED"]:
+                        count += 1
+            return count
+        except Exception as e:
+            print(f"Study Count Error: {e}")
+            return 0
+
+    @staticmethod
     def get_user_study_stats(user_id):
         """ユーザーの学習履歴統計（週間・月間）"""
         sheet = GSheetService.get_worksheet("study_log")

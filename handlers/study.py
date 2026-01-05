@@ -410,7 +410,21 @@ def handle_message(event, text):
 
     if text == "勉強開始":
         # 教科選択ダイアログを表示
-        subject_flex = load_template("study_subject_select.json")
+
+        # Check for daily bonus opportunity
+        study_count = HistoryService.get_today_study_count(user_id)
+        if study_count == 0:
+            header_msg = "🔥 今日の5分ボーナス未獲得！がんばろう！"
+            header_color = "#FF6B6B"
+        else:
+            header_msg = "科目ごとの色を確認してね！"
+            header_color = "#aaaaaa"
+
+        subject_flex = load_template(
+            "study_subject_select.json",
+            header_message=header_msg,
+            header_color=header_color,
+        )
         line_bot_api.reply_message(
             event.reply_token,
             FlexSendMessage(alt_text="教科選択", contents=subject_flex),

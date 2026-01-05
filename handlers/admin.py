@@ -605,7 +605,7 @@ def handle_message(event, text):
             )
             return True
 
-        if text in ["管理", "承認", "admin", "メニュー"]:
+        if text in ["admin", "メニュー"]:
             if not EconomyService.is_admin(user_id):
                 line_bot_api.reply_message(
                     event.reply_token, TextSendMessage(text="権限がありません。")
@@ -621,8 +621,11 @@ def handle_message(event, text):
                 )
             return True
 
-        if text == "承認確認":
+        if text in ["承認確認", "管理", "承認"]:
             if not EconomyService.is_admin(user_id):
+                line_bot_api.reply_message(
+                    event.reply_token, TextSendMessage(text="権限がありません。")
+                )
                 return True
 
             pending_items = ApprovalService.get_all_pending()

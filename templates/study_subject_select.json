@@ -21,9 +21,9 @@
     "contents": [
       {
         "type": "text",
-        "text": "科目ごとの色を確認してね！",
+        "text": "${header_message}",
         "size": "xs",
-        "color": "#aaaaaa",
+        "color": "${header_color}",
         "align": "center",
         "margin": "md"
       },
