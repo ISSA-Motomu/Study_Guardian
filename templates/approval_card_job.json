@@ -51,7 +51,7 @@
         "action": {
           "type": "postback",
           "label": "承認",
-          "data": "action=job_approve&row_id=${row_index}&target=${user_id}&amount=${reward}"
+          "data": "action=job_approve&row_id=${row_index}&target=${user_id}&amount=${reward}&time=${time}"
         }
       },
       {

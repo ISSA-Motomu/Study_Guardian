@@ -283,6 +283,7 @@ def handle_postback(event, action, data):
         minutes = int(data.get("minutes"))
         exp = int(data.get("exp", minutes))
         row_id = data.get("row_id")
+        request_time = data.get("time", "")
 
         # 承認者名を取得
         try:
@@ -328,11 +329,11 @@ def handle_postback(event, action, data):
             # 対象ユーザーへ通知（Push Message）
             try:
                 messages = []
-                messages.append(
-                    TextSendMessage(
-                        text=f"💮 勉強時間が承認されました！\n承認者：{approver_name}\n+{exp} EXP\n(現在残高: {new_balance} EXP)"
-                    )
-                )
+                msg_text = f"💮 勉強時間が承認されました！\n承認者：{approver_name}\n+{exp} EXP\n(現在残高: {new_balance} EXP)"
+                if request_time:
+                    msg_text += f"\n申請時刻：{request_time}"
+
+                messages.append(TextSendMessage(text=msg_text))
 
                 if is_rank_up:
                     # ランクアップ通知

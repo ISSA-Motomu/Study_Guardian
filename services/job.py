@@ -113,6 +113,9 @@ class JobService:
 
                     status = str(r[3]).strip().upper()
                     if status == "REVIEW":
+                        # I列(index 8)に完了時刻があるはず
+                        finished_at = r[8] if len(r) > 8 else ""
+
                         job_data = {
                             "job_id": r[0],
                             "title": r[1],
@@ -120,6 +123,7 @@ class JobService:
                             "status": status,
                             "client_id": r[4] if len(r) > 4 else "",
                             "worker_id": r[5] if len(r) > 5 else "",
+                            "finished_at": finished_at,
                         }
                         reviews.append(job_data)
         except Exception as e:

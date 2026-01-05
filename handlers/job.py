@@ -193,6 +193,7 @@ def handle_postback(event, action, data):
             return True
 
         job_id = data.get("id") or data.get("row_id")
+        request_time = data.get("time", "")
         success, result = JobService.approve_job(job_id)
 
         # 承認者名を取得
@@ -217,11 +218,13 @@ def handle_postback(event, action, data):
 
             # 対象ユーザーへ通知
             try:
+                msg_text = f"🧹 お手伝い「{result['title']}」が承認されました！\n承認者：{approver_name}\n+{result['reward']} EXP\n(現在残高: {result['balance']} EXP)"
+                if request_time:
+                    msg_text += f"\n申請時刻：{request_time}"
+
                 line_bot_api.push_message(
                     worker_id,
-                    TextSendMessage(
-                        text=f"🧹 お手伝い「{result['title']}」が承認されました！\n承認者：{approver_name}\n+{result['reward']} EXP\n(現在残高: {result['balance']} EXP)"
-                    ),
+                    TextSendMessage(text=msg_text),
                 )
             except:
                 pass

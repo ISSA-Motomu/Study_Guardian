@@ -668,6 +668,9 @@ def handle_message(event, text):
                     user_name = "Unknown"
 
                 if p_type == "study":
+                    # 申請時刻を作成
+                    study_time = f"{data.get('date', '')} {data.get('start_time', '')}"
+
                     bubble = load_template(
                         "approval_card_study.json",
                         user_name=user_name,
@@ -677,6 +680,7 @@ def handle_message(event, text):
                         earned_exp=data.get("earned_exp", 0),
                         row_index=data["row_index"],
                         user_id=data["user_id"],
+                        time=study_time,
                     )
                     if "earned_exp" not in data:
                         try:
@@ -698,6 +702,7 @@ def handle_message(event, text):
                                 earned_exp=mins,
                                 row_index=data["row_index"],
                                 user_id=data["user_id"],
+                                time=study_time,
                             )
                         except:
                             pass
@@ -716,6 +721,7 @@ def handle_message(event, text):
                         reward=data["reward"],
                         row_index=data["job_id"],
                         user_id=data["user_id"],
+                        time=data.get("time", ""),
                     )
                     if bubble:
                         bubbles.append(bubble)
@@ -739,6 +745,7 @@ def handle_message(event, text):
                         cost=data["cost"],
                         row_index=data["request_id"],
                         user_id=data["user_id"],
+                        time=data.get("time", ""),
                     )
                     if bubble:
                         bubbles.append(bubble)

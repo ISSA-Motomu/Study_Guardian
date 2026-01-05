@@ -171,6 +171,7 @@ def handle_postback(event, action, data):
         target_id = data.get("target")
         cost = int(data.get("cost"))
         row_id = data.get("row_id")
+        request_time = data.get("time", "")
 
         # 承認者名を取得
         try:
@@ -206,11 +207,13 @@ def handle_postback(event, action, data):
 
             # ユーザーへ通知
             try:
+                msg_text = f"🛍️ ポイント交換リクエスト「{item_name}」が承認されました！\n承認者：{approver_name}\n(現在残高: {new_balance} pt)\n\n親に見せて使ってね！"
+                if request_time:
+                    msg_text += f"\n申請時刻：{request_time}"
+
                 line_bot_api.push_message(
                     target_id,
-                    TextSendMessage(
-                        text=f"🛍️ ポイント交換リクエスト「{item_name}」が承認されました！\n承認者：{approver_name}\n(現在残高: {new_balance} pt)\n\n親に見せて使ってね！"
-                    ),
+                    TextSendMessage(text=msg_text),
                 )
             except:
                 pass

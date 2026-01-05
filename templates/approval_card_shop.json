@@ -51,7 +51,7 @@
         "action": {
           "type": "postback",
           "label": "承認",
-          "data": "action=shop_approve&row_id=${row_index}&target=${user_id}&cost=${cost}"
+          "data": "action=shop_approve&row_id=${row_index}&target=${user_id}&cost=${cost}&time=${time}"
         }
       },
       {

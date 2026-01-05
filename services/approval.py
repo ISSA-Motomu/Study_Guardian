@@ -36,6 +36,7 @@ class ApprovalService:
                 "user_name": worker_name,
                 "job_title": j.get("title"),
                 "reward": j.get("reward"),
+                "time": j.get("finished_at", ""),
             }
             results.append({"type": "job", "data": data})
 
