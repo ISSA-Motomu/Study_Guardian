@@ -276,7 +276,7 @@ def handle_message(event, text):
                 )
                 return True
 
-        if text == "コマンド" or text == "help" or text == "ヘルプ":
+        if text == "コマンド":
             if EconomyService.is_admin(user_id):
                 help_text = (
                     "🛠 コマンド一覧\n\n"

