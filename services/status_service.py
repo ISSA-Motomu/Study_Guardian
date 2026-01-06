@@ -159,7 +159,17 @@ class StatusService:
                 # ランク画像の取得
                 r_total = int(r.get("total_study_time", 0))
                 r_rank_info = StatusService.get_rank_info(r_total)
+
+                # ランクに応じたアイコン (E~S) を使用
+                # すでに img プロパティが rank_a.png 等になっているが、
+                # アイコンとして表示する場合は単純な文字や小さなアイコンの方が視認性が良い場合もある。
+                # ここではユーザーのランクに応じた画像URLを使用する。
                 r_img_url = f"{app_url}/static/medals/{r_rank_info['img']}"
+
+                # ユーザー名の横に表示するテキスト勲章 (例: [S])
+                rank_char = r_rank_info["name"].split(":")[0].replace("Rank ", "")
+                rank_badge_text = f"[{rank_char}]"
+                rank_badge_color = r_rank_info["color"]
 
                 ranking_contents.append(
                     {
@@ -176,12 +186,15 @@ class StatusService:
                                 "flex": 1,
                                 "align": "center",
                             },
+                            # 画像ではなく、テキストバッジでランクを表示する場合の例
                             {
-                                "type": "image",
-                                "url": r_img_url,
+                                "type": "text",
+                                "text": rank_badge_text,
+                                "color": rank_badge_color,
                                 "size": "xs",
-                                "aspectMode": "fit",
+                                "weight": "bold",
                                 "flex": 1,
+                                "align": "center",
                             },
                             {
                                 "type": "text",
@@ -216,7 +229,11 @@ class StatusService:
             if my_rank_data and my_rank_data["rank"] > 3:
                 m_total = int(my_rank_data.get("total_study_time", 0))
                 m_rank_info = StatusService.get_rank_info(m_total)
-                m_img_url = f"{app_url}/static/medals/{m_rank_info['img']}"
+
+                # ユーザー名の横に表示するテキスト勲章 (例: [S])
+                m_rank_char = m_rank_info["name"].split(":")[0].replace("Rank ", "")
+                m_rank_badge_text = f"[{m_rank_char}]"
+                m_rank_badge_color = m_rank_info["color"]
 
                 ranking_contents.append(
                     {"type": "separator", "margin": "sm", "color": "#444444"}
@@ -237,11 +254,13 @@ class StatusService:
                                 "align": "center",
                             },
                             {
-                                "type": "image",
-                                "url": m_img_url,
+                                "type": "text",
+                                "text": m_rank_badge_text,
+                                "color": m_rank_badge_color,
                                 "size": "xs",
-                                "aspectMode": "fit",
+                                "weight": "bold",
                                 "flex": 1,
+                                "align": "center",
                             },
                             {
                                 "type": "text",
@@ -478,11 +497,12 @@ class StatusService:
                         else []
                     ),
                     # ランキング表示エリア
+                    {"type": "separator", "margin": "xxl", "color": "#444444"},
                     {
                         "type": "box",
                         "layout": "vertical",
                         "contents": ranking_contents,
-                        "margin": "xl",
+                        "margin": "lg",
                     },
                 ],
             },
@@ -490,6 +510,7 @@ class StatusService:
                 "type": "box",
                 "layout": "vertical",
                 "contents": footer_contents,
+                "paddingTop": "20px",  # 上部に余白を追加して分離感を出す
                 "paddingAll": "20px",
             },
         }
