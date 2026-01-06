@@ -70,7 +70,7 @@
         "action": {
           "type": "postback",
           "label": "許可",
-          "data": "action=approve&target=${user_id}&item=${item_key}"
+          "data": "action=shop_approve&target=${user_id}&cost=${item_cost}&row_id=${request_id}"
         },
         "style": "primary"
       },
@@ -79,7 +79,7 @@
         "action": {
           "type": "postback",
           "label": "却下",
-          "data": "action=deny&target=${user_id}&cost=${item_cost}"
+          "data": "action=shop_reject&target=${user_id}&cost=${item_cost}&row_id=${request_id}"
         },
         "style": "secondary"
       }

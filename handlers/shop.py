@@ -256,7 +256,7 @@ def handle_message(event, text):
         new_balance = EconomyService.add_exp(user_id, -cost, f"BUY_{item_key}")
 
         # 購入リクエストを記録 (Admin承認用)
-        ShopService.create_request(user_id, item_key, cost, comment)
+        request_id = ShopService.create_request(user_id, item_key, cost, comment)
 
         # 親への承認リクエストカードを作成
         user_info = EconomyService.get_user_info(user_id)
@@ -275,6 +275,7 @@ def handle_message(event, text):
             item_key=item_key,
             comment=comment,
             timestamp=timestamp,
+            request_id=request_id,
         )
 
         # 管理者(親)に通知を送る
