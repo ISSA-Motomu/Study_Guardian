@@ -708,12 +708,20 @@ class StatusService:
         # 統計情報の生成
         # total_min = sum([d["minutes"] for d in history_data]) # define at top
         stats_section = []
-        if total_min > 0:
+
+        # 偏差値計算用の期間合計時間 (グラフの合計ではなく、カレンダー基準の正しい集計値を使う)
+        calc_min = 0
+        if is_weekly:
+            calc_min = int(user_data.get("weekly_study_time", 0))
+        else:
+            calc_min = int(user_data.get("monthly_study_time", 0))
+
+        if calc_min > 0:
             if is_weekly:
-                stats = SagaStats.calculate_weekly(total_min)
+                stats = SagaStats.calculate_weekly(calc_min)
                 period_label = "週間偏差値"
             else:
-                stats = SagaStats.calculate_monthly(total_min)
+                stats = SagaStats.calculate_monthly(calc_min)
                 period_label = "月間偏差値"
 
             if stats:

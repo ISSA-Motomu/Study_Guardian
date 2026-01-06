@@ -34,6 +34,8 @@ def send_user_status_view(reply_token, user_id, is_detailed=False):
     # Prepare data for StatusService
     user_data = user_info.copy()
     user_data["total_study_time"] = study_stats["total"]
+    user_data["weekly_study_time"] = study_stats["weekly"]
+    user_data["monthly_study_time"] = study_stats["monthly"]
     user_data["total_jobs"] = job_count
 
     if is_detailed:

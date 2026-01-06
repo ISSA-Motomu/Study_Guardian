@@ -116,14 +116,18 @@ class HistoryService:
 
     @staticmethod
     def get_user_study_stats(user_id):
-        """ユーザーの学習履歴統計（週間・月間）"""
+        """ユーザーの学習履歴統計（週間・月間）※カレンダー基準"""
         sheet = GSheetService.get_worksheet("study_log")
         if not sheet:
             return {"weekly": 0, "monthly": 0, "total": 0}
 
         now = datetime.datetime.now()
-        week_start = now - datetime.timedelta(days=7)
-        month_start = now - datetime.timedelta(days=30)
+        # 今週の月曜日 (0:00:00)
+        week_start = (now - datetime.timedelta(days=now.weekday())).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        # 今月の1日 (0:00:00)
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
         stats = {"weekly": 0, "monthly": 0, "total": 0}
 
