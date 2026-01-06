@@ -145,6 +145,11 @@ def handle_postback(event):
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     msg = event.message.text
+    user_id = event.source.user_id
+
+    # 連打防止 (メッセージも3秒間ロック)
+    if Debouncer.is_locked(user_id, msg):
+        return
 
     # グループ判定
     is_group = event.source.type != "user"

@@ -166,7 +166,8 @@ def handle_postback(event, action, data):
 
     if action == "admin_show_user_status":
         target_id = data.get("target_id")
-        send_user_status_view(event.reply_token, target_id)
+        is_detailed = data.get("detailed") == "true"
+        send_user_status_view(event.reply_token, target_id, is_detailed=is_detailed)
         return True
 
     if action == "admin_show_history":
@@ -252,10 +253,45 @@ def handle_message(event, text):
     user_id = common.get_current_user_id(line_user_id)
 
     if text == "詳細ステータス":
-        # 管理者であっても、自分の詳細ステータスを表示する
-        is_detailed = True
-        send_user_status_view(event.reply_token, user_id, is_detailed)
-        return True
+        # 1. Adminかどうかチェック
+        if EconomyService.is_admin(user_id):
+            # ユーザー選択メニューを表示（詳細モード）
+            users = EconomyService.get_all_users()
+            items = []
+            for u in users:
+                label = u.get("display_name", "Unknown")[:20]
+                uid = str(u.get("user_id"))
+                items.append(
+                    QuickReplyButton(
+                        action=PostbackAction(
+                            label=label,
+                            data=f"action=admin_show_user_status&target_id={uid}&detailed=true",
+                        )
+                    )
+                )
+
+            # 自分自身のステータスを見るボタンも追加
+            items.append(
+                QuickReplyButton(
+                    action=PostbackAction(
+                        label="自分",
+                        data=f"action=admin_show_user_status&target_id={user_id}&detailed=true",
+                    )
+                )
+            )
+
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(
+                    text="誰の詳細ステータスを確認する？",
+                    quick_reply=QuickReply(items=items),
+                ),
+            )
+            return True
+        else:
+            # 一般ユーザーは自分の詳細ステータスを表示
+            send_user_status_view(event.reply_token, user_id, is_detailed=True)
+            return True
 
     if text in ["状況", "ステータス", "status"]:
         # 1. Adminかどうかチェック

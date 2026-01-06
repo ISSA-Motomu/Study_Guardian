@@ -12,10 +12,37 @@ class HistoryService:
             return []
 
         try:
-            records = sheet.get_all_records()
-            # 新しい順にソート
+            # get_all_records はヘッダー依存で不安定なため get_all_values を使用
+            # 想定カラム: tx_id, user_id, amount, tx_type, related_id, timestamp, user_name
+            rows = sheet.get_all_values()
+
+            records = []
+            # ヘッダー行判定 (1行目が "tx_id" ならヘッダーとみなす)
+            start_index = 0
+            if len(rows) > 0 and str(rows[0][0]) == "tx_id":
+                start_index = 1
+
+            for r in rows[start_index:]:
+                if len(r) < 6:
+                    continue
+
+                records.append(
+                    {
+                        "tx_id": r[0],
+                        "user_id": r[1],
+                        "amount": int(r[2])
+                        if r[2] and str(r[2]).lstrip("-").isdigit()
+                        else 0,
+                        "tx_type": r[3],
+                        "related_id": r[4],
+                        "timestamp": r[5],
+                        "user_name": r[6] if len(r) > 6 else "",
+                    }
+                )
+
+            # 新しい順にソート (timestamp降順)
             sorted_records = sorted(
-                records, key=lambda x: x.get("timestamp", ""), reverse=True
+                records, key=lambda x: str(x.get("timestamp", "")), reverse=True
             )
             return sorted_records
         except Exception as e:
@@ -25,20 +52,8 @@ class HistoryService:
     @staticmethod
     def get_admin_history(limit=10):
         """管理用：最近の取引履歴を取得"""
-        sheet = GSheetService.get_worksheet("transactions")
-        if not sheet:
-            return []
-
-        try:
-            records = sheet.get_all_records()
-            # 新しい順にソート
-            sorted_records = sorted(
-                records, key=lambda x: x.get("timestamp", ""), reverse=True
-            )
-            return sorted_records[:limit]
-        except Exception as e:
-            print(f"Admin History Error: {e}")
-            return []
+        all_tx = HistoryService.get_all_transactions()
+        return all_tx[:limit]
 
     @staticmethod
     def is_first_study_today(user_id):
