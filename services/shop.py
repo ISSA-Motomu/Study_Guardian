@@ -53,6 +53,12 @@ class ShopService:
             cell = sheet.find(str(request_id))
             if not cell:
                 return False
+
+            # ステータスチェック (PENDING以外なら処理しない)
+            current_status = sheet.cell(cell.row, 5).value
+            if current_status != "PENDING":
+                return False
+
             sheet.update_cell(cell.row, 5, "APPROVED")
 
             # 商品キーを返す（アイテム名取得用）
@@ -74,6 +80,12 @@ class ShopService:
             cell = sheet.find(str(request_id))
             if not cell:
                 return False
+
+            # ステータスチェック (PENDING以外なら処理しない)
+            current_status = sheet.cell(cell.row, 5).value
+            if current_status != "PENDING":
+                return False
+
             sheet.update_cell(cell.row, 5, "DENIED")
 
             # 商品キーを返す（アイテム名取得用）

@@ -188,6 +188,34 @@ class GSheetService:
         return pending
 
     @staticmethod
+    def get_user_latest_pending_session(user_id):
+        """ユーザーの最新のPENDING（コメント待ち）セッションを取得"""
+        sheet = GSheetService.get_worksheet("study_log")
+        if not sheet:
+            return None
+
+        all_records = sheet.get_all_values()
+
+        # 後ろから検索
+        for i in range(len(all_records), 0, -1):
+            row = all_records[i - 1]
+            # ID一致 かつ Status(F列=5)が"PENDING"
+            if len(row) >= 6 and row[0] == user_id and row[5] == "PENDING":
+                # コメント(J列=9)がまだ空であることを確認
+                comment = row[9] if len(row) >= 10 else ""
+                if not comment:
+                    return {
+                        "row_index": i,
+                        "start_time": row[3],
+                        "minutes": int(row[6])
+                        if len(row) >= 7 and row[6].isdigit()
+                        else 0,
+                        "subject": row[8] if len(row) >= 9 else "",
+                        "state": "WAITING_COMMENT",
+                    }
+        return None
+
+    @staticmethod
     def approve_study(row_index):
         """学習記録を承認済みに更新"""
         sheet = GSheetService.get_worksheet("study_log")

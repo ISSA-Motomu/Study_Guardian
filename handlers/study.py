@@ -381,8 +381,15 @@ def handle_postback(event, action, data):
 def handle_message(event, text):
     user_id = event.source.user_id
 
-    # 状態チェック
+    # 状態チェック (メモリ上にない場合はDBから復元を試みる)
     state_data = user_states.get(user_id)
+    if not state_data:
+        # DBからPENDING状態のセッションを探す（タイムアウト後のコメント待ちなど）
+        pending_session = GSheetService.get_user_latest_pending_session(user_id)
+        if pending_session:
+            user_states[user_id] = pending_session
+            state_data = pending_session
+
     if state_data:
         state = state_data.get("state")
 
