@@ -47,6 +47,9 @@ class ApprovalService:
             uid = str(s.get("user_id"))
             uname = user_map.get(uid, uid)
 
+            # タイムスタンプの取得（time or timestamp）
+            time_val = s.get("time") or s.get("timestamp") or ""
+
             # s keys: request_id, user_id, item_key, cost, status, time
             data = {
                 "request_id": s.get("request_id") or s.get("id") or s.get("req_id"),
@@ -54,7 +57,7 @@ class ApprovalService:
                 "user_name": uname,
                 "item_key": s.get("item_key"),
                 "cost": s.get("cost"),
-                "time": s.get("time"),
+                "time": time_val,
             }
             results.append({"type": "shop", "data": data})
 

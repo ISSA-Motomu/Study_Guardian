@@ -7,7 +7,7 @@ import datetime
 class JobService:
     @staticmethod
     def get_all_jobs_map():
-        """全ジョブをID:Titleの辞書で取得（管理画面用）"""
+        """全ジョブをID:Titleの辞書で取得（管理画面用・動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("jobs")
         if not sheet:
             return {}
@@ -16,9 +16,17 @@ class JobService:
             rows = sheet.get_all_values()
             job_map = {}
             if len(rows) > 1:
+                headers = rows[0]
+                col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+                idx_jid = col_map.get("job_id")
+                idx_title = col_map.get("title")
+
+                if idx_jid is None or idx_title is None:
+                    return {}
+
                 for r in rows[1:]:
-                    if len(r) > 1:
-                        job_map[str(r[0])] = r[1]
+                    if len(r) > max(idx_jid, idx_title):
+                        job_map[str(r[idx_jid])] = r[idx_title]
             return job_map
         except:
             return {}
@@ -26,37 +34,45 @@ class JobService:
     @staticmethod
     @cached(job_list_cache)
     def get_open_jobs():
-        """募集中(OPEN)のジョブを取得"""
+        """募集中(OPEN)のジョブを取得（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("jobs")
         if not sheet:
             return []
 
         jobs = []
         try:
-            # ヘッダー依存を避けるため、全値を取得してインデックスでアクセス
-            # 列: A:job_id, B:title, C:reward, D:status, E:client_id, F:worker_id, G:deadline
             rows = sheet.get_all_values()
-
-            # ヘッダー行(1行目)をスキップ
             if len(rows) > 1:
-                for r in rows[1:]:
-                    # 列数が足りない場合はスキップ
-                    if len(r) < 4:
-                        continue
+                headers = rows[0]
+                col_map = {str(h).strip(): i for i, h in enumerate(headers)}
 
-                    # D列 (Index 3) が Status
-                    status = str(r[3]).strip().upper()
+                # 必須カラム
+                idx_status = col_map.get("status")
+                if idx_status is None:
+                    return []
+
+                idx_jid = col_map.get("job_id")
+                idx_title = col_map.get("title")
+                idx_reward = col_map.get("reward")
+                idx_client = col_map.get("client_id")
+                idx_worker = col_map.get("worker_id")
+                idx_deadline = col_map.get("deadline")
+
+                def get_val(r, idx):
+                    return r[idx] if idx is not None and idx < len(r) else ""
+
+                for r in rows[1:]:
+                    status = str(get_val(r, idx_status)).strip().upper()
 
                     if status == "OPEN":
-                        # 辞書形式に変換してリストに追加
                         job_data = {
-                            "job_id": r[0],
-                            "title": r[1],
-                            "reward": r[2],
+                            "job_id": get_val(r, idx_jid),
+                            "title": get_val(r, idx_title),
+                            "reward": get_val(r, idx_reward),
                             "status": status,
-                            "client_id": r[4] if len(r) > 4 else "",
-                            "worker_id": r[5] if len(r) > 5 else "",
-                            "deadline": r[6] if len(r) > 6 else "",
+                            "client_id": get_val(r, idx_client),
+                            "worker_id": get_val(r, idx_worker),
+                            "deadline": get_val(r, idx_deadline),
                         }
                         jobs.append(job_data)
         except Exception as e:
@@ -65,7 +81,7 @@ class JobService:
 
     @staticmethod
     def get_user_active_jobs(user_id):
-        """ユーザーが現在担当中(ASSIGNED)のジョブを取得"""
+        """ユーザーが現在担当中(ASSIGNED)のジョブを取得（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("jobs")
         if not sheet:
             return []
@@ -74,22 +90,37 @@ class JobService:
         try:
             rows = sheet.get_all_values()
             if len(rows) > 1:
-                for r in rows[1:]:
-                    if len(r) < 6:
-                        continue
+                headers = rows[0]
+                col_map = {str(h).strip(): i for i, h in enumerate(headers)}
 
-                    status = str(r[3]).strip().upper()
-                    worker = str(r[5]).strip()
+                idx_status = col_map.get("status")
+                idx_worker = col_map.get("worker_id")
+
+                if idx_status is None or idx_worker is None:
+                    return []
+
+                idx_jid = col_map.get("job_id")
+                idx_title = col_map.get("title")
+                idx_reward = col_map.get("reward")
+                idx_client = col_map.get("client_id")
+                idx_deadline = col_map.get("deadline")
+
+                def get_val(r, idx):
+                    return r[idx] if idx is not None and idx < len(r) else ""
+
+                for r in rows[1:]:
+                    status = str(get_val(r, idx_status)).strip().upper()
+                    worker = str(get_val(r, idx_worker)).strip()
 
                     if status == "ASSIGNED" and worker == str(user_id):
                         job_data = {
-                            "job_id": r[0],
-                            "title": r[1],
-                            "reward": r[2],
+                            "job_id": get_val(r, idx_jid),
+                            "title": get_val(r, idx_title),
+                            "reward": get_val(r, idx_reward),
                             "status": status,
-                            "client_id": r[4],
+                            "client_id": get_val(r, idx_client),
                             "worker_id": worker,
-                            "deadline": r[6] if len(r) > 6 else "",
+                            "deadline": get_val(r, idx_deadline),
                         }
                         jobs.append(job_data)
         except Exception as e:
@@ -98,7 +129,7 @@ class JobService:
 
     @staticmethod
     def get_pending_reviews():
-        """承認待ち(REVIEW)のジョブを取得"""
+        """承認待ち(REVIEW)のジョブを取得（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("jobs")
         if not sheet:
             return []
@@ -107,23 +138,35 @@ class JobService:
         try:
             rows = sheet.get_all_values()
             if len(rows) > 1:
+                headers = rows[0]
+                col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+                idx_status = col_map.get("status")
+                if idx_status is None:
+                    return []
+
+                idx_jid = col_map.get("job_id")
+                idx_title = col_map.get("title")
+                idx_reward = col_map.get("reward")
+                idx_client = col_map.get("client_id")
+                idx_worker = col_map.get("worker_id")
+                idx_finished = col_map.get("finished_at")
+
+                def get_val(r, idx):
+                    return r[idx] if idx is not None and idx < len(r) else ""
+
                 for r in rows[1:]:
-                    if len(r) < 4:
-                        continue
+                    status = str(get_val(r, idx_status)).strip().upper()
 
-                    status = str(r[3]).strip().upper()
                     if status == "REVIEW":
-                        # I列(index 8)に完了時刻があるはず
-                        finished_at = r[8] if len(r) > 8 else ""
-
                         job_data = {
-                            "job_id": r[0],
-                            "title": r[1],
-                            "reward": r[2],
+                            "job_id": get_val(r, idx_jid),
+                            "title": get_val(r, idx_title),
+                            "reward": get_val(r, idx_reward),
                             "status": status,
-                            "client_id": r[4] if len(r) > 4 else "",
-                            "worker_id": r[5] if len(r) > 5 else "",
-                            "finished_at": finished_at,
+                            "client_id": get_val(r, idx_client),
+                            "worker_id": get_val(r, idx_worker),
+                            "finished_at": get_val(r, idx_finished),
                         }
                         reviews.append(job_data)
         except Exception as e:
@@ -132,18 +175,35 @@ class JobService:
 
     @staticmethod
     def create_job(title, reward, deadline, client_id):
-        """新しいジョブを作成"""
+        """新しいジョブを作成（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("jobs")
         if not sheet:
             return False, "シートエラー"
 
         try:
-            # ID生成 (job_timestamp)
+            headers = sheet.row_values(1)
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+            # Construct row based on headers
+            row_data = [""] * len(headers)
+
             job_id = f"job_{int(datetime.datetime.now().timestamp())}"
 
-            # 列: job_id, title, reward, status, client_id, worker_id, deadline
-            # ※ deadlineはG列(7列目)に追加と仮定
-            sheet.append_row([job_id, title, reward, "OPEN", client_id, "", deadline])
+            # Helper to set value safely
+            def set_val(key, val):
+                idx = col_map.get(key)
+                if idx is not None:
+                    row_data[idx] = val
+
+            set_val("job_id", job_id)
+            set_val("title", title)
+            set_val("reward", reward)
+            set_val("status", "OPEN")
+            set_val("client_id", client_id)
+            set_val("deadline", deadline)
+            set_val("worker_id", "")  # Explicitly empty
+
+            sheet.append_row(row_data)
             return True, job_id
         except Exception as e:
             print(f"Create Job Error: {e}")
@@ -151,7 +211,7 @@ class JobService:
 
     @staticmethod
     def accept_job(job_id, user_id):
-        """ジョブを受注する"""
+        """ジョブを受注する（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("jobs")
         if not sheet:
             return False, "シートエラー"
@@ -161,18 +221,30 @@ class JobService:
             if not cell:
                 return False, "ジョブが見つかりません"
 
+            headers = sheet.row_values(1)
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+            idx_status = col_map.get("status")
+            idx_worker = col_map.get("worker_id")
+            idx_title = col_map.get("title")
+
+            if idx_status is None or idx_worker is None:
+                return False, "シート形式エラー"
+
             row = cell.row
-            # ステータス確認 (D列=4)
-            status = sheet.cell(row, 4).value
+            # ステータス確認
+            status = sheet.cell(row, idx_status + 1).value
             if status != "OPEN":
                 return False, "この仕事はもう空いていません"
 
             # 更新: Status=ASSIGNED, Worker=user_id
-            sheet.update_cell(row, 4, "ASSIGNED")
-            sheet.update_cell(row, 6, user_id)
+            sheet.update_cell(row, idx_status + 1, "ASSIGNED")
+            sheet.update_cell(row, idx_worker + 1, user_id)
 
             # ジョブ情報を返す
-            title = sheet.cell(row, 2).value
+            title = ""
+            if idx_title is not None:
+                title = sheet.cell(row, idx_title + 1).value
             return True, title
         except Exception as e:
             print(f"Accept Error: {e}")
@@ -180,7 +252,7 @@ class JobService:
 
     @staticmethod
     def finish_job(job_id, user_id, comment=""):
-        """ジョブ完了報告"""
+        """ジョブ完了報告（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("jobs")
         if not sheet:
             return False, "シートエラー"
@@ -190,28 +262,47 @@ class JobService:
             if not cell:
                 return False, "ジョブが見つかりません"
 
+            headers = sheet.row_values(1)
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+            idx_status = col_map.get("status")
+            idx_worker = col_map.get("worker_id")
+            idx_title = col_map.get("title")
+            idx_reward = col_map.get("reward")
+            idx_comment = col_map.get("comment")
+            idx_finished = col_map.get("finished_at")
+
+            if idx_worker is None or idx_status is None:
+                return False, "シート形式エラー"
+
             row = cell.row
-            # 本人確認 (F列=6)
-            worker = sheet.cell(row, 6).value
+            # 本人確認
+            worker = sheet.cell(row, idx_worker + 1).value
             if worker != user_id:
                 return False, "担当者ではありません"
 
-            sheet.update_cell(row, 4, "REVIEW")
+            sheet.update_cell(row, idx_status + 1, "REVIEW")
 
-            # コメント(H列=8)と完了時刻(I列=9)を記録
+            # コメントと完了時刻を記録
             now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            sheet.update_cell(row, 8, comment)
-            sheet.update_cell(row, 9, now_str)
+            if idx_comment is not None:
+                sheet.update_cell(row, idx_comment + 1, comment)
+            if idx_finished is not None:
+                sheet.update_cell(row, idx_finished + 1, now_str)
 
-            title = sheet.cell(row, 2).value
-            reward = sheet.cell(row, 3).value
+            title = (
+                sheet.cell(row, idx_title + 1).value if idx_title is not None else ""
+            )
+            reward = (
+                sheet.cell(row, idx_reward + 1).value if idx_reward is not None else ""
+            )
             return True, {"title": title, "reward": reward}
         except Exception as e:
             return False, str(e)
 
     @staticmethod
     def approve_job(job_id):
-        """ジョブ承認（報酬支払い）"""
+        """ジョブ承認（報酬支払い）（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("jobs")
         if not sheet:
             return False, "シートエラー"
@@ -221,18 +312,39 @@ class JobService:
             if not cell:
                 return False, "ジョブが見つかりません"
 
+            headers = sheet.row_values(1)
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+            idx_status = col_map.get("status")
+            idx_worker = col_map.get("worker_id")
+            idx_title = col_map.get("title")
+            idx_reward = col_map.get("reward")
+
+            if idx_status is None:
+                return False, "シート形式エラー"
+
             row = cell.row
-            status = sheet.cell(row, 4).value
+            status = sheet.cell(row, idx_status + 1).value
             if status != "REVIEW":
                 return False, "承認待ちではありません"
 
             # 情報取得
-            title = sheet.cell(row, 2).value
-            reward = int(sheet.cell(row, 3).value)
-            worker_id = sheet.cell(row, 6).value
+            title = (
+                sheet.cell(row, idx_title + 1).value if idx_title is not None else ""
+            )
+            reward_val = (
+                sheet.cell(row, idx_reward + 1).value if idx_reward is not None else "0"
+            )
+            if not str(reward_val).isdigit():
+                reward_val = 0
+            reward = int(reward_val)
+
+            worker_id = (
+                sheet.cell(row, idx_worker + 1).value if idx_worker is not None else ""
+            )
 
             # 更新
-            sheet.update_cell(row, 4, "CLOSED")
+            sheet.update_cell(row, idx_status + 1, "CLOSED")
 
             # 支払い
             new_balance = EconomyService.add_exp(worker_id, reward, f"JOB_{job_id}")
@@ -248,7 +360,7 @@ class JobService:
 
     @staticmethod
     def reject_job(job_id):
-        """ジョブ却下（ステータスをASSIGNEDに戻す）"""
+        """ジョブ却下（ステータスをASSIGNEDに戻す・動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("jobs")
         if not sheet:
             return False, "シートエラー"
@@ -258,15 +370,26 @@ class JobService:
             if not cell:
                 return False, "ジョブが見つかりません"
 
+            headers = sheet.row_values(1)
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+            idx_status = col_map.get("status")
+            idx_title = col_map.get("title")
+
+            if idx_status is None:
+                return False, "シート形式エラー"
+
             row = cell.row
-            status = sheet.cell(row, 4).value
+            status = sheet.cell(row, idx_status + 1).value
             if status != "REVIEW":
                 return False, "承認待ちではありません"
 
             # 更新: Status=ASSIGNED
-            sheet.update_cell(row, 4, "ASSIGNED")
+            sheet.update_cell(row, idx_status + 1, "ASSIGNED")
 
-            title = sheet.cell(row, 2).value
+            title = (
+                sheet.cell(row, idx_title + 1).value if idx_title is not None else ""
+            )
             return True, title
         except Exception as e:
             return False, str(e)

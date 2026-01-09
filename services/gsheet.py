@@ -49,32 +49,36 @@ class GSheetService:
 
     @staticmethod
     def log_activity(user_id, user_name, today, time, subject=""):
-        """学習記録ログを study_log シートに保存"""
+        """学習記録ログを study_log シートに保存（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("study_log")
         if not sheet:
             print("【Error】study_log シートが見つかりません。作成してください。")
             return False
 
         try:
-            # ユーザー指定順序に対応:
-            # A:display_name, B:date, C:start_time, D:end_time, E:status,
-            # F:duration_min, G:rank_score, H:subject, I:comment, J:concentration
-            # K:user_id (System ID for tracking)
-            sheet.append_row(
-                [
-                    user_name,  # A: display_name
-                    today,  # B: date
-                    time,  # C: start_time
-                    "",  # D: end_time
-                    "STARTED",  # E: status
-                    "",  # F: duration_min
-                    "",  # G: rank_score
-                    subject,  # H: subject
-                    "",  # I: comment
-                    "",  # J: concentration
-                    user_id,  # K: user_id
-                ]
-            )
+            # ヘッダー行を取得してカラム位置を特定
+            headers = sheet.row_values(1)
+            if not headers:
+                print("【Error】ヘッダー情報が取得できません")
+                return False
+
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+            # データ用配列初期化
+            row_data = [""] * len(headers)
+
+            def set_val(name, val):
+                if name in col_map:
+                    row_data[col_map[name]] = val
+
+            set_val("user_id", user_id)
+            set_val("display_name", user_name)
+            set_val("date", today)
+            set_val("start_time", time)
+            set_val("status", "STARTED")
+            set_val("subject", subject)
+
+            sheet.append_row(row_data)
             return True
         except Exception as e:
             print(f"ログ記録エラー: {e}")
@@ -82,40 +86,61 @@ class GSheetService:
 
     @staticmethod
     def cancel_study(user_id, user_name=None):
-        """学習記録をキャンセル（削除またはステータス変更）"""
+        """学習記録をキャンセル（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("study_log")
         if not sheet:
             return False
 
         all_records = sheet.get_all_values()
+        if not all_records:
+            return False
+
+        headers = all_records[0]
+        col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+        idx_uid = col_map.get("user_id")
+        idx_name = col_map.get("display_name")
+        idx_end = col_map.get("end_time")
+        idx_status = col_map.get("status")
+
+        if idx_status is None:
+            return False
+
         target_row = None
 
         # 後ろから検索
-        # IDがK列(index 10)にあるか、NameがA列(index 0)にあるか確認
-        for i in range(len(all_records), 0, -1):
+        for i in range(len(all_records), 1, -1):
             row = all_records[i - 1]
-            if len(row) < 5:
+            if not row:
                 continue
 
-            # 判定ロジック
-            is_match = False
-            # ID check (Index 10)
-            if len(row) >= 11 and str(row[10]) == str(user_id):
-                is_match = True
-            # Fallback Name check (Index 0)
-            elif user_name and str(row[0]) == str(user_name):
-                is_match = True
-            # Legacy check (if row has ID at 0? No, unsafe to assume)
+            def get_val(idx):
+                return (
+                    str(row[idx]).strip() if idx is not None and idx < len(row) else ""
+                )
 
-            # End Time (Index 3) が空なら対象
-            if is_match and row[3] == "":
-                target_row = i
-                break
+            is_match = False
+            if idx_uid is not None and get_val(idx_uid) == str(user_id):
+                is_match = True
+            elif (
+                user_name
+                and idx_name is not None
+                and get_val(idx_name) == str(user_name)
+            ):
+                is_match = True
+
+            if is_match:
+                end_val = get_val(idx_end)
+                status_val = get_val(idx_status)
+
+                # 終了時刻が空 かつ statusがSTARTED (念のため)
+                if end_val == "" and status_val == "STARTED":
+                    target_row = i
+                    break
 
         if target_row:
             try:
-                # Status is Index 4 (E列)
-                sheet.update_cell(target_row, 5, "CANCELLED")
+                sheet.update_cell(target_row, idx_status + 1, "CANCELLED")
                 return True
             except Exception as e:
                 print(f"Cancel Study Error: {e}")
@@ -124,48 +149,72 @@ class GSheetService:
 
     @staticmethod
     def update_end_time(user_id, end_time, user_name=None):
-        """終了時刻を study_log シートに更新"""
+        """終了時刻を study_log シートに更新（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("study_log")
         if not sheet:
             return None
 
         all_records = sheet.get_all_values()
+        if not all_records:
+            return None
+
+        headers = all_records[0]
+        col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+        idx_uid = col_map.get("user_id")
+        idx_name = col_map.get("display_name")
+        idx_end = col_map.get("end_time")
+        idx_status = col_map.get("status")
+        idx_start = col_map.get("start_time")
+        idx_subj = col_map.get("subject")
+
+        if idx_status is None or idx_end is None:
+            return None
+
         target_row = None
 
         # 後ろから検索
-        for i in range(len(all_records), 0, -1):
+        for i in range(len(all_records), 1, -1):
             row = all_records[i - 1]
-            if len(row) < 5:
+            if not row:
                 continue
+
+            def get_val(idx):
+                return (
+                    str(row[idx]).strip() if idx is not None and idx < len(row) else ""
+                )
 
             # Match Logic
             is_match = False
-            if len(row) >= 11 and str(row[10]).strip() == str(user_id):
+            if idx_uid is not None and get_val(idx_uid) == str(user_id):
                 is_match = True
-            elif user_name and str(row[0]).strip() == str(user_name):
+            elif (
+                user_name
+                and idx_name is not None
+                and get_val(idx_name) == str(user_name)
+            ):
                 is_match = True
 
-            # EndTime (IDX 3), Status (IDX 4)
+            # EndTime, Status
             if is_match:
-                end_val = str(row[3]).strip()
-                status_val = str(row[4]).strip()
+                end_val = get_val(idx_end)
+                status_val = get_val(idx_status)
 
                 if end_val == "" and status_val == "STARTED":
                     target_row = i
                     break
 
         if target_row:
-            # D列(4):終了時刻, E列(5):ステータス
-            sheet.update_cell(target_row, 4, end_time)
-            sheet.update_cell(target_row, 5, "PENDING")
+            sheet.update_cell(target_row, idx_end + 1, end_time)
+            sheet.update_cell(target_row, idx_status + 1, "PENDING")
 
-            # Subject is Index 7 (H列)
             subject = ""
-            if len(all_records[target_row - 1]) >= 8:
-                subject = all_records[target_row - 1][7]
+            if idx_subj is not None and idx_subj < len(all_records[target_row - 1]):
+                subject = all_records[target_row - 1][idx_subj]
 
-            # Start Time is Index 2 (C列)
-            start_time = all_records[target_row - 1][2]
+            start_time = ""
+            if idx_start is not None and idx_start < len(all_records[target_row - 1]):
+                start_time = all_records[target_row - 1][idx_start]
 
             return {
                 "start_time": start_time,
@@ -176,14 +225,21 @@ class GSheetService:
 
     @staticmethod
     def update_study_stats(row_index, duration, rank):
-        """学習時間とランクを study_log シートに追記"""
+        """学習時間とランクを study_log シートに追記（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("study_log")
         if not sheet:
             return False
         try:
-            # G列(7): Duration, H列(8): Rank
-            sheet.update_cell(row_index, 7, duration)
-            sheet.update_cell(row_index, 8, rank)
+            headers = sheet.row_values(1)
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+            idx_dur = col_map.get("duration_min")
+            idx_rank = col_map.get("rank_score")
+
+            if idx_dur is not None:
+                sheet.update_cell(row_index, idx_dur + 1, duration)
+            if idx_rank is not None:
+                sheet.update_cell(row_index, idx_rank + 1, rank)
             return True
         except Exception as e:
             print(f"Stats Update Error: {e}")
@@ -191,14 +247,21 @@ class GSheetService:
 
     @staticmethod
     def update_study_details(row_index, comment, concentration):
-        """学習の成果と集中度を study_log シートに追記"""
+        """学習の成果と集中度を study_log シートに追記（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("study_log")
         if not sheet:
             return False
         try:
-            # J列(10): Comment, K列(11): Concentration
-            sheet.update_cell(row_index, 10, comment)
-            sheet.update_cell(row_index, 11, concentration)
+            headers = sheet.row_values(1)
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+            idx_com = col_map.get("comment")
+            idx_conc = col_map.get("concentration")
+
+            if idx_com is not None:
+                sheet.update_cell(row_index, idx_com + 1, comment)
+            if idx_conc is not None:
+                sheet.update_cell(row_index, idx_conc + 1, concentration)
             return True
         except Exception as e:
             print(f"Details Update Error: {e}")
@@ -206,7 +269,7 @@ class GSheetService:
 
     @staticmethod
     def get_pending_studies():
-        """承認待ちの学習記録を取得"""
+        """承認待ちの学習記録を取得（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("study_log")
         if not sheet:
             return []
@@ -214,22 +277,43 @@ class GSheetService:
         pending = []
         try:
             records = sheet.get_all_values()
+            if not records:
+                return []
+
+            headers = records[0]
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+            idx_status = col_map.get("status")
+            idx_uid = col_map.get("user_id")
+            idx_name = col_map.get("display_name")
+            idx_date = col_map.get("date")
+            idx_start = col_map.get("start_time")
+            idx_end = col_map.get("end_time")
+
+            if idx_status is None:
+                return []
+
             # ヘッダー飛ばす
             for i, row in enumerate(records[1:], start=2):
-                if len(row) < 5:
+                if not row:
                     continue
-                # Status (IDX 4)
-                if row[4] == "PENDING":
-                    # ID (IDX 10) or Name (IDX 0)
-                    uid = row[10] if len(row) >= 11 else ""
+
+                def get_val(idx):
+                    return (
+                        str(row[idx]).strip()
+                        if idx is not None and idx < len(row)
+                        else ""
+                    )
+
+                if get_val(idx_status) == "PENDING":
                     pending.append(
                         {
                             "row_index": i,
-                            "user_id": uid,
-                            "user_name": row[0],  # Name
-                            "date": row[1],  # Date
-                            "start_time": row[2],  # Start
-                            "end_time": row[3],  # End
+                            "user_id": get_val(idx_uid),
+                            "user_name": get_val(idx_name),
+                            "date": get_val(idx_date),
+                            "start_time": get_val(idx_start),
+                            "end_time": get_val(idx_end),
                         }
                     )
         except Exception as e:
@@ -238,102 +322,156 @@ class GSheetService:
 
     @staticmethod
     def get_user_latest_pending_session(user_id, user_name=None):
-        """ユーザーの最新のPENDING（コメント待ち）セッションを取得"""
+        """ユーザーの最新のPENDING（コメント待ち）セッションを取得（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("study_log")
         if not sheet:
             return None
 
         all_records = sheet.get_all_values()
+        if not all_records:
+            return None
+
+        headers = all_records[0]
+        col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+        idx_status = col_map.get("status")
+        idx_uid = col_map.get("user_id")
+        idx_name = col_map.get("display_name")
+        idx_comment = col_map.get("comment")
+        idx_dur = col_map.get("duration_min")
+        idx_subj = col_map.get("subject")
+        idx_start = col_map.get("start_time")
+
+        if idx_status is None:
+            return None
 
         # 後ろから検索
-        for i in range(len(all_records), 0, -1):
+        for i in range(len(all_records), 1, -1):
             row = all_records[i - 1]
-            if len(row) < 6:
+            if not row:
                 continue
 
+            def get_val(idx):
+                return (
+                    str(row[idx]).strip() if idx is not None and idx < len(row) else ""
+                )
+
             is_match = False
-            # ID (A=0)
-            if str(row[0]).strip() == str(user_id):
+            if idx_uid is not None and get_val(idx_uid) == str(user_id):
                 is_match = True
-            # Name (B=1)
-            elif user_name and str(row[1]).strip() == str(user_name):
+            elif (
+                user_name
+                and idx_name is not None
+                and get_val(idx_name) == str(user_name)
+            ):
                 is_match = True
 
-            # Status (F=IDX 5) == PENDING
-            if is_match and row[5] == "PENDING":
-                # Comment (J=IDX 9) check
-                comment = row[9] if len(row) >= 10 else ""
+            if is_match and get_val(idx_status) == "PENDING":
+                comment = get_val(idx_comment)
                 if not comment:
-                    # Duration (G=IDX 6), Subject (I=IDX 8)
-                    dur_str = row[6] if len(row) >= 7 else "0"
+                    dur_str = get_val(idx_dur)
 
                     return {
                         "row_index": i,
-                        "start_time": row[3],  # Start D=3
+                        "start_time": get_val(idx_start),
                         "minutes": int(dur_str) if dur_str.isdigit() else 0,
-                        "subject": row[8] if len(row) >= 9 else "",  # Subject I=8
+                        "subject": get_val(idx_subj),
                         "state": "WAITING_COMMENT",
                     }
         return None
 
     @staticmethod
     def approve_study(row_index):
-        """学習記録を承認済みに更新"""
+        """学習記録を承認済みに更新（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("study_log")
         if not sheet:
             return False
         try:
-            # Status (F=IDX 5, Column 6)
-            current_status = sheet.cell(row_index, 6).value
+            headers = sheet.row_values(1)
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+            idx_status = col_map.get("status")
+            if idx_status is None:
+                return False  # Status column not found
+
+            current_status = sheet.cell(row_index, idx_status + 1).value
             if current_status == "APPROVED":
                 return False
 
-            sheet.update_cell(row_index, 6, "APPROVED")
+            sheet.update_cell(row_index, idx_status + 1, "APPROVED")
             return True
         except:
             return False
 
     @staticmethod
     def reject_study(row_index):
-        """学習記録を却下（REJECTED）に更新"""
+        """学習記録を却下（REJECTED）に更新（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("study_log")
         if not sheet:
             return False
         try:
-            # Status (F=IDX 5, Column 6)
-            current_status = sheet.cell(row_index, 6).value
+            headers = sheet.row_values(1)
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+            idx_status = col_map.get("status")
+            if idx_status is None:
+                return False
+
+            current_status = sheet.cell(row_index, idx_status + 1).value
             if current_status == "APPROVED":
                 return False
 
-            sheet.update_cell(row_index, 6, "REJECTED")
+            sheet.update_cell(row_index, idx_status + 1, "REJECTED")
             return True
         except:
             return False
 
     @staticmethod
     def check_timeout_sessions(timeout_minutes=90):
-        """制限時間を超えた学習セッションを強制終了する"""
+        """制限時間を超えた学習セッションを強制終了する（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("study_log")
         if not sheet:
             return []
 
         try:
             all_records = sheet.get_all_values()
+            if not all_records:
+                return []
+
+            headers = all_records[0]
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+            idx_status = col_map.get("status")
+            idx_end = col_map.get("end_time")
+            idx_date = col_map.get("date")
+            idx_start = col_map.get("start_time")
+            idx_uid = col_map.get("user_id")
+            idx_subj = col_map.get("subject")
+
+            # 必須カラムチェック
+            if (
+                idx_status is None
+                or idx_end is None
+                or idx_date is None
+                or idx_start is None
+            ):
+                return []
+
             expired_sessions = []
 
             now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
 
             for i in range(1, len(all_records)):
                 row = all_records[i]
-                if len(row) < 6:
-                    continue
 
-                status = row[5]  # IDX 5 status
-                end_time = row[4]  # IDX 4 end_time
+                # 安全なアクセス
+                def get_val(idx):
+                    return row[idx] if idx is not None and idx < len(row) else ""
+
+                status = get_val(idx_status)
+                end_time = get_val(idx_end)
 
                 if status == "STARTED" and end_time == "":
-                    date_str = row[2]  # IDX 2 date
-                    start_time_str = row[3]  # IDX 3 start_time
+                    date_str = get_val(idx_date)
+                    start_time_str = get_val(idx_start)
 
                     try:
                         start_dt = datetime.datetime.strptime(
@@ -353,22 +491,21 @@ class GSheetService:
                             force_end_time_str = force_end_dt.strftime("%H:%M:%S")
 
                             row_index = i + 1
-                            # Update End(IDX 4 -> Col 5)
-                            # Update Status(IDX 5 -> Col 6)
-                            sheet.update_cell(row_index, 5, force_end_time_str)
-                            sheet.update_cell(row_index, 6, "PENDING")
 
-                            # UID IDX 0 (A)
-                            uid = row[0]
+                            sheet.update_cell(
+                                row_index, idx_end + 1, force_end_time_str
+                            )
+                            sheet.update_cell(row_index, idx_status + 1, "PENDING")
+
+                            uid = get_val(idx_uid)
+                            subject = get_val(idx_subj)
 
                             expired_sessions.append(
                                 {
                                     "user_id": uid,
                                     "row_index": row_index,
                                     "minutes": timeout_minutes,
-                                    "subject": row[8]
-                                    if len(row) > 8
-                                    else "",  # Subject I=8
+                                    "subject": subject,
                                     "start_time": start_time_str,
                                 }
                             )

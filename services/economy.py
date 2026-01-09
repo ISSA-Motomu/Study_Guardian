@@ -28,25 +28,52 @@ class EconomyService:
 
     @staticmethod
     def get_user_info(user_id):
-        """ユーザー情報を取得（なければNone）"""
+        """ユーザー情報を取得（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("users")
         if not sheet:
             return None
 
-        # 全データを取得して検索（人数が増えたらfindメソッドなどへ最適化推奨）
-        records = sheet.get_all_records()  # ヘッダーがある前提
-        for user in records:
-            if str(user.get("user_id")) == user_id:
-                return user
+        # get_all_records is safe enough for reading dicts, but to be consistent with "check headers":
+        try:
+            rows = sheet.get_all_values()
+            if len(rows) > 1:
+                headers = rows[0]
+                col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+                idx_uid = col_map.get("user_id")
+
+                if idx_uid is None:
+                    return None
+
+                for r in rows[1:]:
+                    if len(r) > idx_uid and str(r[idx_uid]) == str(user_id):
+                        # Construct dict
+                        return {
+                            k: (r[v] if v < len(r) else "") for k, v in col_map.items()
+                        }
+        except:
+            pass
         return None
 
     @staticmethod
     def get_all_users():
-        """全ユーザー情報を取得"""
+        """全ユーザー情報を取得（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("users")
         if not sheet:
             return []
-        return sheet.get_all_records()
+
+        try:
+            rows = sheet.get_all_values()
+            users = []
+            if len(rows) > 1:
+                headers = rows[0]
+                col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+                for r in rows[1:]:
+                    u = {k: (r[v] if v < len(r) else "") for k, v in col_map.items()}
+                    users.append(u)
+            return users
+        except:
+            return []
 
     @staticmethod
     def get_admin_users():
@@ -57,7 +84,7 @@ class EconomyService:
 
     @staticmethod
     def register_user(user_id, display_name):
-        """新規ユーザー登録（口座開設）"""
+        """新規ユーザー登録（口座開設・動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("users")
         if not sheet:
             return False
@@ -66,14 +93,33 @@ class EconomyService:
         if EconomyService.get_user_info(user_id):
             return True  # 登録済み
 
-        # 新規登録 (初期EXP: 0, Role: USER, Inventory: {}, Rank: E)
-        # 列順: user_id, display_name, current_exp, total_study_time, role, inventory_json, rank
-        sheet.append_row([user_id, display_name, 0, 0, "USER", "{}", "E"])
-        return True
+        try:
+            headers = sheet.row_values(1)
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+            row_data = [""] * len(headers)
+
+            def set_val(key, val):
+                idx = col_map.get(key)
+                if idx is not None:
+                    row_data[idx] = val
+
+            set_val("user_id", user_id)
+            set_val("display_name", display_name)
+            set_val("current_exp", 0)
+            set_val("total_study_time", 0)
+            set_val("role", "USER")
+            set_val("inventory_json", "{}")
+            set_val("rank", "E")
+
+            sheet.append_row(row_data)
+            return True
+        except:
+            return False
 
     @staticmethod
     def update_user_rank(user_id, rank):
-        """ユーザーのランクを更新"""
+        """ユーザーのランクを更新（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("users")
         if not sheet:
             return False
@@ -81,9 +127,12 @@ class EconomyService:
         try:
             cell = sheet.find(user_id)
             if cell:
-                # Rank is column 7
-                sheet.update_cell(cell.row, 7, rank)
-                return True
+                headers = sheet.row_values(1)
+                col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+                idx_rank = col_map.get("rank")
+                if idx_rank is not None:
+                    sheet.update_cell(cell.row, idx_rank + 1, rank)
+                    return True
             return False
         except Exception as e:
             print(f"Update Rank Error: {e}")
@@ -91,7 +140,7 @@ class EconomyService:
 
     @staticmethod
     def update_user_achievements(user_id, achievements_str):
-        """ユーザーの実績リストを更新"""
+        """ユーザーの実績リストを更新（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("users")
         if not sheet:
             return False
@@ -99,12 +148,18 @@ class EconomyService:
         try:
             cell = sheet.find(user_id)
             if cell:
-                # Achievements is column 8 (H)
-                # もし列が足りない場合は自動拡張されるかエラーになるが、
-                # gspreadのupdate_cellは範囲外だとエラーになる可能性がある。
-                # 安全のため、行データを取得して長さを確認しても良いが、
-                # ここでは列8を指定して更新を試みる。
-                sheet.update_cell(cell.row, 8, achievements_str)
+                headers = sheet.row_values(1)
+                col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+                # Looking for 'achievements', usually not present in initial schema but added here
+                idx_ach = col_map.get("achievements")
+                if idx_ach is None:
+                    # Fallback check for column 8 (H) or just print error?
+                    # Ideally we should not fallback to hardcoded if we want to be strict.
+                    # But if the column doesn't exist, we can't update it unless we find empty col?
+                    # Assuming 'achievements' header must exist.
+                    return False
+
+                sheet.update_cell(cell.row, idx_ach + 1, achievements_str)
                 return True
             return False
         except Exception as e:
@@ -113,7 +168,7 @@ class EconomyService:
 
     @staticmethod
     def update_user_role(user_id, role):
-        """ユーザーの権限(Role)を更新"""
+        """ユーザーの権限(Role)を更新（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("users")
         if not sheet:
             return False
@@ -121,9 +176,12 @@ class EconomyService:
         try:
             cell = sheet.find(user_id)
             if cell:
-                # Role is column 5
-                sheet.update_cell(cell.row, 5, role)
-                return True
+                headers = sheet.row_values(1)
+                col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+                idx_role = col_map.get("role")
+                if idx_role is not None:
+                    sheet.update_cell(cell.row, idx_role + 1, role)
+                    return True
             return False
         except Exception as e:
             print(f"Update Role Error: {e}")
@@ -149,6 +207,7 @@ class EconomyService:
     @staticmethod
     def get_user_inventory(user_id):
         """ユーザーの所持品リストを取得"""
+        # Uses get_user_info which is already refactored
         user = EconomyService.get_user_info(user_id)
         if not user:
             return []
@@ -163,7 +222,6 @@ class EconomyService:
             inventory_dict = {}
 
         # 辞書からリスト形式に変換 (表示用)
-        # 定義マスタ (本来は別ファイルやDBで管理すべきだが一旦ここに記述)
         item_master = {
             "ticket_1.5x": {"name": "ポイント 1.5倍", "icon": "🎟", "type": "item"},
             "shield_chores": {"name": "絶対防御", "icon": "🛡", "type": "item"},
@@ -202,76 +260,115 @@ class EconomyService:
 
     @staticmethod
     def add_inventory_item(user_id, item_key, count=1):
-        """インベントリにアイテムを追加"""
+        """インベントリにアイテムを追加（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("users")
         if not sheet:
             return False
 
-        cell = sheet.find(user_id)
-        if not cell:
-            return False
-
-        row_num = cell.row
-        # inventory_json は F列(6列目)
-        inv_cell = sheet.cell(row_num, 6)
-        inv_json = inv_cell.value
-
         try:
-            inv_dict = json.loads(inv_json) if inv_json else {}
+            cell = sheet.find(user_id)
+            if not cell:
+                return False
+
+            row_num = cell.row
+
+            headers = sheet.row_values(1)
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+            idx_inv = col_map.get("inventory_json")
+            if idx_inv is None:
+                return False
+
+            inv_cell = sheet.cell(row_num, idx_inv + 1)
+            inv_json = inv_cell.value
+
+            try:
+                inv_dict = json.loads(inv_json) if inv_json else {}
+            except:
+                inv_dict = {}
+
+            current_count = inv_dict.get(item_key, 0)
+            inv_dict[item_key] = current_count + count
+
+            sheet.update_cell(row_num, idx_inv + 1, json.dumps(inv_dict))
+            return True
         except:
-            inv_dict = {}
-
-        current_count = inv_dict.get(item_key, 0)
-        inv_dict[item_key] = current_count + count
-
-        sheet.update_cell(row_num, 6, json.dumps(inv_dict))
-        return True
+            return False
 
     @staticmethod
     def add_exp(user_id, amount, related_id="STUDY"):
-        """EXPを加算（減算ならマイナス）し、履歴に残す"""
+        """EXPを加算（減算ならマイナス）し、履歴に残す（動的カラムマッピング）"""
         users_sheet = GSheetService.get_worksheet("users")
         tx_sheet = GSheetService.get_worksheet("transactions")
 
         if not users_sheet or not tx_sheet:
             return False
 
-        # 1. ユーザーを探して残高更新
-        cell = users_sheet.find(user_id)
-        if not cell:
-            return False
-
-        row_num = cell.row
-        # display_name は B列(2列目)、current_exp は C列(3列目)
-        user_name = users_sheet.cell(row_num, 2).value
-        current_exp_cell = users_sheet.cell(row_num, 3)
-
         try:
-            current_val = int(current_exp_cell.value)
-        except:
-            current_val = 0
-        new_exp = current_val + amount
+            # 1. ユーザーを探して残高更新
+            cell = users_sheet.find(user_id)
+            if not cell:
+                return False
 
-        # 2. 取引履歴(Transaction)を記録 (原子性担保のため先にログ)
-        # 列: tx_id, user_id, amount, tx_type, related_id, timestamp, user_name
-        tx_id = f"tx_{int(datetime.datetime.now().timestamp())}"
-        tx_type = "REWARD" if amount > 0 else "SPEND"
-        now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            headers_u = users_sheet.row_values(1)
+            col_map_u = {str(h).strip(): i for i, h in enumerate(headers_u)}
+            idx_name = col_map_u.get("display_name")
+            idx_exp = col_map_u.get("current_exp")
 
-        try:
-            tx_sheet.append_row(
-                [tx_id, user_id, amount, tx_type, related_id, now_str, user_name]
-            )
+            if idx_name is None or idx_exp is None:
+                return False
+
+            row_num = cell.row
+            user_name = users_sheet.cell(row_num, idx_name + 1).value
+            current_exp_cell = users_sheet.cell(row_num, idx_exp + 1)
+
+            try:
+                current_val = int(current_exp_cell.value)
+            except:
+                current_val = 0
+            new_exp = current_val + amount
+
+            # 2. 取引履歴(Transaction)を記録
+            tx_id = f"tx_{int(datetime.datetime.now().timestamp())}"
+            tx_type = "REWARD" if amount > 0 else "SPEND"
+            now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            headers_tx = tx_sheet.row_values(1)
+            col_map_tx = {str(h).strip(): i for i, h in enumerate(headers_tx)}
+
+            row_data_tx = [""] * len(headers_tx)
+
+            def set_val_tx(key, val, alt_keys=None):
+                idx = col_map_tx.get(key)
+                if idx is None and alt_keys:
+                    for ak in alt_keys:
+                        idx = col_map_tx.get(ak)
+                        if idx is not None:
+                            break
+                if idx is not None:
+                    row_data_tx[idx] = val
+
+            set_val_tx("tx_id", tx_id)
+            set_val_tx("user_id", user_id)
+            set_val_tx("amount", amount)
+            set_val_tx("tx_type", tx_type)
+            set_val_tx("related_id", related_id)
+            set_val_tx("timestamp", now_str, ["time"])
+            set_val_tx("user_name", user_name)
+
+            try:
+                tx_sheet.append_row(row_data_tx)
+            except Exception as e:
+                print(f"Transaction Log Error: {e}")
+                return False
+
+            # 3. 残高更新
+            try:
+                users_sheet.update_cell(row_num, idx_exp + 1, new_exp)
+            except Exception as e:
+                print(f"Balance Update Error: {e}")
+                return False
+
+            return new_exp
         except Exception as e:
-            print(f"Transaction Log Error: {e}")
+            print(f"Add Exp Error: {e}")
             return False
-
-        # 3. 残高更新
-        try:
-            users_sheet.update_cell(row_num, 3, new_exp)
-        except Exception as e:
-            print(f"Balance Update Error: {e}")
-            # ログは書けたが残高更新に失敗。不整合だがログ優先。
-            return False
-
-        return new_exp

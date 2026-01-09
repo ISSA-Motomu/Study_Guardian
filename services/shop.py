@@ -7,7 +7,7 @@ from utils.cache import shop_items_cache, cached
 class ShopService:
     @staticmethod
     def create_request(user_id, item_key, cost, comment=""):
-        """購入リクエストを作成"""
+        """購入リクエストを作成（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("shop_requests")
         if not sheet:
             return False
@@ -15,10 +15,29 @@ class ShopService:
         try:
             req_id = f"req_{int(datetime.datetime.now().timestamp())}"
             now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            # ID, User, Item, Cost, Status, Time, Comment
-            sheet.append_row(
-                [req_id, user_id, item_key, cost, "PENDING", now_str, comment]
-            )
+
+            headers = sheet.row_values(1)
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+            row_data = [""] * len(headers)
+
+            def set_val(key, val, alt_key=None):
+                idx = col_map.get(key)
+                if idx is None and alt_key:
+                    idx = col_map.get(alt_key)
+
+                if idx is not None:
+                    row_data[idx] = val
+
+            set_val("request_id", req_id, "id")
+            set_val("user_id", user_id)
+            set_val("item_key", item_key, "item")
+            set_val("cost", cost)
+            set_val("status", "PENDING")
+            set_val("timestamp", now_str, "time")
+            set_val("comment", comment)
+
+            sheet.append_row(row_data)
             return req_id
         except Exception as e:
             print(f"Shop Request Error: {e}")
@@ -26,24 +45,41 @@ class ShopService:
 
     @staticmethod
     def get_pending_requests():
-        """承認待ちの購入リクエストを取得"""
+        """承認待ちの購入リクエストを取得（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("shop_requests")
         if not sheet:
             return []
 
         pending = []
         try:
-            records = sheet.get_all_records()
-            for row in records:
-                if row.get("status") == "PENDING":
-                    pending.append(row)
+            rows = sheet.get_all_values()
+            if len(rows) > 1:
+                headers = rows[0]
+                col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+                idx_status = col_map.get("status")
+                if idx_status is None:
+                    return []
+
+                def get_val(r, key):
+                    idx = col_map.get(key)
+                    return r[idx] if idx is not None and idx < len(r) else ""
+
+                for r in rows[1:]:
+                    if get_val(r, "status") == "PENDING":
+                        # Convert to dict expected by caller
+                        row_dict = {k: get_val(r, k) for k in col_map.keys()}
+                        # Ensure 'time' exists if timestamp was used
+                        if "time" not in row_dict and "timestamp" in row_dict:
+                            row_dict["time"] = row_dict["timestamp"]
+                        pending.append(row_dict)
         except Exception as e:
             print(f"Shop Pending Error: {e}")
         return pending
 
     @staticmethod
     def approve_request(request_id):
-        """購入リクエストを承認"""
+        """購入リクエストを承認（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("shop_requests")
         if not sheet:
             return False
@@ -54,15 +90,25 @@ class ShopService:
             if not cell:
                 return False
 
+            headers = sheet.row_values(1)
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+            idx_status = col_map.get("status")
+            idx_item = col_map.get("item_key")
+
+            if idx_status is None:
+                return False
+
             # ステータスチェック (PENDING以外なら処理しない)
-            current_status = sheet.cell(cell.row, 5).value
+            current_status = sheet.cell(cell.row, idx_status + 1).value
             if current_status != "PENDING":
                 return False
 
-            sheet.update_cell(cell.row, 5, "APPROVED")
+            sheet.update_cell(cell.row, idx_status + 1, "APPROVED")
 
             # 商品キーを返す（アイテム名取得用）
-            item_key = sheet.cell(cell.row, 3).value
+            item_key = None
+            if idx_item is not None:
+                item_key = sheet.cell(cell.row, idx_item + 1).value
             return item_key
         except Exception as e:
             print(f"Shop Approve Error: {e}")
@@ -70,7 +116,7 @@ class ShopService:
 
     @staticmethod
     def deny_request(request_id):
-        """購入リクエストを却下"""
+        """購入リクエストを却下（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("shop_requests")
         if not sheet:
             return False
@@ -81,15 +127,25 @@ class ShopService:
             if not cell:
                 return False
 
+            headers = sheet.row_values(1)
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+            idx_status = col_map.get("status")
+            idx_item = col_map.get("item_key")
+
+            if idx_status is None:
+                return False
+
             # ステータスチェック (PENDING以外なら処理しない)
-            current_status = sheet.cell(cell.row, 5).value
+            current_status = sheet.cell(cell.row, idx_status + 1).value
             if current_status != "PENDING":
                 return False
 
-            sheet.update_cell(cell.row, 5, "DENIED")
+            sheet.update_cell(cell.row, idx_status + 1, "DENIED")
 
             # 商品キーを返す（アイテム名取得用）
-            item_key = sheet.cell(cell.row, 3).value
+            item_key = None
+            if idx_item is not None:
+                item_key = sheet.cell(cell.row, idx_item + 1).value
             return item_key
         except Exception as e:
             print(f"Shop Deny Error: {e}")
@@ -98,40 +154,58 @@ class ShopService:
     @staticmethod
     @cached(shop_items_cache)
     def get_items():
-        """スプレッドシートから商品リストを取得"""
+        """スプレッドシートから商品リストを取得（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("shop_items")
         if not sheet:
             return {}
 
         try:
-            # get_all_records はヘッダー重複などでエラーになりやすいため get_all_values を使用
-            # 列: A:item_key, B:name, C:cost, D:description, E:is_active
             rows = sheet.get_all_values()
             items = OrderedDict()
 
             if len(rows) > 1:
-                for r in rows[1:]:
-                    if len(r) < 5:
-                        continue
+                headers = rows[0]
+                col_map = {str(h).strip(): i for i, h in enumerate(headers)}
 
-                    is_active = str(r[4]).strip().upper()
+                idx_key = col_map.get("item_key")
+                idx_name = col_map.get("name")
+                idx_cost = col_map.get("cost")
+                idx_active = col_map.get("is_active")
+                idx_desc = col_map.get("description")
+
+                if idx_key is None or idx_name is None:
+                    return {}
+
+                def get_val(r, idx):
+                    return r[idx] if idx is not None and idx < len(r) else ""
+
+                for r in rows[1:]:
+                    is_active = "TRUE"  # Default if missing
+                    if idx_active is not None:
+                        is_active = str(get_val(r, idx_active)).strip().upper()
+
                     if is_active == "TRUE":
-                        key = r[0]
-                        name = r[1]
+                        key = get_val(r, idx_key)
+                        name = get_val(r, idx_name)
 
                         # 名前が空の場合はスキップ (LINE Flex Messageでエラーになるため)
                         if not name:
                             continue
 
+                        cost = 999999
+                        cost_str = get_val(r, idx_cost) if idx_cost is not None else ""
                         try:
-                            cost = int(r[2])
+                            if cost_str:
+                                cost = int(cost_str)
                         except:
-                            cost = 999999  # エラー時は高額にしておく
+                            pass
+
+                        desc = get_val(r, idx_desc) if idx_desc is not None else ""
 
                         items[key] = {
                             "name": name,
                             "cost": cost,
-                            "description": r[3] if len(r) > 3 else "",
+                            "description": desc,
                         }
             return items
         except Exception as e:
@@ -140,15 +214,31 @@ class ShopService:
 
     @staticmethod
     def add_item(name, cost, description=""):
-        """新しい商品をショップに追加"""
+        """新しい商品をショップに追加（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("shop_items")
         if not sheet:
             return False, "シートエラー"
 
         try:
             item_key = f"item_{int(datetime.datetime.now().timestamp())}"
-            # item_key, name, cost, description, is_active
-            sheet.append_row([item_key, name, cost, description, "TRUE"])
+
+            headers = sheet.row_values(1)
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+            row_data = [""] * len(headers)
+
+            def set_val(key, val):
+                idx = col_map.get(key)
+                if idx is not None:
+                    row_data[idx] = val
+
+            set_val("item_key", item_key)
+            set_val("name", name)
+            set_val("cost", cost)
+            set_val("description", description)
+            set_val("is_active", "TRUE")
+
+            sheet.append_row(row_data)
             return True, item_key
         except Exception as e:
             print(f"Add Item Error: {e}")
