@@ -44,11 +44,12 @@
 |:---|:---|:---|:---|:---|
 | A | request_id | String | リクエストID | req_1700000000 |
 | B | user_id | String | LINE User ID | U1234... |
-| C | item_key | String | 商品ID | game_30 |
-| D | cost | Integer | 消費ポイント | 300 |
-| E | status | String | 状態 (PENDING/APPROVED/DENIED) | PENDING |
-| F | timestamp | Datetime | 申請日時 | 2026-01-01 12:00:00 |
-| G | comment | String | 用途コメント | マリオやる |
+| C | display_name | String | 名前 (Snapshot) | 次男 |
+| D | item_key | String | 商品ID | game_30 |
+| E | cost | Integer | 消費ポイント | 300 |
+| F | status | String | 状態 (PENDING/APPROVED/DENIED) | PENDING |
+| G | timestamp | Datetime | 申請日時 | 2026-01-01 12:00:00 |
+| H | comment | String | 用途コメント | マリオやる |
 
 ### Sheet 5: `transactions` (取引履歴)
 | 列 | キー (Header) | 型 | 説明 | 例 |

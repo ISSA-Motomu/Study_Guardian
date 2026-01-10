@@ -255,12 +255,14 @@ def handle_message(event, text):
         # EXP減算 (先払い)
         new_balance = EconomyService.add_exp(user_id, -cost, f"BUY_{item_key}")
 
-        # 購入リクエストを記録 (Admin承認用)
-        request_id = ShopService.create_request(user_id, item_key, cost, comment)
-
         # 親への承認リクエストカードを作成
         user_info = EconomyService.get_user_info(user_id)
         user_name = user_info.get("display_name", "Unknown") if user_info else "Unknown"
+
+        # 購入リクエストを記録 (Admin承認用)
+        request_id = ShopService.create_request(
+            user_id, item_key, cost, comment, user_name
+        )
 
         now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
         timestamp = now.strftime("%H:%M")

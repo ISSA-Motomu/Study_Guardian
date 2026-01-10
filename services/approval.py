@@ -45,7 +45,9 @@ class ApprovalService:
         shops = ShopService.get_pending_requests()
         for s in shops:
             uid = str(s.get("user_id"))
-            uname = user_map.get(uid, uid)
+            # スプレッドシートに保存された名前があれば優先、なければMapから解決
+            saved_name = s.get("user_name") or s.get("display_name")
+            uname = saved_name if saved_name else user_map.get(uid, uid)
 
             # タイムスタンプの取得（time or timestamp）
             time_val = s.get("time") or s.get("timestamp") or ""

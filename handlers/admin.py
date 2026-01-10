@@ -906,6 +906,13 @@ def handle_message(event, text):
                     # 申請時刻を作成
                     study_time = f"{data.get('date', '')} {data.get('start_time', '')}"
 
+                    # 学習時間はduration_minから取得、なければ0
+                    duration_min = data.get("duration_min", 0)
+                    try:
+                        duration_min = int(duration_min)
+                    except:
+                        duration_min = 0
+
                     bubble = load_template(
                         "approval_card_study.json",
                         user_name=user_name,
@@ -913,6 +920,9 @@ def handle_message(event, text):
                         start_time=data.get("start_time", ""),
                         end_time=data.get("end_time", ""),
                         earned_exp=data.get("earned_exp", 0),
+                        duration_min=str(duration_min),
+                        subject=data.get("subject", ""),
+                        comment=data.get("comment", ""),
                         row_index=data["row_index"],
                         user_id=data["user_id"],
                         time=study_time,

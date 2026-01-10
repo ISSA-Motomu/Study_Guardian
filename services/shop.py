@@ -6,7 +6,7 @@ from utils.cache import shop_items_cache, cached
 
 class ShopService:
     @staticmethod
-    def create_request(user_id, item_key, cost, comment=""):
+    def create_request(user_id, item_key, cost, comment="", user_name=""):
         """購入リクエストを作成（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("shop_requests")
         if not sheet:
@@ -31,6 +31,7 @@ class ShopService:
 
             set_val("request_id", req_id, "id")
             set_val("user_id", user_id)
+            set_val("display_name", user_name, "user_name")
             set_val("item_key", item_key, "item")
             set_val("cost", cost)
             set_val("status", "PENDING")
