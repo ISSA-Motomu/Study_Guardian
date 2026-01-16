@@ -6,58 +6,39 @@ from services.economy import EconomyService
 class HistoryService:
     @staticmethod
     def get_all_transactions():
-        """全取引履歴を取得（Web表示用・動的カラムマッピング）"""
+        """全取引履歴を取得（Web表示用）"""
         sheet = GSheetService.get_worksheet("transactions")
         if not sheet:
             return []
 
         try:
+            # get_all_records はヘッダー依存で不安定なため get_all_values を使用
+            # 想定カラム: tx_id, user_id, amount, tx_type, related_id, timestamp, user_name
             rows = sheet.get_all_values()
+
             records = []
+            # ヘッダー行判定 (1行目が "tx_id" ならヘッダーとみなす)
+            start_index = 0
+            if len(rows) > 0 and str(rows[0][0]) == "tx_id":
+                start_index = 1
 
-            if len(rows) > 1:
-                headers = rows[0]
-                col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+            for r in rows[start_index:]:
+                if len(r) < 6:
+                    continue
 
-                idx_tid = col_map.get("tx_id")
-                idx_uid = col_map.get("user_id")
-                idx_amt = col_map.get("amount")
-                idx_type = col_map.get("tx_type")
-                idx_rel = col_map.get("related_id")
-                idx_ts = col_map.get("timestamp")
-                # Fallback for timestamp/time ambiguity if needed, but standardizing on what we write
-                if idx_ts is None:
-                    idx_ts = col_map.get("time")
-
-                idx_uname = col_map.get("user_name")
-
-                if idx_tid is None:
-                    return []
-
-                def get_val(r, idx):
-                    return r[idx] if idx is not None and idx < len(r) else ""
-
-                for r in rows[1:]:
-                    tx_id = get_val(r, idx_tid)
-                    if not tx_id:
-                        continue
-
-                    amt_val = get_val(r, idx_amt)
-                    amount = 0
-                    if amt_val and str(amt_val).lstrip("-").isdigit():
-                        amount = int(amt_val)
-
-                    records.append(
-                        {
-                            "tx_id": tx_id,
-                            "user_id": get_val(r, idx_uid),
-                            "amount": amount,
-                            "tx_type": get_val(r, idx_type),
-                            "related_id": get_val(r, idx_rel),
-                            "timestamp": get_val(r, idx_ts),
-                            "user_name": get_val(r, idx_uname),
-                        }
-                    )
+                records.append(
+                    {
+                        "tx_id": r[0],
+                        "user_id": r[1],
+                        "amount": int(r[2])
+                        if r[2] and str(r[2]).lstrip("-").isdigit()
+                        else 0,
+                        "tx_type": r[3],
+                        "related_id": r[4],
+                        "timestamp": r[5],
+                        "user_name": r[6] if len(r) > 6 else "",
+                    }
+                )
 
             # 新しい順にソート (timestamp降順)
             sorted_records = sorted(
@@ -556,7 +537,7 @@ class HistoryService:
 
     @staticmethod
     def get_user_job_history(user_id, limit=5):
-        """ユーザーの完了したジョブ履歴（動的カラムマッピング）"""
+        """ユーザーの完了したジョブ履歴"""
         sheet = GSheetService.get_worksheet("jobs")
         if not sheet:
             return []
@@ -565,44 +546,22 @@ class HistoryService:
         try:
             rows = sheet.get_all_values()
             if len(rows) > 1:
-                headers = rows[0]
-                col_map = {str(h).strip(): i for i, h in enumerate(headers)}
-
-                idx_jid = col_map.get("job_id")
-                idx_title = col_map.get("title")
-                idx_reward = col_map.get("reward")
-                idx_status = col_map.get("status")
-                idx_client = col_map.get("client_id")
-                idx_worker = col_map.get("worker_id")
-                idx_deadline = col_map.get("deadline")
-
-                if idx_worker is None or idx_status is None:
-                    return []
-
                 # Header: job_id, title, reward, status, client_id, worker_id, deadline
                 for r in rows[1:]:
-
-                    def get_val(idx):
-                        return (
-                            str(r[idx]).strip()
-                            if idx is not None and idx < len(r)
-                            else ""
-                        )
+                    if len(r) < 6:
+                        continue
 
                     # Check worker_id (F=5) and status (D=3)
-                    if (
-                        get_val(idx_worker) == user_id
-                        and get_val(idx_status) == "CLOSED"
-                    ):
+                    if str(r[5]) == user_id and str(r[3]) == "CLOSED":
                         jobs.append(
                             {
-                                "job_id": get_val(idx_jid),
-                                "title": get_val(idx_title),
-                                "reward": get_val(idx_reward),
-                                "status": get_val(idx_status),
-                                "client_id": get_val(idx_client),
-                                "worker_id": get_val(idx_worker),
-                                "deadline": get_val(idx_deadline),
+                                "job_id": r[0],
+                                "title": r[1],
+                                "reward": r[2],
+                                "status": r[3],
+                                "client_id": r[4],
+                                "worker_id": r[5],
+                                "deadline": r[6] if len(r) > 6 else "",
                             }
                         )
 
@@ -615,7 +574,7 @@ class HistoryService:
 
     @staticmethod
     def get_user_job_count(user_id):
-        """ユーザーの完了したジョブ総数（動的カラムマッピング）"""
+        """ユーザーの完了したジョブ総数"""
         sheet = GSheetService.get_worksheet("jobs")
         if not sheet:
             return 0
@@ -624,28 +583,10 @@ class HistoryService:
             rows = sheet.get_all_values()
             count = 0
             if len(rows) > 1:
-                headers = rows[0]
-                col_map = {str(h).strip(): i for i, h in enumerate(headers)}
-
-                idx_worker = col_map.get("worker_id")
-                idx_status = col_map.get("status")
-
-                if idx_worker is None or idx_status is None:
-                    return 0
-
                 for r in rows[1:]:
-
-                    def get_val(idx):
-                        return (
-                            str(r[idx]).strip()
-                            if idx is not None and idx < len(r)
-                            else ""
-                        )
-
-                    if (
-                        get_val(idx_worker) == user_id
-                        and get_val(idx_status) == "CLOSED"
-                    ):
+                    if len(r) < 6:
+                        continue
+                    if str(r[5]) == user_id and str(r[3]) == "CLOSED":
                         count += 1
             return count
         except Exception as e:

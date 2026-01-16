@@ -226,6 +226,24 @@ def handle_postback(event, action, data):
                 ),
             )
 
+            # 他のAdminへ通知
+            try:
+                admins = EconomyService.get_admin_users()
+                other_admin_ids = [
+                    str(u["user_id"])
+                    for u in admins
+                    if u.get("user_id") and str(u["user_id"]) != str(user_id)
+                ]
+                if other_admin_ids:
+                    line_bot_api.multicast(
+                        other_admin_ids,
+                        TextSendMessage(
+                            text=f"🔔 {approver_name}さんが{worker_name}のお手伝い「{result['title']}」を承認しました。"
+                        ),
+                    )
+            except Exception as e:
+                print(f"Admin BroadCast Error: {e}")
+
             # 対象ユーザーへ通知
             try:
                 msg_text = f"🧹 お手伝い「{result['title']}」が承認されたよ！ありがとう✨\n承認者：{approver_name}\n+{result['reward']} EXP GET！\n(今のEXP: {result['balance']})"

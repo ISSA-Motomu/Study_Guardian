@@ -365,6 +365,24 @@ def handle_postback(event, action, data):
                 ),
             )
 
+            # 他のAdminへ通知 (二重承認防止)
+            try:
+                admins = EconomyService.get_admin_users()
+                other_admin_ids = [
+                    str(u["user_id"])
+                    for u in admins
+                    if u.get("user_id") and str(u["user_id"]) != str(user_id)
+                ]
+                if other_admin_ids:
+                    line_bot_api.multicast(
+                        other_admin_ids,
+                        TextSendMessage(
+                            text=f"🔔 {approver_name}さんが{target_name}の勉強記録を承認しました。"
+                        ),
+                    )
+            except Exception as e:
+                print(f"Admin BroadCast Error: {e}")
+
             # 対象ユーザーへ通知（Push Message）
             try:
                 messages = []
@@ -630,6 +648,7 @@ def finalize_study(event, user_id, state_data, concentration):
             approve_flex = load_template(
                 "study_approve_request.json",
                 user_name=user_name,
+                subject=subject,
                 hours=hours,
                 mins=mins,
                 minutes=minutes,

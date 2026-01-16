@@ -289,9 +289,6 @@ class GSheetService:
             idx_date = col_map.get("date")
             idx_start = col_map.get("start_time")
             idx_end = col_map.get("end_time")
-            idx_subj = col_map.get("subject")
-            idx_comment = col_map.get("comment")
-            idx_dur = col_map.get("duration_min")
 
             if idx_status is None:
                 return []
@@ -308,8 +305,7 @@ class GSheetService:
                         else ""
                     )
 
-                status_val = get_val(idx_status).upper().strip()
-                if status_val == "PENDING":
+                if get_val(idx_status) == "PENDING":
                     pending.append(
                         {
                             "row_index": i,
@@ -318,9 +314,6 @@ class GSheetService:
                             "date": get_val(idx_date),
                             "start_time": get_val(idx_start),
                             "end_time": get_val(idx_end),
-                            "subject": get_val(idx_subj),
-                            "comment": get_val(idx_comment),
-                            "duration_min": get_val(idx_dur),
                         }
                     )
         except Exception as e:

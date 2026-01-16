@@ -23,6 +23,14 @@
       },
       {
         "type": "text",
+        "text": "教科: ${subject}",
+        "weight": "bold",
+        "size": "md",
+        "margin": "sm",
+        "color": "#27ACB2"
+      },
+      {
+        "type": "text",
         "text": "時間: ${hours}時間 ${mins}分",
         "weight": "bold",
         "size": "xl",
