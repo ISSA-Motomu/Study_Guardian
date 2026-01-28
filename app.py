@@ -19,7 +19,7 @@ load_dotenv()
 
 from services.status_service import StatusService
 
-app = Flask(__name__, template_folder="templates/html")
+app = Flask(__name__, template_folder="templates")
 
 
 # --- LIFF / Web App Routes ---
@@ -31,7 +31,7 @@ def liff_dashboard():
     # テンプレートフォルダを一時的に切り替えるか、レンダリング時にパス指定
     # Flaskはデフォルトでtemplatesを探すので、templates/liff/index.html を指定可能
     # template_folderの指定により "templates/html" がルートになっているため、上位階層に戻って指定
-    return render_template("../liff/index.html")
+    return render_template("liff/index.html")
 
 
 @app.route("/api/user/<user_id>/status")
@@ -152,7 +152,7 @@ def admin_dashboard():
 
         tx["description"] = desc
 
-    return render_template("admin_dashboard.html", transactions=transactions)
+    return render_template("html/admin_dashboard.html", transactions=transactions)
 
 
 @app.route("/callback", methods=["POST"])
