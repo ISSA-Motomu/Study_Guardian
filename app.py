@@ -37,8 +37,9 @@ app = Flask(__name__, template_folder="templates/html")
 def liff_dashboard():
     """LIFFのトップページ (ダッシュボード) を返す"""
     # テンプレートフォルダ外のファイルを返すため、send_from_directoryを使用
-    # カレントディレクトリからの相対パスで templates/liff を指定
-    return send_from_directory("../templates/liff", "index.html")
+    # app.root_path を使って絶対パスを構築
+    directory = os.path.join(app.root_path, "templates", "liff")
+    return send_from_directory(directory, "index.html")
 
 
 @app.route("/api/user/<user_id>/status")
