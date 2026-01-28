@@ -28,6 +28,8 @@ from utils.debouncer import Debouncer
 load_dotenv()
 
 from services.status_service import StatusService
+from services.stats import SagaStats  # 追加
+from utils.achievements import AchievementManager  # 追加
 
 app = Flask(__name__, template_folder="templates/html")
 

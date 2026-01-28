@@ -57,15 +57,25 @@
             {{ timerDisplay }}
           </div>
 
-          <div class="flex justify-center gap-4">
-            <!-- 一時停止などは未実装、まずは終了のみ -->
-            <button @click="finishStudy"
-              class="bg-red-500 text-white font-bold py-3 px-8 rounded-full shadow-lg active:scale-95 transition-transform">
-              終了する
+          <div class="flex flex-col gap-4">
+            <div class="flex justify-center gap-4">
+              <button @click="finishStudy"
+                class="bg-red-500 text-white font-bold py-3 px-8 rounded-full shadow-lg active:scale-95 transition-transform w-32">
+                終了
+              </button>
+              <button @click="cancelStudy"
+                class="bg-gray-400 text-white font-bold py-3 px-6 rounded-full shadow-lg active:scale-95 transition-transform text-sm w-24">
+                取消
+              </button>
+            </div>
+
+            <button @click="pauseStudy"
+              class="mx-auto text-indigo-500 font-bold text-xs border border-indigo-200 bg-white/80 rounded-full px-4 py-2 hover:bg-white active:scale-95 transition-transform">
+              一時中断してアプリを閉じる
             </button>
           </div>
         </div>
-        <div class="text-white text-sm opacity-80">
+        <div class="text-white text-sm opacity-80 mt-4">
           アプリを閉じても計測は続きます
         </div>
       </div>
@@ -193,7 +203,7 @@
 
     // 簡易的なサウンド管理
     const sounds = {
-      click: new Audio('/static/assets/sounds/click.mp3'),
+      click: new Audio('/static/assets/sounds/mouse_click.mp3'),
       levelup: new Audio('/static/assets/sounds/levelup.mp3')
     };
 
@@ -269,6 +279,7 @@
               const profile = await liff.getProfile();
               this.currentUserId = profile.userId;
               await this.fetchUserData(this.currentUserId);
+              await this.checkActiveSession(this.currentUserId); // 勉強中チェック
             } else {
               liff.login();
             }
@@ -374,8 +385,67 @@
           }, 1000);
         },
         async finishStudy() {
-          alert("LINEのメニューから「終了」を押して記録を確定させてください");
+          if (!confirm("勉強を終了して記録しますか？")) return;
+          playSound('click');
+          try {
+            const res = await fetch('/api/study/finish', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ user_id: this.currentUserId })
+            });
+            const json = await res.json();
+            if (json.status === 'ok') {
+              // 獲得報酬の表示などは本来ここで行う
+              alert(`お疲れ様でした！\n${json.data.minutes}分 勉強しました。\n獲得コイン: ${json.data.earned_coins} pt`);
+              liff.closeWindow();
+            } else {
+              alert("終了処理に失敗しました: " + json.message);
+            }
+          } catch (e) { alert("通信エラー"); }
+        },
+        async cancelStudy() {
+          if (!confirm("本当に記録を取り消しますか？\n(この時間はカウントされません)")) return;
+          playSound('click');
+          try {
+            const res = await fetch('/api/study/cancel', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ user_id: this.currentUserId })
+            });
+            const json = await res.json();
+            if (json.status === 'ok') {
+              alert("記録を取り消しました。");
+              liff.closeWindow();
+            } else {
+              alert("取消に失敗しました");
+            }
+          } catch (e) { alert("通信エラー"); }
+        },
+        pauseStudy() {
+          playSound('click');
+          alert("LINEのメニューから再開できます。\nアプリを閉じます。");
           liff.closeWindow();
+        },
+        async checkActiveSession(userId) {
+          try {
+            const res = await fetch(`/api/user/${userId}/active_session`);
+            const json = await res.json();
+            if (json.status === 'ok' && json.active) {
+              // 復帰処理
+              this.currentSubject = json.data.subject;
+              this.currentSubjectColor = this.subjects[json.data.subject] || '#000';
+              const startTimeParts = json.data.start_time.split(':');
+              const now = new Date();
+              const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(),
+                Number(startTimeParts[0]), Number(startTimeParts[1]), Number(startTimeParts[2]));
+              // 日付跨ぎ対応（簡易）
+              if (startDate > now) startDate.setDate(startDate.getDate() - 1);
+
+              this.startTime = startDate;
+              this.view = 'timer';
+              this.startTimerTick();
+            }
+          } catch (e) { console.error(e); }
         }
       }
     }).mount('#app')
