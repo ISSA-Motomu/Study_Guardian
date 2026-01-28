@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guardian Dashboard</title>
+  <!-- LIFF SDK -->
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <!-- Vue 3 -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <!-- Tailwind CSS (Play CDN for prototyping) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'M PLUS Rounded 1c', sans-serif;
+      background-color: #f3f4f6;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    .progress-bar {
+      transition: width 1s ease-in-out;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app" class="min-h-screen pb-20 max-w-md mx-auto relative overflow-hidden bg-slate-50">
+    <!-- Header Background -->
+    <div
+      class="absolute top-0 left-0 w-full h-48 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-b-[40px] z-0">
+    </div>
+
+    <!-- Main Content -->
+    <div class="relative z-10 px-6 pt-8">
+      <!-- Loading State -->
+      <div v-if="loading" class="flex justify-center items-center h-64 text-white">
+        <div class="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent"></div>
+      </div>
+
+      <div v-else>
+        <!-- Avatar & Rank Section -->
+        <div class="text-center mb-6">
+          <div class="relative inline-block">
+            <div class="w-24 h-24 mx-auto bg-white rounded-full p-1 shadow-xl">
+              <img :src="user.avatar_url || 'https://via.placeholder.com/150'"
+                class="w-full h-full rounded-full object-cover">
+            </div>
+            <div
+              class="absolute -bottom-2 -right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-3 py-1 rounded-full shadow border-2 border-white">
+              Lx.{{ user.level }}
+            </div>
+          </div>
+          <h1 class="text-white text-xl font-bold mt-3 shadow-sm">{{ user.name }}</h1>
+          <div class="inline-block bg-white/20 backdrop-blur-sm text-white text-xs px-3 py-1 rounded-full mt-1">
+            {{ user.rank_name }}
+          </div>
+        </div>
+
+        <!-- Main Stats Card -->
+        <div class="glass-panel p-6 mb-6 transform transition-all hover:scale-[1.02]">
+          <div class="flex justify-between items-center mb-4">
+            <div class="text-gray-500 text-sm font-bold">TOTAL STUDY</div>
+            <div class="text-indigo-600 text-2xl font-black">{{ user.total_hours }}<span
+                class="text-sm text-gray-400 ml-1">h</span></div>
+          </div>
+
+          <!-- EXP Bar -->
+          <div class="mb-2 flex justify-between text-xs font-bold text-gray-500">
+            <span>EXP</span>
+            <span>{{ user.exp }} / {{ user.next_exp }}</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-3 mb-6 overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-400 to-indigo-500 h-3 rounded-full progress-bar"
+              :style="{ width: expPercentage + '%' }"></div>
+          </div>
+
+          <!-- Coins -->
+          <div class="flex items-center justify-between border-t border-gray-100 pt-4">
+            <div class="flex items-center text-gray-600 font-bold">
+              <span class="text-xl mr-2">💰</span>
+              <span>所持コイン</span>
+            </div>
+            <div class="text-xl font-bold text-yellow-600">{{ user.coins.toLocaleString() }} G</div>
+          </div>
+        </div>
+
+        <!-- Weekly Activity Chart (Mock) -->
+        <div class="glass-panel p-5 mb-6">
+          <h3 class="text-gray-700 font-bold mb-4 flex items-center">
+            <span class="w-1 h-6 bg-pink-500 rounded-full mr-2"></span>
+            今週の活動
+          </h3>
+          <div class="flex items-end justify-between h-32 px-2">
+            <div v-for="(day, index) in weeklyData" :key="index" class="flex flex-col items-center w-1/7 group">
+              <div class="relative w-3 bg-gray-100 rounded-t-sm h-full flex items-end overflow-hidden">
+                <div class="w-full bg-pink-400 rounded-t-sm transition-all duration-500 group-hover:bg-pink-500"
+                  :style="{ height: day.percent + '%' }"></div>
+              </div>
+              <span class="text-[10px] text-gray-400 mt-2 font-bold">{{ day.label }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Menu Grid -->
+        <div class="grid grid-cols-2 gap-4 mb-20">
+          <button @click="openShop"
+            class="glass-panel p-4 flex flex-col items-center justify-center active:scale-95 transition-transform">
+            <span class="text-3xl mb-2">🛒</span>
+            <span class="font-bold text-gray-700">ショップ</span>
+          </button>
+          <button
+            class="glass-panel p-4 flex flex-col items-center justify-center active:scale-95 transition-transform opacity-50">
+            <span class="text-3xl mb-2">⚔️</span>
+            <span class="font-bold text-gray-700">準備中</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <button
+      class="fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 rounded-full shadow-lg shadow-indigo-300 text-white flex items-center justify-center text-2xl active:scale-90 transition-transform z-50">
+      <span>📚</span>
+    </button>
+  </div>
+
+  <script>
+    const { createApp } = Vue
+
+    createApp({
+      data() {
+        return {
+          loading: true,
+          liffId: "2008998497-Vfli3v7u", // TODO: Set via backend
+          user: {
+            name: "Guest",
+            level: 1,
+            exp: 0,
+            next_exp: 100,
+            coins: 0,
+            total_hours: 0,
+            rank_name: "Beginner",
+            avatar_url: ""
+          },
+          weeklyData: [
+            { label: 'Mo', percent: 20 },
+            { label: 'Tu', percent: 45 },
+            { label: 'We', percent: 30 },
+            { label: 'Th', percent: 80 },
+            { label: 'Fr', percent: 10 },
+            { label: 'Sa', percent: 90 },
+            { label: 'Su', percent: 60 },
+          ]
+        }
+      },
+      computed: {
+        expPercentage() {
+          if (this.user.next_exp === 0) return 100;
+          return Math.min(100, (this.user.exp / this.user.next_exp) * 100);
+        }
+      },
+      async mounted() {
+        await this.initLiff();
+        // For development without LIFF ID, uncomment below:
+        // await this.fetchUserData("DEBUG_USER"); 
+      },
+      methods: {
+        async initLiff() {
+          try {
+            // liffIdが空の場合は初期化スキップ（ローカルデバッグ用）
+            if (!this.liffId || this.liffId === "YOUR_LIFF_ID") {
+              console.log("LIFF ID not set. Running in browser mode.");
+              // デバッグ用のダミーIDでデータを取得
+              await this.fetchUserData("U1234567890abcdef1234567890abcdef");
+              this.loading = false;
+              return;
+            }
+
+            await liff.init({ liffId: this.liffId });
+            if (liff.isLoggedIn()) {
+              const profile = await liff.getProfile();
+              await this.fetchUserData(profile.userId);
+            } else {
+              liff.login();
+            }
+          } catch (err) {
+            console.error('LIFF Init Failed', err);
+            // Fallback for debug
+            await this.fetchUserData("DEBUG_USER");
+          } finally {
+            this.loading = false;
+          }
+        },
+        async fetchUserData(userId) {
+          try {
+            // userIdをクエリパラメータなどで渡す必要があるが、
+            // 実際はLIFFのアクセストークンを使うのが安全。
+            // ここではプロトタイプとしてPathパラメータで渡す。
+            const response = await fetch(`/api/user/${userId}/status`);
+            if (!response.ok) throw new Error('API Error');
+
+            const data = await response.json();
+            if (data.status === 'ok') {
+              this.user = data.data;
+              // Weekly dataなどは後で実装
+            }
+          } catch (e) {
+            console.error(e);
+            // Mock data on error
+            this.user = {
+              name: "勇者アルス",
+              level: 12,
+              exp: 1450,
+              next_exp: 2000,
+              coins: 3500,
+              total_hours: 42.5,
+              rank_name: "Rank C: 熟練者",
+              avatar_url: "https://cdn-icons-png.flaticon.com/512/4333/4333609.png"
+            };
+          }
+        },
+        openShop() {
+          alert("ショップ機能は準備中です！");
+        }
+      }
+    }).mount('#app')
+  </script>
+</body>
+
+</html>

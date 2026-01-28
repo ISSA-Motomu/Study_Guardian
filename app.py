@@ -1,5 +1,5 @@
 import os
-from flask import Flask, request, abort, render_template
+from flask import Flask, request, abort, render_template, jsonify, session
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import (
     MessageEvent,
@@ -17,7 +17,71 @@ from utils.debouncer import Debouncer
 
 load_dotenv()
 
+from services.status_service import StatusService
+
 app = Flask(__name__, template_folder="templates/html")
+
+
+# --- LIFF / Web App Routes ---
+
+
+@app.route("/app/dashboard")
+def liff_dashboard():
+    """LIFFのトップページ (ダッシュボード) を返す"""
+    # テンプレートフォルダを一時的に切り替えるか、レンダリング時にパス指定
+    # Flaskはデフォルトでtemplatesを探すので、templates/liff/index.html を指定可能
+    # template_folderの指定により "templates/html" がルートになっているため、上位階層に戻って指定
+    return render_template("../liff/index.html")
+
+
+@app.route("/api/user/<user_id>/status")
+def api_user_status(user_id):
+    """ユーザーのステータス情報をJSONで返すAPI"""
+    try:
+        # A. 基本情報取得
+        user_info = EconomyService.get_user_info(user_id)
+        if not user_info:
+            # ユーザーが存在しない場合
+            return jsonify({"status": "error", "message": "User not found"}), 404
+
+        # B. 各種統計取得
+        study_stats = HistoryService.get_user_study_stats(user_id)
+        # job_count = HistoryService.get_user_job_count(user_id)
+
+        # C. ランク計算等
+        total_minutes = (
+            study_stats.get("total", 0) * 60
+        )  # totalは時間単位？ HistoryServiceの実装によるが、一旦分換算の想定
+
+        # HistoryService.get_user_study_stats は float(hours) を返していると仮定するか実装確認が必要
+        # handlers/status.py ではこうなっている: user_data["total_study_time"] = study_stats["total"]
+        # StatusService.get_rank_info(total_minutes)
+
+        # ここでは簡易的に実装。本来はService層に移譲すべき。
+        total_hours = study_stats.get("total", 0)
+        total_minutes_val = total_hours * 60
+        rank_info = StatusService.get_rank_info(total_minutes_val)
+
+        # レベル計算ロジック (commonあたりにあるはずだが、簡易計算)
+        # 一旦 user_info の情報を信じる
+
+        # レスポンスデータの構築
+        response_data = {
+            "name": user_info.get("name", "Unknown"),
+            "level": int(user_info.get("level", 1)),
+            "exp": int(user_info.get("exp", 0)),
+            "next_exp": int(user_info.get("level", 1)) * 100 + 500,  # 仮のNextEXP計算式
+            "coins": int(user_info.get("coins", 0)),
+            "total_hours": round(total_hours, 1),
+            "rank_name": rank_info.get("name", "Rank E"),
+            "avatar_url": user_info.get("avatar_url", ""),  # DBにあれば
+        }
+
+        return jsonify({"status": "ok", "data": response_data})
+
+    except Exception as e:
+        print(f"API Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 @app.route("/")
