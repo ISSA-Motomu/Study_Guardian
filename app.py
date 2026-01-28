@@ -13,10 +13,12 @@ from linebot.models import (
     MessageEvent,
     TextMessage,
     PostbackEvent,
+    FlexSendMessage,
 )
 from dotenv import load_dotenv
-
-# 新しい構成のインポート
+import datetime
+from utils.template_loader import load_template
+from services.gsheet import GSheetService
 from bot_instance import line_bot_api, handler
 from handlers import study, shop, job, admin, status, common, help, gacha, mission
 from services.history import HistoryService
@@ -89,6 +91,58 @@ def api_user_status(user_id):
 
     except Exception as e:
         print(f"API Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/study/subjects")
+def api_study_subjects():
+    """学習可能な科目リストと色定義を返す"""
+    # handlers.study.SUBJECT_COLORS を利用
+    return jsonify({"status": "ok", "data": study.SUBJECT_COLORS})
+
+
+@app.route("/api/study/start", methods=["POST"])
+def api_start_study():
+    """学習セッションを開始する"""
+    data = request.json
+    user_id = data.get("user_id")
+    subject = data.get("subject")
+
+    if not user_id or not subject:
+        return jsonify({"status": "error", "message": "Missing parameters"}), 400
+
+    try:
+        # ユーザー情報の取得（名前解決用）
+        user_info = EconomyService.get_user_info(user_id)
+        user_name = user_info["display_name"] if user_info else "User"
+
+        # 現在時刻
+        now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
+        today = now.strftime("%Y-%m-%d")
+        current_time = now.strftime("%H:%M:%S")
+
+        # GSheetに記録
+        if GSheetService.log_activity(user_id, user_name, today, current_time, subject):
+            # LINEにPush通知 (Flex Message)
+            color = study.SUBJECT_COLORS.get(subject, "#27ACB2")
+            bubble = load_template(
+                "study_session.json",
+                subject=subject,
+                start_time=current_time,
+                color=color,
+            )
+            line_bot_api.push_message(
+                user_id,
+                FlexSendMessage(alt_text="勉強中...", contents=bubble),
+            )
+            return jsonify({"status": "ok", "start_time": current_time})
+        else:
+            return jsonify(
+                {"status": "error", "message": "Failed to log activity"}
+            ), 500
+
+    except Exception as e:
+        print(f"Study Start Error: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
