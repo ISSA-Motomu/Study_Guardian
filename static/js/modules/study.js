@@ -97,15 +97,13 @@ export const studyModule = {
       this.memoToSend = this.studyMemo;
       this.showMemoConfirm = true;
     },
-    async confirmFinishStudy() {
-      console.log("confirmFinishStudy called");
-
+    async onConfirmFinish() {
+      console.log("onConfirmFinish called");
       this.showMemoConfirm = false;
-
+      this.handleFinishStudy();
+    },
+    async handleFinishStudy() {
       playSound('levelup');
-
-      // Optional: Show a global loading spinner if available
-      // this.loading = true; 
 
       try {
         const res = await fetch('/api/study/finish', {

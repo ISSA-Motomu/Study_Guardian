@@ -1,8 +1,8 @@
 // Main Application Entry Point
-import { playSound } from './modules/utils.js?v=2';
-import { gameModule } from './modules/game.js?v=2';
-import { studyModule } from './modules/study.js?v=2';
-import { chartsModule } from './modules/charts.js?v=2';
+import { playSound } from './modules/utils.js?v=3';
+import { gameModule } from './modules/game.js?v=3';
+import { studyModule } from './modules/study.js?v=3';
+import { chartsModule } from './modules/charts.js?v=3';
 
 const { createApp } = Vue;
 
@@ -48,6 +48,8 @@ createApp({
     }
   },
   async mounted() {
+    console.log("App Mounted. Modules loaded:", { game: !!gameModule, study: !!studyModule, charts: !!chartsModule });
+
     // Note: Mixin mounted hooks would be called here if defined
     // Initialize specific modules if needed
     if (this.generateWeeklyData) this.generateWeeklyData();
