@@ -28,7 +28,7 @@
 > 勉強することによりゲームが急進行
 
 - コアサイクル
-  - 学習時間`T`に対し、
+  - 学習時間`T`に対し、$$Progress = \alpha \cdot T \cdot (1 + \beta \cdot \text{Interaction Count})$$
 
 - 転生機能
   - 学期末転生

@@ -571,9 +571,9 @@
             '（未入力）' }}</div>
         </div>
         <div class="flex gap-4 mt-6">
-          <button @click="onConfirmFinish"
+          <button @click="showMemoConfirm = false; handleFinishStudy()" style="position: relative; z-index: 10001;"
             class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl active:scale-95 transition-transform">記録して終了</button>
-          <button @click="closeMemoConfirm"
+          <button @click="showMemoConfirm = false" style="position: relative; z-index: 10001;"
             class="flex-1 py-3 bg-gray-200 text-gray-600 font-bold rounded-xl active:scale-95 transition-transform">戻る</button>
         </div>
       </div>
@@ -635,7 +635,7 @@
   </div>
   </div>
 
-  <script type="module" src="/static/js/app.js?v=4"></script>
+  <script type="module" src="/static/js/app.js?v=5"></script>
 </body>
 
 </html>

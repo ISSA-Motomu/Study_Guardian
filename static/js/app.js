@@ -1,8 +1,8 @@
 // Main Application Entry Point
-import { playSound } from './modules/utils.js?v=4';
-import { gameModule } from './modules/game.js?v=4';
-import { studyModule } from './modules/study.js?v=4';
-import { chartsModule } from './modules/charts.js?v=4';
+import { playSound } from './modules/utils.js?v=5';
+import { gameModule } from './modules/game.js?v=5';
+import { studyModule } from './modules/study.js?v=5';
+import { chartsModule } from './modules/charts.js?v=5';
 
 const { createApp } = Vue;
 
