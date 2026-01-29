@@ -448,6 +448,118 @@ def api_cancel_study():
     return jsonify({"status": "error", "message": "Failed to cancel"}), 400
 
 
+# ===== Evolution Game API =====
+@web_bp.route("/api/game/evolution/<user_id>")
+def api_get_evolution(user_id):
+    """進化ゲームのデータを取得"""
+    try:
+        sheet = GSheetService.get_worksheet("evolution_data")
+        if not sheet:
+            return jsonify({"status": "ok", "data": None})
+
+        records = sheet.get_all_values()
+        if len(records) <= 1:
+            return jsonify({"status": "ok", "data": None})
+
+        headers = records[0]
+        col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+        idx_uid = col_map.get("user_id")
+        idx_kp = col_map.get("knowledge_points")
+        idx_total = col_map.get("total_earned")
+        idx_levels = col_map.get("facility_levels")
+
+        for row in records[1:]:
+            if len(row) > idx_uid and str(row[idx_uid]) == str(user_id):
+                import json
+                levels_str = row[idx_levels] if idx_levels is not None and idx_levels < len(row) else "{}"
+                try:
+                    levels = json.loads(levels_str) if levels_str else {}
+                except:
+                    levels = {}
+
+                return jsonify({
+                    "status": "ok",
+                    "data": {
+                        "knowledge_points": int(row[idx_kp]) if idx_kp is not None and row[idx_kp] else 0,
+                        "total_earned": int(row[idx_total]) if idx_total is not None and row[idx_total] else 0,
+                        "facility_levels": levels
+                    }
+                })
+
+        return jsonify({"status": "ok", "data": None})
+
+    except Exception as e:
+        print(f"Evolution Get Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@web_bp.route("/api/game/evolution/sync", methods=["POST"])
+def api_sync_evolution():
+    """進化ゲームのデータを同期（保存）"""
+    import json
+    data = request.json
+    user_id = data.get("user_id")
+    knowledge_points = data.get("knowledge_points", 0)
+    total_earned = data.get("total_earned", 0)
+    facility_levels = data.get("facility_levels", {})
+
+    try:
+        sheet = GSheetService.get_worksheet("evolution_data")
+        if not sheet:
+            # シートがない場合は新規作成
+            spreadsheet = GSheetService.get_spreadsheet()
+            if spreadsheet:
+                sheet = spreadsheet.add_worksheet(title="evolution_data", rows=100, cols=10)
+                sheet.append_row(["user_id", "knowledge_points", "total_earned", "facility_levels", "last_sync"])
+
+        if not sheet:
+            return jsonify({"status": "error", "message": "Cannot access sheet"}), 500
+
+        records = sheet.get_all_values()
+        headers = records[0] if records else ["user_id", "knowledge_points", "total_earned", "facility_levels", "last_sync"]
+        col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+        idx_uid = col_map.get("user_id", 0)
+        idx_kp = col_map.get("knowledge_points", 1)
+        idx_total = col_map.get("total_earned", 2)
+        idx_levels = col_map.get("facility_levels", 3)
+        idx_sync = col_map.get("last_sync", 4)
+
+        now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
+        timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
+        levels_json = json.dumps(facility_levels)
+
+        # 既存ユーザーを探す
+        target_row = None
+        for i, row in enumerate(records[1:], start=2):
+            if len(row) > idx_uid and str(row[idx_uid]) == str(user_id):
+                target_row = i
+                break
+
+        if target_row:
+            # 更新
+            sheet.update_cell(target_row, idx_kp + 1, knowledge_points)
+            sheet.update_cell(target_row, idx_total + 1, total_earned)
+            sheet.update_cell(target_row, idx_levels + 1, levels_json)
+            sheet.update_cell(target_row, idx_sync + 1, timestamp)
+        else:
+            # 新規追加
+            new_row = [""] * max(5, len(headers))
+            new_row[idx_uid] = user_id
+            new_row[idx_kp] = knowledge_points
+            new_row[idx_total] = total_earned
+            new_row[idx_levels] = levels_json
+            new_row[idx_sync] = timestamp
+            sheet.append_row(new_row)
+
+        return jsonify({"status": "ok"})
+
+    except Exception as e:
+        print(f"Evolution Sync Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 @web_bp.route("/api/study/pause", methods=["POST"])
 def api_pause_study():
     data = request.json

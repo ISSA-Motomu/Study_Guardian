@@ -47,6 +47,12 @@ class GSheetService:
             print(f"【Error】シート '{sheet_name}' が見つかりません")
             return None
 
+    @classmethod
+    def get_spreadsheet(cls):
+        """スプレッドシート本体を取得（シート追加用）"""
+        cls._connect()
+        return cls._doc
+
     @staticmethod
     def log_activity(user_id, user_name, today, time, subject=""):
         """学習記録ログを study_log シートに保存（動的カラムマッピング）"""

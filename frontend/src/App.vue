@@ -60,6 +60,7 @@ import { useUserStore } from '@/stores/user'
 import { useStudyStore } from '@/stores/study'
 import { useGameStore } from '@/stores/game'
 import { useShopStore } from '@/stores/shop'
+import { useEvolutionStore } from '@/stores/evolution'
 import { useLiff } from '@/composables/useLiff'
 import { useSound } from '@/composables/useSound'
 
@@ -82,6 +83,7 @@ const userStore = useUserStore()
 const studyStore = useStudyStore()
 const gameStore = useGameStore()
 const shopStore = useShopStore()
+const evolutionStore = useEvolutionStore()
 
 // Composables
 const { initLiff } = useLiff()
@@ -95,6 +97,7 @@ onMounted(async () => {
   playSound('poweron')
   await initLiff()
   gameStore.startBattleLoop()
+  evolutionStore.initialize()
 })
 
 // Handlers
@@ -115,6 +118,12 @@ const handleFinishStudy = async () => {
   const minutes = await studyStore.finishStudy()
   if (minutes > 0) {
     gameStore.applyStudyDamage(minutes)
+    // 進化ゲームにポイント付与
+    const earnedPoints = evolutionStore.earnFromStudy(minutes)
+    if (earnedPoints > 0) {
+      // サーバーに同期
+      await evolutionStore.syncToServer()
+    }
   }
   view.value = 'study'
 }
