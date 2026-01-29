@@ -56,6 +56,118 @@ class HistoryService:
         return all_tx[:limit]
 
     @staticmethod
+    def get_user_study_stats(user_id):
+        """ユーザーの学習統計情報を収集（Web表示用）"""
+        sheet = GSheetService.get_worksheet("study_log")
+        if not sheet:
+            return {"weekly": [], "subject": [], "recent": []}
+
+        try:
+            records = sheet.get_all_values()
+            if not records:
+                return {"weekly": [], "subject": [], "recent": []}
+
+            headers = records[0]
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+            idx_uid = col_map.get("user_id")
+            idx_date = col_map.get("date")
+            idx_dur = col_map.get("duration_min")
+            idx_subj = col_map.get("subject")
+            idx_stat = col_map.get("status")
+
+            if None in [idx_uid, idx_date, idx_dur, idx_subj]:
+                return {"weekly": [], "subject": [], "recent": []}
+
+            # 7日間の日付リスト生成
+            today = datetime.datetime.now(
+                datetime.timezone(datetime.timedelta(hours=9))
+            ).date()
+            last_7_days = [today - datetime.timedelta(days=i) for i in range(6, -1, -1)]
+            weekly_map = {d.strftime("%Y-%m-%d"): 0 for d in last_7_days}
+            days_jp = ["月", "火", "水", "木", "金", "土", "日"]
+
+            subject_map = {}
+            recent_logs = []
+
+            for row in records[1:]:
+                # User Filter
+                if len(row) <= idx_uid or str(row[idx_uid]) != str(user_id):
+                    continue
+
+                # Status Filter (DONE or PENDING or updated ones which have duration)
+                duration_str = row[idx_dur] if len(row) > idx_dur else "0"
+                if not duration_str.isdigit() or int(duration_str) == 0:
+                    continue
+
+                duration = int(duration_str)
+                date_str = row[idx_date] if len(row) > idx_date else ""
+                subject = row[idx_subj] if len(row) > idx_subj else "その他"
+
+                # Weekly Data
+                if date_str in weekly_map:
+                    weekly_map[date_str] += duration
+
+                # Subject Data
+                if subject in subject_map:
+                    subject_map[subject] += duration
+                else:
+                    subject_map[subject] = duration
+
+                # Recent Data (Keep all, sort later)
+                recent_logs.append(
+                    {"subject": subject, "date": date_str, "minutes": duration}
+                )
+
+            # Format Weekly Data
+            weekly_data = []
+            for d in last_7_days:
+                d_str = d.strftime("%Y-%m-%d")
+                weekday = days_jp[d.weekday()]
+                weekly_data.append(
+                    {"day": weekday, "date": d_str, "minutes": weekly_map[d_str]}
+                )
+
+            # Format Subject Data
+            subject_data = []
+            # Define colors
+            colors = {
+                "国語": "#FF6B6B",
+                "数学": "#4D96FF",
+                "英語": "#FFD93D",
+                "理科": "#6BCB77",
+                "社会": "#9D4EDD",
+                "その他": "#95A5A6",
+            }
+            total_sub_min = sum(subject_map.values())
+            for sub, mins in subject_map.items():
+                subject_data.append(
+                    {
+                        "subject": sub,
+                        "minutes": mins,
+                        "color": colors.get(sub, "#95A5A6"),
+                        "percent": (mins / total_sub_min * 100)
+                        if total_sub_min > 0
+                        else 0,
+                    }
+                )
+            subject_data.sort(key=lambda x: x["minutes"], reverse=True)
+
+            # Format Recent Data
+            recent_logs.sort(key=lambda x: x["date"], reverse=True)
+            recent_logs = recent_logs[:10]  # Last 10
+
+            return {
+                "weekly": weekly_data,
+                "subject": subject_data,
+                "recent": recent_logs,
+            }
+
+        except Exception as e:
+            print(f"Stats Error: {e}")
+            return {"weekly": [], "subject": [], "recent": []}
+
+    @staticmethod
     def is_first_study_today(user_id):
         """その日の最初の勉強かどうか判定"""
         sheet = GSheetService.get_worksheet("study_log")

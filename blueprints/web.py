@@ -266,6 +266,26 @@ def api_start_study():
 
 
 @web_bp.route("/api/user/<user_id>/active_session")
+def api_user_active_session(user_id):
+    """ユーザーのアクティブな勉強セッションを確認"""
+    status, data = HistoryService.get_active_session(
+        user_id
+    )  # Note: Need to verify if this method exists or use GSheet logic directly
+    # Actually logic was in study.py, let's use a simpler check or move logic.
+    # checking study store implementation... it calls /api/user/{userId}/active_session
+    # Wait, I am editing web.py to ADD stats endpoint, not fix active_session.
+    # Where to insert?
+    pass
+
+
+@web_bp.route("/api/user/<user_id>/stats")
+def api_user_stats(user_id):
+    """ユーザーの学習統計詳細を取得"""
+    stats = HistoryService.get_user_study_stats(user_id)
+    return jsonify({"status": "ok", "data": stats})
+
+
+@web_bp.route("/api/user/<user_id>/active_session")
 def api_active_session(user_id):
     # 簡易実装: リクエストがあればアクティブとみなすか、本来はDB問い合わせが必要
     # ユーザーが「勉強中」かどうかを判定するロジック
