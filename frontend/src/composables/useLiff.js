@@ -2,7 +2,7 @@ import { ref, computed } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { useStudyStore } from '@/stores/study'
 
-const liffId = import.meta.env.VITE_LIFF_ID || '2007525134-MmemlK4B'
+const liffId = import.meta.env.VITE_LIFF_ID || '2008998497-Vfli3v7u'
 const isInitialized = ref(false)
 const liffError = ref(null)
 
