@@ -98,13 +98,25 @@ export const studyModule = {
       this.showMemoConfirm = true;
     },
     async confirmFinishStudy() {
+      // Improve UX: Close modal immediately to prevent freezing feeling
+      this.showMemoConfirm = false;
+
       playSound('levelup');
+
+      // Optional: Show a global loading spinner if available
+      // this.loading = true; 
+
       try {
         const res = await fetch('/api/study/finish', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ user_id: this.currentUserId, memo: this.memoToSend })
         });
+
+        if (!res.ok) {
+          throw new Error(`Server returned ${res.status}`);
+        }
+
         const json = await res.json();
         if (json.status === 'ok') {
           alert(`お疲れ様でした！\n${json.minutes}分 勉強しました。`);
@@ -121,9 +133,14 @@ export const studyModule = {
           }
         } else {
           alert("終了処理に失敗しました: " + json.message);
+          // Re-open modal if needed? Or just let them try again from menu?
+          // this.showMemoConfirm = true; 
         }
-      } catch (e) { alert("通信エラー"); }
-      this.showMemoConfirm = false;
+      } catch (e) {
+        console.error(e);
+        alert("通信エラーが発生しました。もう一度お試しください。");
+        // Recover state if necessary
+      }
     },
     closeMemoConfirm() {
       this.showMemoConfirm = false;

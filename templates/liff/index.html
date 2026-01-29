@@ -564,7 +564,7 @@
   </div>
 
   <!-- メモ確認ダイアログ -->
-  <div v-if="showMemoConfirm" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div v-if="showMemoConfirm" class="fixed inset-0 flex items-center justify-center p-4" style="z-index: 9999;">
     <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeMemoConfirm"></div>
     <div class="bg-white rounded-3xl p-6 w-full max-w-sm relative z-10 shadow-2xl overflow-hidden">
       <h3 class="text-xl font-bold text-center text-gray-800 mb-6">勉強内容の確認</h3>
