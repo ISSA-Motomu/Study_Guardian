@@ -291,6 +291,17 @@ def api_user_stats(user_id):
         return jsonify({"weekly": [], "subject": [], "recent": [], "total": 0})
 
 
+@web_bp.route("/api/ranking/weekly")
+def api_weekly_ranking():
+    """週間XPランキングを取得"""
+    try:
+        ranking = HistoryService.get_weekly_exp_ranking()
+        return jsonify({"status": "ok", "data": ranking})
+    except Exception as e:
+        print(f"Weekly Ranking API Error: {e}")
+        return jsonify({"status": "error", "data": []})
+
+
 @web_bp.route("/api/activity/recent")
 def api_recent_activity():
     """全ユーザーの最近の勉強・お手伝い履歴を取得（最新10件）"""
@@ -670,10 +681,10 @@ def api_user_notifications(user_id):
     try:
         # 通知用シートから未読通知を取得
         notifications = []
-        
+
         # 現状はシンプルに空配列を返す（将来的には通知テーブルを追加）
         # 実際の通知はLINEで送られるので、Web用は補助的
-        
+
         return jsonify({"status": "ok", "notifications": notifications})
     except Exception as e:
         print(f"User Notifications Error: {e}")

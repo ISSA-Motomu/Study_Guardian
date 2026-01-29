@@ -271,6 +271,55 @@
         </div>
       </div>
     </GlassPanel>
+
+    <!-- Weekly Ranking -->
+    <GlassPanel>
+      <h3 class="font-bold text-gray-700 mb-4">🏆 週間XPランキング</h3>
+      <div v-if="weeklyRanking.length === 0" class="text-center text-gray-500 py-4">
+        ランキングデータがありません
+      </div>
+      <div class="space-y-2">
+        <div 
+          v-for="(user, idx) in weeklyRanking" 
+          :key="idx"
+          :class="[
+            'flex items-center gap-3 py-3 px-4 rounded-xl transition-all',
+            idx === 0 ? 'bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-400' :
+            idx === 1 ? 'bg-gradient-to-r from-gray-50 to-slate-100 border border-gray-300' :
+            idx === 2 ? 'bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-300' :
+            'bg-gray-50',
+            user.user_id === userStore.currentUserId && 'ring-2 ring-indigo-400'
+          ]"
+        >
+          <!-- Rank -->
+          <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg"
+            :class="[
+              idx === 0 ? 'bg-yellow-400 text-yellow-900' :
+              idx === 1 ? 'bg-gray-300 text-gray-700' :
+              idx === 2 ? 'bg-orange-400 text-orange-900' :
+              'bg-gray-200 text-gray-600'
+            ]"
+          >
+            {{ idx === 0 ? '👑' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : user.rank }}
+          </div>
+          <!-- User Info -->
+          <div class="flex-1 min-w-0">
+            <p class="font-bold text-gray-800 truncate">
+              {{ user.display_name }}
+              <span v-if="user.user_id === userStore.currentUserId" class="text-xs text-indigo-500">(あなた)</span>
+            </p>
+            <p class="text-xs text-gray-500">Lv.{{ user.level || 1 }}</p>
+          </div>
+          <!-- XP -->
+          <div class="text-right">
+            <p class="font-bold text-lg" :class="idx < 3 ? 'text-amber-600' : 'text-gray-700'">
+              {{ user.weekly_exp?.toLocaleString() || 0 }}
+            </p>
+            <p class="text-[10px] text-gray-400">XP</p>
+          </div>
+        </div>
+      </div>
+    </GlassPanel>
   </div>
 </template>
 
@@ -296,6 +345,7 @@ const subjectData = ref([])
 const recentActivity = ref([])
 const globalActivity = ref([])
 const studyRecords = ref([]) // 全勉強ログ（日付・科目付き）
+const weeklyRanking = ref([]) // 週間ランキング
 
 // Navigation offsets
 const weekOffset = ref(0)
@@ -400,9 +450,6 @@ const formatTimestamp = (timestamp) => {
 
 // Week calculations
 const weekLabel = computed(() => {
-  if (weekOffset.value === 0) return '今週'
-  if (weekOffset.value === 1) return '先週'
-  
   const today = new Date()
   const startOfWeek = new Date(today)
   const dayOfWeek = today.getDay() || 7
@@ -410,7 +457,12 @@ const weekLabel = computed(() => {
   const endOfWeek = new Date(startOfWeek)
   endOfWeek.setDate(startOfWeek.getDate() + 6)
   
-  return `${startOfWeek.getMonth() + 1}/${startOfWeek.getDate()} - ${endOfWeek.getMonth() + 1}/${endOfWeek.getDate()}`
+  const formatDate = (d) => `${d.getMonth() + 1}/${d.getDate()}`
+  const dateRange = `${formatDate(startOfWeek)} - ${formatDate(endOfWeek)}`
+  
+  if (weekOffset.value === 0) return `今週 (${dateRange})`
+  if (weekOffset.value === 1) return `先週 (${dateRange})`
+  return dateRange
 })
 
 const currentWeekData = computed(() => {
@@ -458,7 +510,14 @@ const weeklyAverage = computed(() => {
 const monthLabel = computed(() => {
   const today = new Date()
   const targetDate = new Date(today.getFullYear(), today.getMonth() - monthOffset.value, 1)
-  return `${targetDate.getFullYear()}年${targetDate.getMonth() + 1}月`
+  const lastDay = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0)
+  
+  const monthName = `${targetDate.getFullYear()}年${targetDate.getMonth() + 1}月`
+  const dateRange = `${targetDate.getMonth() + 1}/1 - ${targetDate.getMonth() + 1}/${lastDay.getDate()}`
+  
+  if (monthOffset.value === 0) return `今月 (${dateRange})`
+  if (monthOffset.value === 1) return `先月 (${dateRange})`
+  return `${monthName} (${dateRange})`
 })
 
 const currentMonthWeeks = computed(() => {
@@ -608,8 +667,22 @@ const fetchGlobalActivity = async () => {
   }
 }
 
+// Fetch weekly ranking
+const fetchWeeklyRanking = async () => {
+  try {
+    const res = await fetch('/api/ranking/weekly')
+    const data = await res.json()
+    if (data.status === 'ok') {
+      weeklyRanking.value = data.data || []
+    }
+  } catch (e) {
+    console.error('Failed to fetch weekly ranking:', e)
+  }
+}
+
 onMounted(() => {
   fetchData()
   fetchGlobalActivity()
+  fetchWeeklyRanking()
 })
 </script>

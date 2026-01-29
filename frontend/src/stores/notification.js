@@ -19,7 +19,7 @@ export const useNotificationStore = defineStore('notification', () => {
       timestamp: new Date().toISOString()
     })
     unreadCount.value++
-    
+
     // 最大20件に制限
     if (notifications.value.length > 20) {
       notifications.value = notifications.value.slice(0, 20)
@@ -52,11 +52,11 @@ export const useNotificationStore = defineStore('notification', () => {
     try {
       const res = await fetch('/api/admin/pending')
       const data = await res.json()
-      
+
       if (data.status === 'ok' && data.data) {
         const currentCount = data.data.length
         const previousCount = parseInt(localStorage.getItem('lastPendingCount') || '0')
-        
+
         if (currentCount > previousCount && previousCount > 0) {
           // 新しい承認待ちがある
           const newItems = currentCount - previousCount
@@ -67,7 +67,7 @@ export const useNotificationStore = defineStore('notification', () => {
             icon: '📬'
           })
         }
-        
+
         localStorage.setItem('lastPendingCount', currentCount.toString())
       }
     } catch (e) {
@@ -83,7 +83,7 @@ export const useNotificationStore = defineStore('notification', () => {
     try {
       const res = await fetch(`/api/user/${userStore.currentUserId}/notifications`)
       const data = await res.json()
-      
+
       if (data.status === 'ok' && data.notifications) {
         data.notifications.forEach(n => {
           // 既存の通知と重複しないようにチェック
@@ -106,11 +106,11 @@ export const useNotificationStore = defineStore('notification', () => {
   // ポーリング開始
   const startPolling = () => {
     if (pollingInterval.value) return
-    
+
     // 初回チェック
     checkPendingForAdmin()
     checkApprovalResults()
-    
+
     // 30秒ごとにチェック
     pollingInterval.value = setInterval(() => {
       checkPendingForAdmin()

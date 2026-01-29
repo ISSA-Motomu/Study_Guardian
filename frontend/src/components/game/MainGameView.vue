@@ -151,28 +151,99 @@
       </div>
     </div>
 
-    <!-- Unlock Celebration Overlay -->
+    <!-- Unlock Celebration Overlay - Premium Design -->
     <transition name="celebrate">
       <div 
         v-if="showUnlockCelebration"
-        class="absolute inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md ios-safe-area"
-        @click="showUnlockCelebration = false"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-lg"
+        @click.self="showUnlockCelebration = false"
       >
-        <div class="unlock-celebration text-center px-8">
-          <div class="text-7xl mb-6 animate-bounce-in">{{ unlockingFacility?.icon }}</div>
-          <h2 class="text-3xl font-bold text-white mb-2">🎉 解放！</h2>
-          <p class="text-2xl text-yellow-300 font-bold">{{ unlockingFacility?.name }}</p>
-          <p class="text-sm text-white/70 mt-3 leading-relaxed">{{ unlockingFacility?.description }}</p>
+        <!-- Radial Glow Background -->
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div class="w-96 h-96 rounded-full bg-gradient-radial from-yellow-400/30 via-amber-500/10 to-transparent animate-pulse-slow" />
+        </div>
+        
+        <!-- Floating Particles -->
+        <div class="absolute inset-0 pointer-events-none overflow-hidden">
+          <div v-for="i in 20" :key="'sparkle-'+i" class="sparkle" :style="sparkleStyle(i)" />
+        </div>
+
+        <!-- Main Content Card -->
+        <div class="unlock-celebration relative z-10 max-w-sm mx-4 bg-gradient-to-br from-slate-900/95 via-indigo-900/95 to-purple-900/95 rounded-3xl p-8 border border-yellow-400/30 shadow-2xl">
+          <!-- Top Badge -->
+          <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-yellow-400 to-amber-500 px-6 py-2 rounded-full shadow-lg">
+            <span class="text-black font-bold text-sm tracking-wider">🔓 NEW UNLOCK</span>
+          </div>
+
+          <!-- Icon with Glow -->
+          <div class="relative mt-4 mb-6">
+            <div class="absolute inset-0 flex items-center justify-center">
+              <div class="w-32 h-32 rounded-full bg-yellow-400/20 animate-ping-slow" />
+            </div>
+            <div class="relative text-8xl text-center animate-bounce-in filter drop-shadow-[0_0_20px_rgba(250,204,21,0.5)]">
+              {{ unlockingFacility?.icon }}
+            </div>
+          </div>
+
+          <!-- Title -->
+          <h2 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-400 to-yellow-300 text-center mb-2 animate-shimmer-text">
+            {{ unlockingFacility?.name }}
+          </h2>
+
+          <!-- Tier Badge -->
+          <div class="flex justify-center mb-4">
+            <span class="px-3 py-1 text-xs font-bold rounded-full" :class="getTierBadgeClass(unlockingFacility?.tier)">
+              Tier {{ unlockingFacility?.tier }} 施設
+            </span>
+          </div>
+
+          <!-- Description -->
+          <p class="text-white/80 text-center text-sm leading-relaxed mb-4">
+            {{ unlockingFacility?.description }}
+          </p>
+
+          <!-- Academic Note - 学術的説明 -->
+          <div v-if="unlockingFacility?.academicNote" class="bg-black/40 rounded-xl p-4 mb-6 border border-cyan-400/30">
+            <div class="flex items-start gap-2">
+              <span class="text-cyan-400 text-lg">📖</span>
+              <div>
+                <p class="text-[10px] text-cyan-400 font-bold uppercase tracking-wider mb-1">Academic Note</p>
+                <p class="text-xs text-cyan-100/80 leading-relaxed italic">
+                  {{ unlockingFacility?.academicNote }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stats Preview -->
+          <div class="grid grid-cols-2 gap-3 mb-6">
+            <div class="bg-white/10 rounded-xl p-3 text-center">
+              <p class="text-[10px] text-white/50 uppercase">生産量</p>
+              <p class="text-lg font-bold text-green-400">+{{ unlockingFacility?.baseProduction }}/分</p>
+            </div>
+            <div class="bg-white/10 rounded-xl p-3 text-center">
+              <p class="text-[10px] text-white/50 uppercase">初期コスト</p>
+              <p class="text-lg font-bold text-yellow-400">{{ unlockingFacility?.baseCost }} KP</p>
+            </div>
+          </div>
+
+          <!-- Flavor Text -->
+          <p v-if="unlockingFacility?.flavorText" class="text-center text-white/50 text-xs italic mb-6">
+            {{ unlockingFacility?.flavorText }}
+          </p>
+
+          <!-- Continue Button -->
           <button 
             @click.stop="showUnlockCelebration = false"
-            class="mt-8 px-8 py-4 bg-gradient-to-r from-yellow-400 to-amber-500 text-black font-bold rounded-2xl text-lg shadow-lg active:scale-95 transition-transform"
+            class="w-full py-4 bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-400 text-black font-bold rounded-2xl text-lg shadow-lg active:scale-95 transition-all hover:shadow-yellow-400/50 hover:shadow-xl"
           >
-            続ける
+            🚀 研究を開始する
           </button>
         </div>
+
         <!-- Confetti -->
         <div class="confetti-container">
-          <div v-for="i in 50" :key="i" class="confetti" :style="confettiStyle(i)" />
+          <div v-for="i in 60" :key="i" class="confetti" :style="confettiStyle(i)" />
         </div>
       </div>
     </transition>
@@ -345,6 +416,31 @@ const confettiStyle = (i) => {
     backgroundColor: colors[i % colors.length],
     animationDelay: `${Math.random() * 0.5}s`
   }
+}
+
+// Sparkle style generator for unlock screen
+const sparkleStyle = (i) => {
+  return {
+    '--sparkle-delay': `${Math.random() * 2}s`,
+    '--sparkle-x': `${Math.random() * 100}%`,
+    '--sparkle-y': `${Math.random() * 100}%`,
+    '--sparkle-size': `${4 + Math.random() * 8}px`,
+    left: `${Math.random() * 100}%`,
+    top: `${Math.random() * 100}%`
+  }
+}
+
+// Tier badge class
+const getTierBadgeClass = (tier) => {
+  const classes = {
+    1: 'bg-slate-600 text-slate-200',
+    2: 'bg-blue-600 text-blue-100',
+    3: 'bg-purple-600 text-purple-100',
+    4: 'bg-orange-600 text-orange-100',
+    5: 'bg-pink-600 text-pink-100',
+    6: 'bg-amber-600 text-amber-100'
+  }
+  return classes[tier] || 'bg-gray-600 text-gray-200'
 }
 
 onMounted(() => {
@@ -554,5 +650,65 @@ onMounted(() => {
     transform: translateY(100vh) translateX(var(--x-end)) rotate(var(--rotation));
     opacity: 0;
   }
+}
+
+/* Sparkle particles for unlock */
+.sparkle {
+  position: absolute;
+  width: var(--sparkle-size, 6px);
+  height: var(--sparkle-size, 6px);
+  background: radial-gradient(circle, rgba(255, 215, 0, 1) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: sparkle-float 3s ease-in-out infinite;
+  animation-delay: var(--sparkle-delay, 0s);
+}
+
+@keyframes sparkle-float {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(0) translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1) translateY(-30px);
+  }
+}
+
+/* Radial gradient background */
+.bg-gradient-radial {
+  background: radial-gradient(circle, var(--tw-gradient-from) 0%, var(--tw-gradient-via) 50%, var(--tw-gradient-to) 100%);
+}
+
+/* Slow pulse for glow effect */
+.animate-pulse-slow {
+  animation: pulse-slow 3s ease-in-out infinite;
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.1); }
+}
+
+/* Ping slow for icon backdrop */
+.animate-ping-slow {
+  animation: ping-slow 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes ping-slow {
+  75%, 100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* Shimmer text effect */
+.animate-shimmer-text {
+  background-size: 200% 100%;
+  animation: shimmer-text 2s linear infinite;
+}
+
+@keyframes shimmer-text {
+  0% { background-position: 200% center; }
+  100% { background-position: -200% center; }
 }
 </style>
