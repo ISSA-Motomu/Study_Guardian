@@ -1,40 +1,36 @@
 <template>
-  <div class="space-y-3">
-    <div
-      v-for="(item, idx) in data"
-      :key="idx"
-      class="flex items-center gap-3"
-    >
-      <!-- Subject Label -->
-      <div class="w-16 text-sm font-medium text-gray-700 truncate">
-        {{ item.subject }}
+  <div class="flex items-center gap-6">
+    <!-- Pie Chart -->
+    <div class="relative w-32 h-32 flex-shrink-0">
+      <div 
+        class="w-full h-full rounded-full"
+        :style="{ background: gradientStyle }"
+      />
+      <!-- Inner White Circle (Donut) -->
+      <div class="absolute inset-4 bg-white rounded-full flex items-center justify-center shadow-inner">
+        <span class="text-xs font-bold text-gray-500">TOTAL<br>{{ totalMinutes }}分</span>
       </div>
-      
-      <!-- Progress Bar -->
-      <div class="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
-        <div 
-          class="h-full rounded-full transition-all duration-500 flex items-center justify-end pr-2"
-          :style="{ 
-            width: getBarWidth(item.minutes) + '%',
-            backgroundColor: item.color 
-          }"
-        >
-          <span 
-            v-if="getBarWidth(item.minutes) > 30"
-            class="text-white text-xs font-bold"
-          >
-            {{ item.minutes }}分
-          </span>
+    </div>
+
+    <!-- Legend -->
+    <div class="flex-1 space-y-2">
+      <div
+        v-for="(item, idx) in sortedData"
+        :key="idx"
+        class="flex items-center justify-between text-sm"
+      >
+        <div class="flex items-center gap-2">
+          <div 
+            class="w-3 h-3 rounded-full"
+            :style="{ backgroundColor: item.color }"
+          />
+          <span class="text-gray-700 font-medium">{{ item.subject }}</span>
+        </div>
+        <div class="text-right">
+          <span class="font-bold text-gray-800">{{ item.minutes }}分</span>
+          <span class="text-xs text-gray-400 ml-1">({{ Math.round(item.percent) }}%)</span>
         </div>
       </div>
-      
-      <!-- Minutes (outside bar for small values) -->
-      <span 
-        v-if="getBarWidth(item.minutes) <= 30"
-        class="text-sm font-medium text-gray-600 w-12 text-right"
-      >
-        {{ item.minutes }}分
-      </span>
     </div>
   </div>
 </template>
@@ -49,11 +45,25 @@ const props = defineProps({
   }
 })
 
-const maxMinutes = computed(() => {
-  return Math.max(...props.data.map(d => d.minutes), 1)
+const sortedData = computed(() => {
+  return [...props.data].sort((a, b) => b.minutes - a.minutes)
 })
 
-const getBarWidth = (minutes) => {
-  return Math.max(5, (minutes / maxMinutes.value) * 100)
-}
+const totalMinutes = computed(() => {
+  return props.data.reduce((acc, cur) => acc + cur.minutes, 0)
+})
+
+const gradientStyle = computed(() => {
+  if (props.data.length === 0) return '#e5e7eb'
+  
+  let currentPos = 0
+  const parts = sortedData.value.map(item => {
+    const start = currentPos
+    const end = currentPos + item.percent
+    currentPos = end
+    return `${item.color} ${start}% ${end}%`
+  })
+  
+  return `conic-gradient(${parts.join(', ')})`
+})
 </script>

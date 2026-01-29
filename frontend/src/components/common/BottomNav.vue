@@ -1,6 +1,6 @@
 <template>
-  <nav class="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white/80 backdrop-blur-lg rounded-full shadow-lg px-6 py-3 z-40">
-    <div class="flex gap-8 items-center">
+  <nav class="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white/80 backdrop-blur-lg rounded-full shadow-lg px-6 py-3 z-40 w-[90%] max-w-sm">
+    <div class="flex justify-between items-center px-4">
       <button 
         v-for="item in navItems" 
         :key="item.id"
