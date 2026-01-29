@@ -10,8 +10,9 @@ from services.status_service import StatusService
 from services.stats import SagaStats
 from bot_instance import line_bot_api
 from utils.template_loader import load_template
-from linebot.models import FlexSendMessage
+from linebot.models import FlexSendMessage, TextSendMessage
 from handlers import study
+from utils.achievements import AchievementManager, ACHIEVEMENT_MASTER
 
 web_bp = Blueprint("web", __name__)
 
@@ -296,7 +297,10 @@ def api_active_session(user_id):
 def api_finish_study():
     data = request.json
     user_id = data.get("user_id")
-    memo = data.get("memo", "")
+    # Memo from frontend corresponds to Comment
+    memo = data.get("memo", "なし")
+    # Concentration not in frontend yet, default to 3
+    concentration = 3
 
     now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
     current_time = now.strftime("%H:%M:%S")
@@ -304,43 +308,134 @@ def api_finish_study():
     user_info = EconomyService.get_user_info(user_id)
     user_name = user_info["display_name"] if user_info else "User"
 
+    # 1. Update End Time & Status to PENDING
     result = GSheetService.update_end_time(user_id, current_time, user_name)
-    if result:
-        # メモを保存
-        try:
-            # study_logの該当行にmemoカラムがあれば書き込む
-            sheet = GSheetService.get_worksheet("study_log")
-            if sheet:
-                headers = sheet.row_values(1)
-                col_map = {str(h).strip(): i for i, h in enumerate(headers)}
-                idx_memo = col_map.get("memo")
-                if idx_memo is not None:
-                    sheet.update_cell(result["row_index"], idx_memo + 1, memo)
-        except Exception as e:
-            print(f"Memo保存エラー: {e}")
+    if not result:
+        return jsonify(
+            {
+                "status": "error",
+                "message": "Failed to update end time or no active session",
+            }
+        ), 404
 
-        start_time_str = result["start_time"]
-        try:
-            start_dt = datetime.datetime.strptime(start_time_str, "%H:%M:%S")
-            end_dt = datetime.datetime.strptime(current_time, "%H:%M:%S")
-            if end_dt < start_dt:
-                end_dt += datetime.timedelta(days=1)
-            duration = end_dt - start_dt
-            minutes = int(duration.total_seconds() / 60)
-            if minutes > 90:
-                minutes = 90
+    row_index = result["row_index"]
+    start_time_str = result.get("start_time", "")
+    subject = result.get("subject", "")
 
-            stats = SagaStats.calculate(minutes)
-            if stats:
-                GSheetService.update_study_stats(
-                    result["row_index"], minutes, stats["rank"]
+    # 2. Save Details (Memo/Concentration)
+    try:
+        GSheetService.update_study_details(row_index, memo, concentration)
+    except Exception as e:
+        print(f"Details update error: {e}")
+
+    try:
+        # 3. Calculate Duration
+        start_dt = datetime.datetime.strptime(start_time_str, "%H:%M:%S")
+        end_dt = datetime.datetime.strptime(current_time, "%H:%M:%S")
+        if end_dt < start_dt:
+            end_dt += datetime.timedelta(days=1)
+        duration = end_dt - start_dt
+        minutes = int(duration.total_seconds() / 60)
+
+        # Cap at 90 mins
+        if minutes > 90:
+            minutes = 90
+
+        earned_exp = minutes
+
+        # 4. Update Stats (Rank/Duration)
+        stats = SagaStats.calculate(minutes)
+        if stats:
+            GSheetService.update_study_stats(row_index, minutes, stats["rank"])
+
+        # 5. Bonus Calculation
+        bonus_msg = ""
+        is_first_today = HistoryService.is_first_study_today(user_id)
+        if minutes >= 5 and is_first_today:
+            bonus = 30
+            earned_exp += bonus
+            bonus_msg = f"\n🎁 初回ボーナス: +{bonus}pt"
+
+        # 6. Achievements Check
+        achievement_msg = ""
+        try:
+            if user_info:
+                current_session = {
+                    "start_time": start_time_str,
+                    "minutes": minutes,
+                    "is_first_ever": int(user_info.get("total_study_time", 0)) == 0,
+                }
+                new_achievements = AchievementManager.check_achievements(
+                    user_info, current_session
                 )
+                if new_achievements:
+                    current_str = str(user_info.get("unlocked_achievements", ""))
+                    new_ids = [a.value for a in new_achievements]
+                    current_set = set(current_str.split(",")) if current_str else set()
+                    for nid in new_ids:
+                        current_set.add(nid)
+                    updated_str = ",".join(list(current_set))
+                    EconomyService.update_user_achievements(user_id, updated_str)
 
-            return jsonify({"status": "ok", "minutes": minutes})
+                    ach_titles = [ACHIEVEMENT_MASTER[a].title for a in new_achievements]
+                    achievement_msg = f"\n\n🎉 実績解除！\n" + "\n".join(
+                        [f"・{t}" for t in ach_titles]
+                    )
         except Exception as e:
-            return jsonify({"status": "error", "message": str(e)}), 500
+            print(f"Achievement Error: {e}")
 
-    return jsonify({"status": "error", "message": "No active session"}), 404
+        # 7. Notify User
+        hours, mins = divmod(minutes, 60)
+        subject_str = f"\n教科: {subject}" if subject else ""
+        stats_msg = ""
+        if stats:
+            stats_msg = f"\n\n📊 佐賀県統計モデル\n偏差値: {stats['deviation']}\n判定: {stats['school_level']}"
+            if stats.get("is_saganishi"):
+                stats_msg += "\n🌸 佐賀西合格圏内！"
+
+        try:
+            line_bot_api.push_message(
+                user_id,
+                TextSendMessage(
+                    text=f"OK！Webから記録したよ✨\n勉強時間: {hours}時間{mins}分{subject_str}\n成果: {memo}\n集中度: {concentration}/5{bonus_msg}{achievement_msg}{stats_msg}\n\n親御さんに報告しておいたからね！"
+                ),
+            )
+        except Exception as push_err:
+            print(f"User Push Error: {push_err}")
+
+        # 8. Notify Admins
+        try:
+            admins = EconomyService.get_admin_users()
+            admin_ids = [str(u["user_id"]) for u in admins if u.get("user_id")]
+
+            if admin_ids:
+                timestamp_str = now.strftime("%H:%M")
+                approve_flex = load_template(
+                    "study_approve_request.json",
+                    user_name=user_name,
+                    subject=subject,
+                    hours=hours,
+                    mins=mins,
+                    minutes=minutes,
+                    earned_exp=earned_exp,
+                    user_id=user_id,
+                    comment=memo + bonus_msg,
+                    concentration=concentration,
+                    timestamp=timestamp_str,
+                    row_index=row_index,
+                )
+                line_bot_api.multicast(
+                    admin_ids,
+                    FlexSendMessage(alt_text="勉強完了報告", contents=approve_flex),
+                )
+        except Exception as admin_err:
+            print(f"Admin Notify Error: {admin_err}")
+
+        return jsonify({"status": "ok", "minutes": minutes})
+
+    except Exception as e:
+        print(f"Finish Process Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 @web_bp.route("/api/study/cancel", methods=["POST"])
