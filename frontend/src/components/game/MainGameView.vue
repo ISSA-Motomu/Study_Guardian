@@ -120,32 +120,32 @@
         <p class="text-[10px] text-white/50 text-center mb-3 uppercase tracking-widest">タップしてKPを獲得</p>
         <div class="flex gap-2 justify-center flex-wrap">
           <button 
-            @click.stop="$emit('navigate', 'list')"
+            @click.stop="navigate('list')"
             class="ios-nav-button"
           >
-            <span class="text-2xl">📋</span>
-            <span class="text-[10px] font-medium">施設</span>
+            <span class="text-3xl mb-1">📋</span>
+            <span class="text-xs font-bold">施設</span>
           </button>
           <button 
-            @click.stop="$emit('navigate', 'tree')"
+            @click.stop="navigate('tree')"
             class="ios-nav-button"
           >
-            <span class="text-2xl">🌳</span>
-            <span class="text-[10px] font-medium">ツリー</span>
+            <span class="text-3xl mb-1">🌳</span>
+            <span class="text-xs font-bold">ツリー</span>
           </button>
           <button 
-            @click.stop="$emit('navigate', 'upgrade')"
+            @click.stop="navigate('upgrade')"
             class="ios-nav-button"
           >
-            <span class="text-2xl">🔬</span>
-            <span class="text-[10px] font-medium">強化</span>
+            <span class="text-3xl mb-1">🔬</span>
+            <span class="text-xs font-bold">強化</span>
           </button>
           <button 
-            @click.stop="$emit('navigate', 'prestige')"
+            @click.stop="navigate('prestige')"
             class="ios-nav-button prestige-button"
           >
-            <span class="text-2xl">🔄</span>
-            <span class="text-[10px] font-medium">転生</span>
+            <span class="text-3xl mb-1">🔄</span>
+            <span class="text-xs font-bold">転生</span>
           </button>
         </div>
       </div>
@@ -183,6 +183,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useEvolutionStore } from '@/stores/evolution'
 import { useUserStore } from '@/stores/user'
+import { soundManager } from '@/utils/sound'
 import AnimatedCounter from './AnimatedCounter.vue'
 import KPParticlesAdvanced from './KPParticlesAdvanced.vue'
 import SpaceBackground from './SpaceBackground.vue'
@@ -192,6 +193,17 @@ const evolutionStore = useEvolutionStore()
 const userStore = useUserStore()
 
 const emit = defineEmits(['navigate'])
+
+// Initialize sounds
+onMounted(() => {
+  document.addEventListener('click', () => soundManager.init(), { once: true })
+})
+
+// Navigation with sound
+const navigate = (view) => {
+  soundManager.play('click')
+  emit('navigate', view)
+}
 
 // Refs
 const particleSystem = ref(null)
@@ -217,6 +229,7 @@ const progressBarClass = computed(() => {
 
 // Tap handling
 const handleTap = (e) => {
+  soundManager.play('click')
   const rect = e.currentTarget.getBoundingClientRect()
   const x = e.clientX - rect.left
   const y = e.clientY - rect.top
@@ -361,12 +374,12 @@ onMounted(() => {
   padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
 }
 
-/* iOS-style Navigation Buttons - 44px min touch target */
+/* iOS-style Navigation Buttons - Larger for better tap targets */
 .ios-nav-button {
-  @apply flex flex-col items-center justify-center gap-1.5 bg-white/15 backdrop-blur-xl rounded-2xl border border-white/30 text-white transition-all;
-  min-width: 64px;
-  min-height: 56px;
-  padding: 10px 14px;
+  @apply flex flex-col items-center justify-center gap-1 bg-white/15 backdrop-blur-xl rounded-2xl border border-white/30 text-white transition-all;
+  min-width: 80px;
+  min-height: 70px;
+  padding: 12px 14px;
 }
 
 .ios-nav-button:active {
@@ -387,8 +400,8 @@ onMounted(() => {
 .floating-number {
   position: absolute;
   transform: translate(-50%, -50%);
-  font-size: 24px;
-  font-weight: bold;
+  font-size: 32px;
+  font-weight: 800;
   color: #facc15;
   text-shadow: 0 0 10px rgba(250, 204, 21, 0.8), 0 2px 4px rgba(0,0,0,0.5);
   pointer-events: none;

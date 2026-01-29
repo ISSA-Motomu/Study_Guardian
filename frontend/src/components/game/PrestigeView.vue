@@ -12,7 +12,7 @@
     <div class="sticky top-0 z-30 bg-amber-950/95 backdrop-blur-lg border-b border-amber-500/20 ios-safe-top">
       <div class="p-4 flex items-center gap-3">
         <button 
-          @click="$emit('navigate', 'main')"
+          @click="navigate('main')"
           class="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center text-white active:bg-white/30 active:scale-95 transition-all text-lg"
         >
           ←
@@ -131,7 +131,7 @@
       <div class="max-w-md mx-auto space-y-3">
         <button 
           v-if="canPrestige"
-          @click="showConfirmDialog = true"
+          @click="showConfirmDialog = true; soundManager.play('click')"
           class="w-full py-5 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-400 text-black font-bold rounded-2xl text-xl shadow-2xl active:scale-95 transition-all animate-shimmer"
         >
           🔄 転生する (+{{ evolutionStore.potentialPrestigePoints }} pts)
@@ -145,7 +145,7 @@
         </button>
         
         <button 
-          @click="$emit('navigate', 'main')"
+          @click="navigate('main')"
           class="w-full py-4 bg-white/15 backdrop-blur-xl rounded-2xl text-white font-bold flex items-center justify-center gap-2 border border-white/20 active:bg-white/30 active:scale-95 transition-all"
         >
           <span class="text-xl">🌍</span>
@@ -212,10 +212,16 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useEvolutionStore } from '@/stores/evolution'
+import { soundManager } from '@/utils/sound'
 
 const evolutionStore = useEvolutionStore()
 
 const emit = defineEmits(['navigate'])
+const navigate = (view) => {
+  soundManager.play('click')
+  emit('navigate', view)
+}
+
 
 const showConfirmDialog = ref(false)
 const showSuccessAnimation = ref(false)

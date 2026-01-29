@@ -10,7 +10,7 @@
     <div class="sticky top-0 z-30 bg-slate-900/95 backdrop-blur-lg border-b border-white/10 ios-safe-top">
       <div class="p-4 flex items-center gap-3">
         <button 
-          @click="$emit('navigate', 'main')"
+          @click="navigate('main')"
           class="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center text-white active:bg-white/30 active:scale-95 transition-all text-lg"
         >
           ←
@@ -96,14 +96,14 @@
     <div class="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-900 via-slate-900/95 to-transparent ios-safe-bottom">
       <div class="flex gap-3 max-w-md mx-auto">
         <button 
-          @click="$emit('navigate', 'main')"
+          @click="navigate('main')"
           class="flex-1 py-4 bg-white/15 backdrop-blur-xl rounded-2xl text-white font-bold flex items-center justify-center gap-2 border border-white/20 active:bg-white/30 active:scale-95 transition-all text-base"
         >
           <span class="text-xl">🌍</span>
           <span>メイン</span>
         </button>
         <button 
-          @click="$emit('navigate', 'tree')"
+          @click="navigate('tree')"
           class="flex-1 py-4 bg-white/15 backdrop-blur-xl rounded-2xl text-white font-bold flex items-center justify-center gap-2 border border-white/20 active:bg-white/30 active:scale-95 transition-all text-base"
         >
           <span class="text-xl">🌳</span>
@@ -117,13 +117,19 @@
 <script setup>
 import { computed } from 'vue'
 import { useEvolutionStore } from '@/stores/evolution'
+import { soundManager } from '@/utils/sound'
 import AnimatedCounter from './AnimatedCounter.vue'
 import FacilityCardAdvanced from './FacilityCardAdvanced.vue'
 import CircularProgress from './CircularProgress.vue'
 
 const evolutionStore = useEvolutionStore()
 
-defineEmits(['navigate'])
+const emit = defineEmits(['navigate'])
+
+const navigate = (view) => {
+  soundManager.play('click')
+  emit('navigate', view)
+}
 
 const stats = computed(() => evolutionStore.stats)
 

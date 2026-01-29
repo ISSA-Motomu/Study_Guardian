@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useUserStore } from './user'
+import { soundManager } from '@/utils/sound'
 
 // ========================================
 // 施設マスターデータ（60個の施設）
@@ -829,14 +830,14 @@ export const useEvolutionStore = defineStore('evolution', () => {
     return FACILITIES_MASTER.map(facility => {
       const level = facilityLevels.value[facility.id] || 0
       const currentCost = calculateCost(facility.baseCost, level)
-      
+
       // マイルストーンボーナス計算
       let milestoneBonus = 1
       const milestones = [10, 25, 50, 100, 150, 200, 250, 300, 350, 400]
       for (const m of milestones) {
         if (level >= m) milestoneBonus *= 2
       }
-      
+
       const upgradeMult = getUpgradeMultiplier(facility.id, facility.tier)
       const baseProduction = facility.baseProduction * Math.max(1, level) * upgradeMult * prestigeMultiplier.value
       const production = baseProduction * milestoneBonus
@@ -937,7 +938,7 @@ export const useEvolutionStore = defineStore('evolution', () => {
   // 施設の生産量計算（マイルストーンボーナス込み）
   function getFacilityProduction(facility, level) {
     if (level <= 0) return 0
-    
+
     let bonus = 1
     // マイルストーンボーナス: 各閾値で +100%（2倍）
     // 10個: 2x, 25個: 4x, 50個: 8x, 100個: 16x, 150個: 32x, 200個: 64x
@@ -945,7 +946,7 @@ export const useEvolutionStore = defineStore('evolution', () => {
     for (const m of milestones) {
       if (level >= m) bonus *= 2
     }
-    
+
     const upgradeMult = getUpgradeMultiplier(facility.id, facility.tier)
     return facility.baseProduction * level * bonus * upgradeMult * prestigeMultiplier.value
   }
@@ -995,6 +996,15 @@ export const useEvolutionStore = defineStore('evolution', () => {
 
     if (purchased > 0) {
       isDirty.value = true
+      // マイルストーン判定
+      const milestones = [10, 25, 50, 100, 150, 200, 250, 300, 350, 400]
+      const currentLevel = facilityLevels.value[facilityId]
+      if (milestones.includes(currentLevel)) {
+        soundManager.play('milestone')
+      } else {
+        soundManager.play('buy')
+      }
+      
       triggerEvent('onPurchase', { facility, amount: purchased })
       checkAchievements()
       saveToLocalStorage()
@@ -1009,6 +1019,7 @@ export const useEvolutionStore = defineStore('evolution', () => {
     knowledgePoints.value -= upgrade.cost
     purchasedUpgrades.value.push(upgradeId)
     isDirty.value = true
+    soundManager.play('levelup')
     triggerEvent('onPurchase', { upgrade })
     saveToLocalStorage()
     return true
@@ -1017,6 +1028,7 @@ export const useEvolutionStore = defineStore('evolution', () => {
   function prestige() {
     const points = potentialPrestigePoints.value
     if (points <= 0) return false
+    soundManager.play('prestige')
 
     prestigePoints.value += points
     prestigeLevel.value += 1

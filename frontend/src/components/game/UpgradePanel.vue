@@ -10,7 +10,7 @@
     <div class="sticky top-0 z-30 bg-indigo-950/95 backdrop-blur-lg border-b border-purple-500/20 ios-safe-top">
       <div class="p-4 flex items-center gap-3">
         <button 
-          @click="$emit('navigate', 'main')"
+          @click="navigate('main')"
           class="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center text-white active:bg-white/30 active:scale-95 transition-all text-lg"
         >
           ←
@@ -125,10 +125,16 @@
 <script setup>
 import { computed } from 'vue'
 import { useEvolutionStore } from '@/stores/evolution'
+import { soundManager } from '@/utils/sound'
 
 const evolutionStore = useEvolutionStore()
 
-defineEmits(['navigate'])
+const emit = defineEmits(['navigate'])
+const navigate = (view) => {
+  soundManager.play('click')
+  emit('navigate', view)
+}
+
 
 const availableUpgrades = computed(() => 
   evolutionStore.upgradesWithState.filter(u => u.unlocked && !u.purchased)

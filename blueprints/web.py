@@ -493,7 +493,9 @@ def api_get_evolution(user_id):
                             "knowledge_points": parse_int(get_val("knowledge_points")),
                             "total_earned": parse_int(get_val("total_earned")),
                             "lifetime_earned": parse_int(get_val("lifetime_earned")),
-                            "facility_levels": parse_json(get_val("facility_levels"), {}),
+                            "facility_levels": parse_json(
+                                get_val("facility_levels"), {}
+                            ),
                             "upgrades": parse_json(get_val("upgrades"), []),
                             "achievements": parse_json(get_val("achievements"), []),
                             "prestige_level": parse_int(get_val("prestige_level")),
@@ -554,14 +556,21 @@ def api_sync_evolution():
 
         records = sheet.get_all_values()
         headers = records[0] if records else []
-        
+
         # ヘッダーが古い形式の場合、新しいカラムを追加
         expected_headers = [
-            "user_id", "knowledge_points", "total_earned", "lifetime_earned",
-            "facility_levels", "upgrades", "achievements", 
-            "prestige_level", "prestige_points", "last_sync"
+            "user_id",
+            "knowledge_points",
+            "total_earned",
+            "lifetime_earned",
+            "facility_levels",
+            "upgrades",
+            "achievements",
+            "prestige_level",
+            "prestige_points",
+            "last_sync",
         ]
-        
+
         if len(headers) < len(expected_headers):
             # 不足しているヘッダーを追加
             for i, h in enumerate(expected_headers):
@@ -574,7 +583,7 @@ def api_sync_evolution():
 
         now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
         timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
-        
+
         levels_json = json.dumps(facility_levels)
         upgrades_json = json.dumps(upgrades)
         achievements_json = json.dumps(achievements)
