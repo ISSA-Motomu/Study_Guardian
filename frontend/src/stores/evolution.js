@@ -788,6 +788,16 @@ export const useEvolutionStore = defineStore('evolution', () => {
     return mult
   }
 
+  // マイルストーンボーナス計算
+  const getMilestoneBonus = (level) => {
+    let bonus = 1
+    const milestones = [10, 25, 50, 100, 150, 200, 250, 300, 350, 400]
+    for (const m of milestones) {
+      if (level >= m) bonus *= 2
+    }
+    return bonus
+  }
+
   // ===== Computed =====
   const currentProduction = computed(() => {
     let production = 0
@@ -795,7 +805,8 @@ export const useEvolutionStore = defineStore('evolution', () => {
       const level = facilityLevels.value[facility.id] || 0
       if (level > 0) {
         const upgradeMult = getUpgradeMultiplier(facility.id, facility.tier)
-        production += facility.baseProduction * level * upgradeMult * prestigeMultiplier.value
+        const milestoneBonus = getMilestoneBonus(level)
+        production += facility.baseProduction * level * upgradeMult * prestigeMultiplier.value * milestoneBonus
       }
     }
     return production
@@ -818,19 +829,39 @@ export const useEvolutionStore = defineStore('evolution', () => {
     return FACILITIES_MASTER.map(facility => {
       const level = facilityLevels.value[facility.id] || 0
       const currentCost = calculateCost(facility.baseCost, level)
+      
+      // マイルストーンボーナス計算
+      let milestoneBonus = 1
+      const milestones = [10, 25, 50, 100, 150, 200, 250, 300, 350, 400]
+      for (const m of milestones) {
+        if (level >= m) milestoneBonus *= 2
+      }
+      
       const upgradeMult = getUpgradeMultiplier(facility.id, facility.tier)
-      const production = facility.baseProduction * Math.max(1, level) * upgradeMult * prestigeMultiplier.value
+      const baseProduction = facility.baseProduction * Math.max(1, level) * upgradeMult * prestigeMultiplier.value
+      const production = baseProduction * milestoneBonus
 
       let state = 'locked'
       if (totalEarnedPoints.value >= facility.unlockCondition) state = 'unlocked'
       else if (totalEarnedPoints.value >= facility.unlockCondition * 0.7) state = 'revealed'
       else if (totalEarnedPoints.value >= facility.unlockCondition * 0.3) state = 'hint'
 
+      // 次のマイルストーン情報
+      let nextMilestone = null
+      for (const m of milestones) {
+        if (level < m) {
+          nextMilestone = { target: m, progress: (level / m) * 100, bonus: milestoneBonus * 2 }
+          break
+        }
+      }
+
       return {
         ...facility,
         level,
         currentCost,
         production,
+        milestoneBonus,
+        nextMilestone,
         state,
         canAfford: knowledgePoints.value >= currentCost && state === 'unlocked',
         progressToUnlock: Math.min(100, (totalEarnedPoints.value / facility.unlockCondition) * 100),
@@ -897,8 +928,26 @@ export const useEvolutionStore = defineStore('evolution', () => {
   })
 
   // ===== Actions =====
+  // コスト計算: baseCost × 1.15^level
+  // Cookie Clicker と同じ係数だが、マイルストーンボーナスで緩和
   function calculateCost(baseCost, level) {
     return Math.floor(baseCost * Math.pow(1.15, level))
+  }
+
+  // 施設の生産量計算（マイルストーンボーナス込み）
+  function getFacilityProduction(facility, level) {
+    if (level <= 0) return 0
+    
+    let bonus = 1
+    // マイルストーンボーナス: 各閾値で +100%（2倍）
+    // 10個: 2x, 25個: 4x, 50個: 8x, 100個: 16x, 150個: 32x, 200個: 64x
+    const milestones = [10, 25, 50, 100, 150, 200, 250, 300, 350, 400]
+    for (const m of milestones) {
+      if (level >= m) bonus *= 2
+    }
+    
+    const upgradeMult = getUpgradeMultiplier(facility.id, facility.tier)
+    return facility.baseProduction * level * bonus * upgradeMult * prestigeMultiplier.value
   }
 
   function formatNumber(num) {
@@ -908,6 +957,24 @@ export const useEvolutionStore = defineStore('evolution', () => {
     if (suffixIndex >= NUMBER_SUFFIXES.length) return num.toExponential(2)
     const divisor = Math.pow(1000, suffixIndex)
     return (num / divisor).toFixed(2) + NUMBER_SUFFIXES[suffixIndex]
+  }
+
+  // 次のマイルストーンまでの進捗を取得
+  function getNextMilestone(level) {
+    const milestones = [10, 25, 50, 100, 150, 200, 250, 300, 350, 400]
+    let reachedCount = 0
+    for (let i = 0; i < milestones.length; i++) {
+      if (level >= milestones[i]) {
+        reachedCount++
+      } else {
+        // 次のマイルストーンに向けた進捗
+        const prevMilestone = i > 0 ? milestones[i - 1] : 0
+        const progress = ((level - prevMilestone) / (milestones[i] - prevMilestone)) * 100
+        return { target: milestones[i], progress: Math.min(progress, 100), bonus: Math.pow(2, reachedCount + 1) }
+      }
+    }
+    // 全マイルストーン達成
+    return null
   }
 
   function buyFacility(facilityId, amount = 1) {

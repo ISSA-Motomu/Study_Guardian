@@ -153,10 +153,17 @@
           <!-- Level Badge -->
           <div 
             v-if="facility.level > 0"
-            class="absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white"
+            class="absolute -top-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-lg"
             :class="tierBadgeClass"
           >
             {{ facility.level }}
+          </div>
+          <!-- Milestone Bonus Badge -->
+          <div 
+            v-if="facility.milestoneBonus > 1"
+            class="absolute -bottom-1 -left-1 bg-yellow-400 rounded-full px-1.5 py-0.5 shadow"
+          >
+            <span class="text-[9px] text-yellow-900 font-bold">×{{ facility.milestoneBonus }}</span>
           </div>
         </div>
 
@@ -171,7 +178,7 @@
           <div class="flex items-center gap-3 mt-2 text-xs">
             <div class="flex items-center gap-1 text-green-600">
               <span>⚡</span>
-              <span>+{{ facility.production.toFixed(1) }}/分</span>
+              <span>+{{ formatNumber(facility.production) }}/分</span>
             </div>
             <div class="flex items-center gap-1 text-gray-500">
               <span>💡</span>
@@ -192,14 +199,22 @@
         </button>
       </div>
 
-      <!-- Level Progress Bar -->
-      <div v-if="facility.level > 0" class="px-4 pb-3">
-        <div class="h-1 bg-gray-200 rounded-full overflow-hidden">
+      <!-- Milestone Progress Bar -->
+      <div v-if="facility.level > 0 && facility.nextMilestone" class="px-4 pb-3">
+        <div class="flex items-center justify-between text-[10px] text-gray-500 mb-1">
+          <span>次のボーナス: Lv.{{ facility.nextMilestone.target }}</span>
+          <span class="text-amber-500 font-bold">→ ×{{ facility.nextMilestone.bonus }}</span>
+        </div>
+        <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
           <div 
-            class="h-full transition-all duration-300"
-            :class="tierGradient"
-            :style="{ width: (facility.level % 10) * 10 + '%' }"
+            class="h-full transition-all duration-300 bg-gradient-to-r from-yellow-400 to-amber-500"
+            :style="{ width: facility.nextMilestone.progress + '%' }"
           />
+        </div>
+      </div>
+      <div v-else-if="facility.level > 0" class="px-4 pb-3">
+        <div class="text-center text-[10px] text-amber-500 font-bold">
+          🏆 全マイルストーン達成！ ×{{ facility.milestoneBonus }}
         </div>
       </div>
     </template>
@@ -218,6 +233,9 @@ defineEmits(['buy'])
 
 const evolutionStore = useEvolutionStore()
 const currentTotalPoints = computed(() => evolutionStore.totalEarnedPoints)
+
+// Use store's formatNumber
+const formatNumber = (num) => evolutionStore.formatNumber(num)
 
 // SVG circle circumference
 const circumference = 2 * Math.PI * 28
@@ -264,13 +282,6 @@ const handleClick = () => {
   if (props.facility.state === 'unlocked' && props.facility.canAfford) {
     // 購入ボタンがあるのでここでは何もしない
   }
-}
-
-const formatNumber = (num) => {
-  if (num >= 1000000000) return (num / 1000000000).toFixed(2) + 'B'
-  if (num >= 1000000) return (num / 1000000).toFixed(2) + 'M'
-  if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
-  return Math.floor(num).toLocaleString()
 }
 </script>
 

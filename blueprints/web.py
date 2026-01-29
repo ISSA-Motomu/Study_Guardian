@@ -463,35 +463,41 @@ def api_get_evolution(user_id):
         col_map = {str(h).strip(): i for i, h in enumerate(headers)}
 
         idx_uid = col_map.get("user_id")
-        idx_kp = col_map.get("knowledge_points")
-        idx_total = col_map.get("total_earned")
-        idx_levels = col_map.get("facility_levels")
 
         for row in records[1:]:
             if len(row) > idx_uid and str(row[idx_uid]) == str(user_id):
                 import json
 
-                levels_str = (
-                    row[idx_levels]
-                    if idx_levels is not None and idx_levels < len(row)
-                    else "{}"
-                )
-                try:
-                    levels = json.loads(levels_str) if levels_str else {}
-                except:
-                    levels = {}
+                def get_val(key, default=""):
+                    idx = col_map.get(key)
+                    if idx is not None and idx < len(row):
+                        return row[idx]
+                    return default
+
+                def parse_json(val, default):
+                    try:
+                        return json.loads(val) if val else default
+                    except:
+                        return default
+
+                def parse_int(val, default=0):
+                    try:
+                        return int(float(val)) if val else default
+                    except:
+                        return default
 
                 return jsonify(
                     {
                         "status": "ok",
                         "data": {
-                            "knowledge_points": int(row[idx_kp])
-                            if idx_kp is not None and row[idx_kp]
-                            else 0,
-                            "total_earned": int(row[idx_total])
-                            if idx_total is not None and row[idx_total]
-                            else 0,
-                            "facility_levels": levels,
+                            "knowledge_points": parse_int(get_val("knowledge_points")),
+                            "total_earned": parse_int(get_val("total_earned")),
+                            "lifetime_earned": parse_int(get_val("lifetime_earned")),
+                            "facility_levels": parse_json(get_val("facility_levels"), {}),
+                            "upgrades": parse_json(get_val("upgrades"), []),
+                            "achievements": parse_json(get_val("achievements"), []),
+                            "prestige_level": parse_int(get_val("prestige_level")),
+                            "prestige_points": parse_int(get_val("prestige_points")),
                         },
                     }
                 )
@@ -512,7 +518,12 @@ def api_sync_evolution():
     user_id = data.get("user_id")
     knowledge_points = data.get("knowledge_points", 0)
     total_earned = data.get("total_earned", 0)
+    lifetime_earned = data.get("lifetime_earned", 0)
     facility_levels = data.get("facility_levels", {})
+    upgrades = data.get("upgrades", [])
+    achievements = data.get("achievements", [])
+    prestige_level = data.get("prestige_level", 0)
+    prestige_points = data.get("prestige_points", 0)
 
     try:
         sheet = GSheetService.get_worksheet("evolution_data")
@@ -521,14 +532,19 @@ def api_sync_evolution():
             spreadsheet = GSheetService.get_spreadsheet()
             if spreadsheet:
                 sheet = spreadsheet.add_worksheet(
-                    title="evolution_data", rows=100, cols=10
+                    title="evolution_data", rows=100, cols=15
                 )
                 sheet.append_row(
                     [
                         "user_id",
                         "knowledge_points",
                         "total_earned",
+                        "lifetime_earned",
                         "facility_levels",
+                        "upgrades",
+                        "achievements",
+                        "prestige_level",
+                        "prestige_points",
                         "last_sync",
                     ]
                 )
@@ -537,50 +553,72 @@ def api_sync_evolution():
             return jsonify({"status": "error", "message": "Cannot access sheet"}), 500
 
         records = sheet.get_all_values()
-        headers = (
-            records[0]
-            if records
-            else [
-                "user_id",
-                "knowledge_points",
-                "total_earned",
-                "facility_levels",
-                "last_sync",
-            ]
-        )
-        col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+        headers = records[0] if records else []
+        
+        # ヘッダーが古い形式の場合、新しいカラムを追加
+        expected_headers = [
+            "user_id", "knowledge_points", "total_earned", "lifetime_earned",
+            "facility_levels", "upgrades", "achievements", 
+            "prestige_level", "prestige_points", "last_sync"
+        ]
+        
+        if len(headers) < len(expected_headers):
+            # 不足しているヘッダーを追加
+            for i, h in enumerate(expected_headers):
+                if i < len(headers):
+                    continue
+                sheet.update_cell(1, i + 1, h)
+            headers = expected_headers
 
-        idx_uid = col_map.get("user_id", 0)
-        idx_kp = col_map.get("knowledge_points", 1)
-        idx_total = col_map.get("total_earned", 2)
-        idx_levels = col_map.get("facility_levels", 3)
-        idx_sync = col_map.get("last_sync", 4)
+        col_map = {str(h).strip(): i for i, h in enumerate(headers)}
 
         now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
         timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
+        
         levels_json = json.dumps(facility_levels)
+        upgrades_json = json.dumps(upgrades)
+        achievements_json = json.dumps(achievements)
 
         # 既存ユーザーを探す
         target_row = None
+        idx_uid = col_map.get("user_id", 0)
         for i, row in enumerate(records[1:], start=2):
             if len(row) > idx_uid and str(row[idx_uid]) == str(user_id):
                 target_row = i
                 break
 
+        def get_col(key, default=0):
+            return col_map.get(key, default) + 1  # 1-indexed for gspread
+
         if target_row:
-            # 更新
-            sheet.update_cell(target_row, idx_kp + 1, knowledge_points)
-            sheet.update_cell(target_row, idx_total + 1, total_earned)
-            sheet.update_cell(target_row, idx_levels + 1, levels_json)
-            sheet.update_cell(target_row, idx_sync + 1, timestamp)
+            # 更新（バッチ更新で高速化）
+            updates = [
+                (target_row, get_col("knowledge_points", 1), knowledge_points),
+                (target_row, get_col("total_earned", 2), total_earned),
+                (target_row, get_col("lifetime_earned", 3), lifetime_earned),
+                (target_row, get_col("facility_levels", 4), levels_json),
+                (target_row, get_col("upgrades", 5), upgrades_json),
+                (target_row, get_col("achievements", 6), achievements_json),
+                (target_row, get_col("prestige_level", 7), prestige_level),
+                (target_row, get_col("prestige_points", 8), prestige_points),
+                (target_row, get_col("last_sync", 9), timestamp),
+            ]
+            for row, col, val in updates:
+                sheet.update_cell(row, col, val)
         else:
             # 新規追加
-            new_row = [""] * max(5, len(headers))
-            new_row[idx_uid] = user_id
-            new_row[idx_kp] = knowledge_points
-            new_row[idx_total] = total_earned
-            new_row[idx_levels] = levels_json
-            new_row[idx_sync] = timestamp
+            new_row = [
+                user_id,
+                knowledge_points,
+                total_earned,
+                lifetime_earned,
+                levels_json,
+                upgrades_json,
+                achievements_json,
+                prestige_level,
+                prestige_points,
+                timestamp,
+            ]
             sheet.append_row(new_row)
 
         return jsonify({"status": "ok"})
