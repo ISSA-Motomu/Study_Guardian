@@ -116,9 +116,9 @@
       </div>
 
       <!-- Navigation Buttons - iOS style -->
-      <div class="absolute bottom-4 left-4 right-4 z-20 ios-safe-bottom">
-        <p class="text-[10px] text-white/50 text-center mb-3 uppercase tracking-widest">タップしてKPを獲得</p>
-        <div class="flex gap-2 justify-center flex-wrap">
+      <div class="absolute bottom-4 left-2 right-2 z-20 ios-safe-bottom">
+        <p class="text-[10px] text-white/50 text-center mb-2 uppercase tracking-widest">タップしてKPを獲得</p>
+        <div class="flex gap-1.5 justify-center">
           <button 
             @click.stop="navigate('list')"
             class="ios-nav-button"
@@ -377,9 +377,11 @@ onMounted(() => {
 /* iOS-style Navigation Buttons - Larger for better tap targets */
 .ios-nav-button {
   @apply flex flex-col items-center justify-center gap-1 bg-white/15 backdrop-blur-xl rounded-2xl border border-white/30 text-white transition-all;
-  min-width: 80px;
-  min-height: 70px;
-  padding: 12px 14px;
+  min-width: 72px;
+  min-height: 64px;
+  padding: 10px 8px;
+  flex: 1;
+  max-width: 90px;
 }
 
 .ios-nav-button:active {

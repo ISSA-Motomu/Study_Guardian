@@ -1220,21 +1220,21 @@ export const useEvolutionStore = defineStore('evolution', () => {
       facilityLevels.value = {}
     }
     calculateOfflineReward()
-    
+
     // 定期的にサーバーに同期（30秒ごと）
     setInterval(() => {
       if (isDirty.value) {
         syncToServer()
       }
     }, 30000)
-    
+
     // ページ離脱時にも同期
     window.addEventListener('beforeunload', () => {
       if (isDirty.value) {
         syncToServer()
       }
     })
-    
+
     // ページがバックグラウンドになったときも同期
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden' && isDirty.value) {

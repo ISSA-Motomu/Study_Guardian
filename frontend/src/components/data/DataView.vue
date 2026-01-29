@@ -187,9 +187,27 @@
       </GlassPanel>
     </div>
 
-    <!-- Subject Breakdown (always visible) -->
+    <!-- Subject Breakdown - Weekly -->
     <GlassPanel>
-      <h3 class="font-bold text-gray-700 mb-4">📚 科目別時間</h3>
+      <h3 class="font-bold text-gray-700 mb-4">📚 今週の科目別時間</h3>
+      <div v-if="weeklySubjectData.length === 0" class="text-center text-gray-500 py-4">
+        今週の記録はありません
+      </div>
+      <SubjectChart v-else :data="weeklySubjectData" />
+    </GlassPanel>
+
+    <!-- Subject Breakdown - Monthly -->
+    <GlassPanel>
+      <h3 class="font-bold text-gray-700 mb-4">📆 今月の科目別時間</h3>
+      <div v-if="monthlySubjectData.length === 0" class="text-center text-gray-500 py-4">
+        今月の記録はありません
+      </div>
+      <SubjectChart v-else :data="monthlySubjectData" />
+    </GlassPanel>
+
+    <!-- Subject Breakdown - Total -->
+    <GlassPanel>
+      <h3 class="font-bold text-gray-700 mb-4">📊 累計科目別時間</h3>
       <SubjectChart :data="subjectData" />
     </GlassPanel>
 
@@ -277,6 +295,7 @@ const allData = ref([])
 const subjectData = ref([])
 const recentActivity = ref([])
 const globalActivity = ref([])
+const studyRecords = ref([]) // 全勉強ログ（日付・科目付き）
 
 // Navigation offsets
 const weekOffset = ref(0)
@@ -300,6 +319,54 @@ const subjectLegend = computed(() => {
 const getSubjectColor = (subject) => {
   return subjectColors[subject] || subjectColors['その他']
 }
+
+// Weekly subject breakdown
+const weeklySubjectData = computed(() => {
+  const today = new Date()
+  const targetMonday = new Date(today)
+  const dayOfWeek = today.getDay() || 7
+  targetMonday.setDate(today.getDate() - dayOfWeek + 1)
+  const mondayStr = targetMonday.toISOString().split('T')[0]
+  
+  const subjectTotals = {}
+  studyRecords.value.forEach(record => {
+    if (record.date >= mondayStr) {
+      const subj = record.subject || 'その他'
+      subjectTotals[subj] = (subjectTotals[subj] || 0) + (record.minutes || 0)
+    }
+  })
+  
+  const total = Object.values(subjectTotals).reduce((a, b) => a + b, 0)
+  return Object.entries(subjectTotals).map(([subject, minutes]) => ({
+    subject,
+    minutes,
+    color: getSubjectColor(subject),
+    percent: total > 0 ? (minutes / total * 100) : 0
+  })).sort((a, b) => b.minutes - a.minutes)
+})
+
+// Monthly subject breakdown
+const monthlySubjectData = computed(() => {
+  const today = new Date()
+  const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
+  const firstStr = firstOfMonth.toISOString().split('T')[0]
+  
+  const subjectTotals = {}
+  studyRecords.value.forEach(record => {
+    if (record.date >= firstStr) {
+      const subj = record.subject || 'その他'
+      subjectTotals[subj] = (subjectTotals[subj] || 0) + (record.minutes || 0)
+    }
+  })
+  
+  const total = Object.values(subjectTotals).reduce((a, b) => a + b, 0)
+  return Object.entries(subjectTotals).map(([subject, minutes]) => ({
+    subject,
+    minutes,
+    color: getSubjectColor(subject),
+    percent: total > 0 ? (minutes / total * 100) : 0
+  })).sort((a, b) => b.minutes - a.minutes)
+})
 
 // Format timestamp for display
 const formatTimestamp = (timestamp) => {
@@ -506,6 +573,22 @@ const fetchData = async () => {
     
     subjectData.value = data.subject || []
     recentActivity.value = data.recent || []
+    
+    // Store all study records with date and subject for weekly/monthly calc
+    if (data.all_records && data.all_records.length > 0) {
+      studyRecords.value = data.all_records.map(r => ({
+        date: r.date,
+        subject: r.subject,
+        minutes: r.minutes
+      }))
+    } else if (data.recent) {
+      // Fallback to recent if all_records not available
+      studyRecords.value = data.recent.map(r => ({
+        date: r.date,
+        subject: r.subject,
+        minutes: r.minutes
+      }))
+    }
     
   } catch (e) {
     console.error('Failed to fetch stats:', e)

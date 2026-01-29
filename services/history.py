@@ -155,12 +155,18 @@ class HistoryService:
 
             # Format Recent Data
             recent_logs.sort(key=lambda x: x["date"], reverse=True)
-            recent_logs = recent_logs[:10]  # Last 10
+            all_logs = list(recent_logs)  # Keep all for weekly/monthly calc
+            recent_logs = recent_logs[:10]  # Last 10 for display
+
+            # Calculate total minutes
+            total_minutes = sum(subject_map.values())
 
             return {
                 "weekly": weekly_data,
                 "subject": subject_data,
                 "recent": recent_logs,
+                "all_records": all_logs,  # For weekly/monthly subject breakdown
+                "total": total_minutes,
             }
 
         except Exception as e:
@@ -820,29 +826,43 @@ class HistoryService:
 
                     for row in records[1:]:
                         # DONEのもののみ
-                        status = row[idx_stat] if idx_stat and len(row) > idx_stat else ""
+                        status = (
+                            row[idx_stat] if idx_stat and len(row) > idx_stat else ""
+                        )
                         if status.upper() != "DONE":
                             continue
 
-                        duration_str = row[idx_dur] if idx_dur and len(row) > idx_dur else "0"
+                        duration_str = (
+                            row[idx_dur] if idx_dur and len(row) > idx_dur else "0"
+                        )
                         if not duration_str.isdigit() or int(duration_str) == 0:
                             continue
 
-                        name = row[idx_name] if idx_name and len(row) > idx_name else "Unknown"
+                        name = (
+                            row[idx_name]
+                            if idx_name and len(row) > idx_name
+                            else "Unknown"
+                        )
                         date = row[idx_date] if idx_date and len(row) > idx_date else ""
-                        subject = row[idx_subj] if idx_subj and len(row) > idx_subj else ""
-                        start_time = row[idx_time] if idx_time and len(row) > idx_time else ""
+                        subject = (
+                            row[idx_subj] if idx_subj and len(row) > idx_subj else ""
+                        )
+                        start_time = (
+                            row[idx_time] if idx_time and len(row) > idx_time else ""
+                        )
 
                         # タイムスタンプ用にdate + start_timeを結合
                         timestamp = f"{date} {start_time}" if start_time else date
 
-                        recent_items.append({
-                            "type": "study",
-                            "user_name": name,
-                            "description": f"{subject} {duration_str}分",
-                            "timestamp": timestamp,
-                            "icon": "📚"
-                        })
+                        recent_items.append(
+                            {
+                                "type": "study",
+                                "user_name": name,
+                                "description": f"{subject} {duration_str}分",
+                                "timestamp": timestamp,
+                                "icon": "📚",
+                            }
+                        )
         except Exception as e:
             print(f"Study Activity Error: {e}")
 
@@ -861,21 +881,35 @@ class HistoryService:
                     idx_time = col_map.get("completed_at") or col_map.get("applied_at")
 
                     for row in records[1:]:
-                        status = row[idx_stat] if idx_stat and len(row) > idx_stat else ""
+                        status = (
+                            row[idx_stat] if idx_stat and len(row) > idx_stat else ""
+                        )
                         if status.upper() not in ["COMPLETED", "DONE", "APPROVED"]:
                             continue
 
-                        name = row[idx_name] if idx_name and len(row) > idx_name else "Unknown"
-                        title = row[idx_title] if idx_title and len(row) > idx_title else "お手伝い"
-                        timestamp = row[idx_time] if idx_time and len(row) > idx_time else ""
+                        name = (
+                            row[idx_name]
+                            if idx_name and len(row) > idx_name
+                            else "Unknown"
+                        )
+                        title = (
+                            row[idx_title]
+                            if idx_title and len(row) > idx_title
+                            else "お手伝い"
+                        )
+                        timestamp = (
+                            row[idx_time] if idx_time and len(row) > idx_time else ""
+                        )
 
-                        recent_items.append({
-                            "type": "job",
-                            "user_name": name,
-                            "description": title,
-                            "timestamp": timestamp,
-                            "icon": "🏠"
-                        })
+                        recent_items.append(
+                            {
+                                "type": "job",
+                                "user_name": name,
+                                "description": title,
+                                "timestamp": timestamp,
+                                "icon": "🏠",
+                            }
+                        )
         except Exception as e:
             print(f"Job Activity Error: {e}")
 
