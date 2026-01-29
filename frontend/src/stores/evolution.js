@@ -1252,7 +1252,7 @@ export const useEvolutionStore = defineStore('evolution', () => {
     // State
     knowledgePoints, totalEarnedPoints, lifetimeEarnedPoints, facilityLevels,
     purchasedUpgrades, unlockedAchievements, prestigeLevel, prestigePoints,
-    prestigeMultiplier, pendingOfflineReward, lastSyncTime, isDirty,
+    prestigeMultiplier, pendingOfflineReward, lastSyncTime, isDirty, lastActiveTime,
     // Computed
     currentProduction, totalMultiplier, facilitiesWithState, facilitiesByTier,
     upgradesWithState, availableUpgrades, nextUnlock, currentEra,

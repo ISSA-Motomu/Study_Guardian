@@ -40,26 +40,6 @@
           <span class="text-xl font-bold text-purple-300 tabular-nums">{{ stats.totalOwned }}</span>
         </div>
       </div>
-      
-      <!-- Buy Amount Selector -->
-      <div class="px-4 pb-4">
-        <div class="flex items-center gap-2 bg-black/30 rounded-xl p-2">
-          <span class="text-xs text-white/60 px-2">購入数:</span>
-          <button
-            v-for="opt in buyOptions"
-            :key="opt.value"
-            @click="selectedBuyAmount = opt.value"
-            :class="[
-              'flex-1 py-2 px-3 rounded-lg text-sm font-bold transition-all',
-              selectedBuyAmount === opt.value 
-                ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg' 
-                : 'bg-white/10 text-white/70 hover:bg-white/20'
-            ]"
-          >
-            {{ opt.label }}
-          </button>
-        </div>
-      </div>
     </div>
 
     <!-- Facility List by Tier -->
@@ -106,7 +86,6 @@
             v-for="facility in tierGroup.facilities"
             :key="facility.id"
             :facility="facility"
-            :buyAmount="selectedBuyAmount"
             @buy="handleBuy"
           />
         </div>
@@ -136,7 +115,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { useEvolutionStore } from '@/stores/evolution'
 import { soundManager } from '@/utils/sound'
 import AnimatedCounter from './AnimatedCounter.vue'
@@ -153,15 +132,6 @@ const navigate = (view) => {
 }
 
 const stats = computed(() => evolutionStore.stats)
-
-// 購入数選択
-const selectedBuyAmount = ref(1)
-const buyOptions = [
-  { label: '×1', value: 1 },
-  { label: '×10', value: 10 },
-  { label: '×100', value: 100 },
-  { label: 'MAX', value: -1 }  // -1 = MAX
-]
 
 const handleBuy = ({ facilityId, amount }) => {
   if (amount === -1) {

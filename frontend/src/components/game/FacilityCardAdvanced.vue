@@ -187,17 +187,34 @@
           </div>
         </div>
 
-        <!-- Buy Button - Larger for iOS -->
-        <button
-          @click.stop="emit('buy', { facilityId: facility.id, amount: buyAmount })"
-          :disabled="!canAffordMultiple"
-          class="px-4 py-3 rounded-2xl font-bold text-sm transition-all shrink-0 min-w-[60px] min-h-[52px] flex flex-col items-center justify-center gap-0.5"
-          :class="buyButtonClass"
-        >
-          <span v-if="facility.level === 0">🔓</span>
-          <span v-else>⬆️</span>
-          <span v-if="displayAmount" class="text-[10px]">{{ displayAmount }}</span>
-        </button>
+        <!-- Buy Button with Dropdown - Larger for iOS -->
+        <div class="flex flex-col items-center gap-1 shrink-0">
+          <!-- Dropdown Select -->
+          <select
+            v-model="selectedAmount"
+            @click.stop
+            class="px-2 py-1 rounded-lg text-xs font-bold bg-white/20 text-white border border-white/30 appearance-none cursor-pointer text-center"
+            :class="{ 'bg-indigo-500/30 border-indigo-400/50': facility.state === 'unlocked' }"
+            style="min-width: 60px;"
+          >
+            <option value="1">×1</option>
+            <option value="10">×10</option>
+            <option value="100">×100</option>
+            <option value="-1">MAX</option>
+          </select>
+          
+          <!-- Buy Button -->
+          <button
+            @click.stop="handleBuyClick"
+            :disabled="!canAffordMultiple"
+            class="px-4 py-3 rounded-2xl font-bold text-sm transition-all min-w-[60px] min-h-[44px] flex flex-col items-center justify-center gap-0.5"
+            :class="buyButtonClass"
+          >
+            <span v-if="facility.level === 0">🔓</span>
+            <span v-else>⬆️</span>
+            <span v-if="displayAmountText" class="text-[10px]">{{ displayAmountText }}</span>
+          </button>
+        </div>
       </div>
 
       <!-- Milestone Progress Bar -->
@@ -223,7 +240,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useEvolutionStore } from '@/stores/evolution'
 
 const props = defineProps({
@@ -236,8 +253,17 @@ const emit = defineEmits(['buy'])
 const evolutionStore = useEvolutionStore()
 const currentTotalPoints = computed(() => evolutionStore.totalEarnedPoints)
 
+// 選択された購入数（カードごとに独立）
+const selectedAmount = ref(1)
+
 // Use store's formatNumber
 const formatNumber = (num) => evolutionStore.formatNumber(num)
+
+// 購入ボタンクリックハンドラー
+const handleBuyClick = () => {
+  const amount = parseInt(selectedAmount.value)
+  emit('buy', { facilityId: props.facility.id, amount })
+}
 
 // 購入可能数と合計コストを計算
 const purchaseInfo = computed(() => {
@@ -245,7 +271,8 @@ const purchaseInfo = computed(() => {
     return { canBuy: 0, totalCost: 0 }
   }
   
-  const targetAmount = props.buyAmount === -1 ? 1000 : props.buyAmount
+  const amount = parseInt(selectedAmount.value)
+  const targetAmount = amount === -1 ? 1000 : amount
   let totalCost = 0
   let canBuy = 0
   let tempKP = evolutionStore.knowledgePoints
@@ -267,17 +294,19 @@ const purchaseInfo = computed(() => {
 })
 
 const displayCost = computed(() => {
-  if (props.buyAmount === 1) {
+  const amount = parseInt(selectedAmount.value)
+  if (amount === 1) {
     return props.facility.currentCost
   }
   return purchaseInfo.value.totalCost
 })
 
-const displayAmount = computed(() => {
-  if (props.buyAmount === -1) {
+const displayAmountText = computed(() => {
+  const amount = parseInt(selectedAmount.value)
+  if (amount === -1) {
     return purchaseInfo.value.canBuy > 0 ? `×${purchaseInfo.value.canBuy}` : 'MAX'
   }
-  return props.buyAmount > 1 ? `×${props.buyAmount}` : ''
+  return amount > 1 ? `×${amount}` : ''
 })
 
 const canAffordMultiple = computed(() => {

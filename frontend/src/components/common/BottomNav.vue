@@ -4,7 +4,7 @@
       <button 
         v-for="item in navItems" 
         :key="item.id"
-        @click="emit('update:modelValue', item.id)"
+        @click="handleNavClick(item.id)"
         :class="[
           'flex flex-col items-center transition-transform',
           modelValue === item.id ? 'text-indigo-600 scale-110' : 'text-gray-400'
@@ -19,7 +19,9 @@
 </template>
 
 <script setup>
-defineProps({
+import { useSound } from '@/composables/useSound'
+
+const props = defineProps({
   modelValue: {
     type: String,
     required: true
@@ -31,10 +33,18 @@ defineProps({
 })
 
 const emit = defineEmits(['update:modelValue'])
+const { playSound } = useSound()
 
 const navItems = [
   { id: 'data', icon: '📊', label: 'データ' },
   { id: 'study', icon: '📖', label: '勉強' },
   { id: 'game', icon: '⚔️', label: 'ゲーム' }
 ]
+
+const handleNavClick = (id) => {
+  if (id !== props.modelValue) {
+    playSound('select3')
+  }
+  emit('update:modelValue', id)
+}
 </script>
