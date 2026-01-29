@@ -37,6 +37,11 @@
       @cancel="shopStore.showBuyModal = false"
     />
 
+    <ShopListModal
+      v-if="shopStore.showShopList"
+      @close="shopStore.showShopList = false"
+    />
+
     <!-- Bottom Navigation -->
     <BottomNav v-model="view" :in-session="studyStore.inSession" />
     
@@ -70,6 +75,7 @@ import GameView from '@/components/game/GameView.vue'
 import DataView from '@/components/data/DataView.vue'
 import AdminView from '@/components/admin/AdminView.vue'
 import BuyModal from '@/components/shop/BuyModal.vue'
+import ShopListModal from '@/components/shop/ShopListModal.vue'
 
 // Stores
 const userStore = useUserStore()

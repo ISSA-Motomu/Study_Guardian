@@ -77,6 +77,26 @@
         <span class="text-sm font-medium text-gray-600">{{ todayMinutes }}/60分</span>
       </div>
     </GlassPanel>
+
+    <!-- Menu Grid -->
+    <div class="grid grid-cols-2 gap-4">
+      <button 
+        @click="openShop"
+        class="bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-lg flex flex-col items-center justify-center gap-2 transition-transform active:scale-95 border-b-4 border-amber-200"
+      >
+        <span class="text-4xl">🏪</span>
+        <span class="font-bold text-gray-700">ショップ</span>
+      </button>
+
+      <button 
+        @click="openGacha"
+        class="bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-lg flex flex-col items-center justify-center gap-2 transition-transform active:scale-95 border-b-4 border-purple-200"
+      >
+        <span class="text-4xl">🔮</span>
+        <span class="font-bold text-gray-700">ガチャ</span>
+        <span class="text-xs text-red-500 font-bold bg-red-100 px-2 py-0.5 rounded-full">準備中</span>
+      </button>
+    </div>
   </div>
 </template>
 
@@ -84,10 +104,14 @@
 import { computed } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { useStudyStore } from '@/stores/study'
+import { useShopStore } from '@/stores/shop'
+import { useSound } from '@/composables/useSound'
 import GlassPanel from '@/components/common/GlassPanel.vue'
 
 const userStore = useUserStore()
 const studyStore = useStudyStore()
+const shopStore = useShopStore()
+const { playSound } = useSound()
 
 const emit = defineEmits(['timer'])
 
@@ -96,4 +120,14 @@ const defaultAvatar = 'https://cdn-icons-png.flaticon.com/512/4333/4333609.png'
 // TODO: Fetch from API
 const todayMinutes = computed(() => Math.min(60, Math.floor(Math.random() * 60)))
 const dailyProgress = computed(() => (todayMinutes.value / 60) * 100)
+
+const openShop = () => {
+  playSound('select1')
+  shopStore.openShopList()
+}
+
+const openGacha = () => {
+  playSound('select2') // Using a different sound just to acknowledge tap
+  alert('ガチャは現在準備中です！\nアップデートをお楽しみに！')
+}
 </script>

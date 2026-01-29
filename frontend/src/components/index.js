@@ -22,6 +22,8 @@ export { default as SubjectChart } from './data/SubjectChart.vue'
 
 // Shop Components
 export { default as BuyModal } from './shop/BuyModal.vue'
+export { default as ShopListModal } from './shop/ShopListModal.vue'
+
 
 // Admin Components
 export { default as AdminView } from './admin/AdminView.vue'

@@ -11,6 +11,7 @@ export const useShopStore = defineStore('shop', () => {
   const shopItems = ref([])
   const selectedItem = ref(null)
   const showBuyModal = ref(false)
+  const showShopList = ref(false)
   const loading = ref(false)
 
   // Actions
@@ -29,6 +30,13 @@ export const useShopStore = defineStore('shop', () => {
       alert('通信エラー')
     } finally {
       loading.value = false
+    }
+  }
+
+  const openShopList = () => {
+    showShopList.value = true
+    if (shopItems.value.length === 0) {
+      fetchItems()
     }
   }
 
@@ -74,9 +82,11 @@ export const useShopStore = defineStore('shop', () => {
     shopItems,
     selectedItem,
     showBuyModal,
+    showShopList,
     loading,
     // Actions
     fetchItems,
+    openShopList,
     openBuyModal,
     confirmBuy
   }
