@@ -598,4 +598,223 @@ def api_pause_study():
     return jsonify({"status": "error"}), 400
 
 
-# --- ADMIN API ---
+# ===== ADMIN API =====
+
+
+@web_bp.route("/api/admin/pending")
+def api_admin_pending():
+    """承認待ちの全項目を取得"""
+    from services.approval import ApprovalService
+
+    try:
+        pending_items = ApprovalService.get_all_pending()
+        return jsonify({"status": "ok", "data": pending_items})
+    except Exception as e:
+        print(f"Admin Pending Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@web_bp.route("/api/admin/approve/study", methods=["POST"])
+def api_admin_approve_study():
+    """勉強記録を承認"""
+    data = request.json
+    row_index = data.get("row_index")
+    user_id = data.get("user_id")
+    minutes = data.get("minutes", 0)
+
+    if not row_index:
+        return jsonify({"status": "error", "message": "Missing row_index"}), 400
+
+    try:
+        # 承認処理
+        if GSheetService.approve_study(int(row_index)):
+            # EXP付与
+            earned_exp = int(minutes) if minutes else 0
+            if earned_exp > 0 and user_id:
+                EconomyService.add_exp(user_id, earned_exp, "STUDY_APPROVED")
+                # 累計勉強時間も更新
+                EconomyService.add_study_time(user_id, earned_exp)
+
+            # ユーザーに通知
+            if user_id:
+                try:
+                    line_bot_api.push_message(
+                        user_id,
+                        TextSendMessage(
+                            text=f"✅ 勉強記録が承認されました！\n+{earned_exp} XP 獲得！"
+                        ),
+                    )
+                except:
+                    pass
+
+            return jsonify({"status": "ok"})
+        else:
+            return jsonify({"status": "error", "message": "Failed to approve"}), 500
+    except Exception as e:
+        print(f"Approve Study Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@web_bp.route("/api/admin/reject/study", methods=["POST"])
+def api_admin_reject_study():
+    """勉強記録を却下"""
+    data = request.json
+    row_index = data.get("row_index")
+    user_id = data.get("user_id")
+
+    if not row_index:
+        return jsonify({"status": "error", "message": "Missing row_index"}), 400
+
+    try:
+        if GSheetService.reject_study(int(row_index)):
+            # ユーザーに通知
+            if user_id:
+                try:
+                    line_bot_api.push_message(
+                        user_id,
+                        TextSendMessage(
+                            text="❌ 勉強記録が却下されました。\n記録に問題があった可能性があります。"
+                        ),
+                    )
+                except:
+                    pass
+            return jsonify({"status": "ok"})
+        else:
+            return jsonify({"status": "error", "message": "Failed to reject"}), 500
+    except Exception as e:
+        print(f"Reject Study Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@web_bp.route("/api/admin/approve/job", methods=["POST"])
+def api_admin_approve_job():
+    """ジョブ完了を承認"""
+    from services.job import JobService
+
+    data = request.json
+    job_id = data.get("job_id")
+
+    if not job_id:
+        return jsonify({"status": "error", "message": "Missing job_id"}), 400
+
+    try:
+        success, msg = JobService.approve_job(job_id)
+        if success:
+            return jsonify({"status": "ok", "message": msg})
+        else:
+            return jsonify({"status": "error", "message": msg}), 500
+    except Exception as e:
+        print(f"Approve Job Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@web_bp.route("/api/admin/reject/job", methods=["POST"])
+def api_admin_reject_job():
+    """ジョブ完了を却下"""
+    from services.job import JobService
+
+    data = request.json
+    job_id = data.get("job_id")
+
+    if not job_id:
+        return jsonify({"status": "error", "message": "Missing job_id"}), 400
+
+    try:
+        success, msg = JobService.reject_job(job_id)
+        if success:
+            return jsonify({"status": "ok", "message": msg})
+        else:
+            return jsonify({"status": "error", "message": msg}), 500
+    except Exception as e:
+        print(f"Reject Job Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@web_bp.route("/api/admin/approve/shop", methods=["POST"])
+def api_admin_approve_shop():
+    """ショップリクエストを承認"""
+    data = request.json
+    request_id = data.get("request_id")
+
+    if not request_id:
+        return jsonify({"status": "error", "message": "Missing request_id"}), 400
+
+    try:
+        if ShopService.approve_request(request_id):
+            return jsonify({"status": "ok"})
+        else:
+            return jsonify({"status": "error", "message": "Failed to approve"}), 500
+    except Exception as e:
+        print(f"Approve Shop Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@web_bp.route("/api/admin/reject/shop", methods=["POST"])
+def api_admin_reject_shop():
+    """ショップリクエストを却下（返金）"""
+    data = request.json
+    request_id = data.get("request_id")
+    user_id = data.get("user_id")
+    cost = data.get("cost", 0)
+
+    if not request_id:
+        return jsonify({"status": "error", "message": "Missing request_id"}), 400
+
+    try:
+        if ShopService.deny_request(request_id):
+            # 返金処理
+            if user_id and cost:
+                EconomyService.add_exp(user_id, int(cost), f"REFUND_{request_id}")
+            return jsonify({"status": "ok"})
+        else:
+            return jsonify({"status": "error", "message": "Failed to reject"}), 500
+    except Exception as e:
+        print(f"Reject Shop Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@web_bp.route("/api/admin/approve/mission", methods=["POST"])
+def api_admin_approve_mission():
+    """ミッション完了を承認"""
+    from services.mission import MissionService
+
+    data = request.json
+    mission_id = data.get("mission_id")
+
+    if not mission_id:
+        return jsonify({"status": "error", "message": "Missing mission_id"}), 400
+
+    try:
+        success, msg = MissionService.approve_mission(mission_id)
+        if success:
+            return jsonify({"status": "ok", "message": msg})
+        else:
+            return jsonify({"status": "error", "message": msg}), 500
+    except Exception as e:
+        print(f"Approve Mission Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@web_bp.route("/api/admin/reject/mission", methods=["POST"])
+def api_admin_reject_mission():
+    """ミッション完了を却下"""
+    from services.mission import MissionService
+
+    data = request.json
+    mission_id = data.get("mission_id")
+
+    if not mission_id:
+        return jsonify({"status": "error", "message": "Missing mission_id"}), 400
+
+    try:
+        success, msg = MissionService.reject_mission(mission_id)
+        if success:
+            return jsonify({"status": "ok", "message": msg})
+        else:
+            return jsonify({"status": "error", "message": msg}), 500
+    except Exception as e:
+        print(f"Reject Mission Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# --- Static and Legacy ---

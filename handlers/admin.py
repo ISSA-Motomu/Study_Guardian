@@ -955,7 +955,7 @@ def handle_message(event, text):
                         bubbles.append(bubble)
 
                 elif p_type == "job":
-                    job_title = data.get("job_title")
+                    job_title = data.get("title") or data.get("job_title")
                     if not job_title:
                         job_title = "無題のタスク"
 
@@ -963,10 +963,10 @@ def handle_message(event, text):
                         "approval_card_job.json",
                         user_name=user_name,
                         job_name=job_title,
-                        reward=data["reward"],
-                        row_index=data["job_id"],
-                        user_id=data["user_id"],
-                        time=data.get("time", ""),
+                        reward=data.get("reward", 0),
+                        row_index=data.get("job_id"),
+                        user_id=data.get("user_id"),
+                        time=data.get("finished_at") or data.get("time", ""),
                     )
                     if bubble:
                         bubbles.append(bubble)
@@ -975,10 +975,11 @@ def handle_message(event, text):
                     if shop_items_cache is None:
                         shop_items_cache = ShopService.get_items()
 
-                    item_name = data.get("item_key", "商品")
-                    item_info = shop_items_cache.get(data["item_key"])
+                    item_key = data.get("item_key", "")
+                    item_name = data.get("item_name") or item_key
+                    item_info = shop_items_cache.get(item_key) if item_key else None
                     if item_info:
-                        item_name = item_info["name"]
+                        item_name = item_info.get("name", item_name)
 
                     if not item_name:
                         item_name = "商品"
@@ -987,10 +988,10 @@ def handle_message(event, text):
                         "approval_card_shop.json",
                         user_name=user_name,
                         item_name=item_name,
-                        cost=data["cost"],
-                        row_index=data["request_id"],
-                        user_id=data["user_id"],
-                        time=data.get("time", ""),
+                        cost=data.get("cost", 0),
+                        row_index=data.get("request_id"),
+                        user_id=data.get("user_id"),
+                        time=data.get("created_at") or data.get("time", ""),
                     )
                     if bubble:
                         bubbles.append(bubble)
@@ -1003,7 +1004,7 @@ def handle_message(event, text):
                         reward=data.get("reward", 0),
                         mission_id=data.get("mission_id"),
                         user_id=data.get("user_id"),
-                        time=data.get("time", ""),
+                        time=data.get("created_at") or data.get("time", ""),
                     )
                     if bubble:
                         bubbles.append(bubble)
