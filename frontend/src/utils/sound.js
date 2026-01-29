@@ -1,13 +1,9 @@
-// 音声ファイルの管理クラス
+// Web Audio API を使ったサウンド管理クラス
+// 外部ファイル不要で軽量なゲームサウンドを生成
+
 class SoundManager {
   constructor() {
-    this.sounds = {
-      click: null,
-      buy: null,
-      levelup: null,
-      milestone: null,
-      prestige: null
-    }
+    this.audioContext = null
     this.enabled = true
     this.initialized = false
   }
@@ -15,44 +11,87 @@ class SoundManager {
   // 初期化（ユーザーインタラクション後に呼ぶ必要がある）
   init() {
     if (this.initialized) return
-
-    // ここで音声ファイルを読み込む
-    // assets/sounds/ ディレクトリにファイルを配置してください
-    // mp3ファイルのパスを指定します
     try {
-      this.sounds.click = new Audio('/static/sounds/click.mp3')
-      this.sounds.buy = new Audio('/static/sounds/buy.mp3') 
-      this.sounds.levelup = new Audio('/static/sounds/levelup.mp3')
-      this.sounds.milestone = new Audio('/static/sounds/milestone.mp3')
-      this.sounds.prestige = new Audio('/static/sounds/prestige.mp3')
-
-      // プリロード設定
-      Object.values(this.sounds).forEach(audio => {
-        if (audio) {
-          audio.load()
-          audio.volume = 0.5
-        }
-      })
-      
+      this.audioContext = new (window.AudioContext || window.webkitAudioContext)()
       this.initialized = true
     } catch (e) {
-      console.warn('Sound initialization failed:', e)
+      console.warn('Web Audio API not supported:', e)
+    }
+  }
+
+  // ビープ音を生成
+  beep(frequency = 440, duration = 0.1, type = 'sine', volume = 0.3) {
+    if (!this.enabled || !this.audioContext) return
+    
+    try {
+      const oscillator = this.audioContext.createOscillator()
+      const gainNode = this.audioContext.createGain()
+      
+      oscillator.connect(gainNode)
+      gainNode.connect(this.audioContext.destination)
+      
+      oscillator.type = type
+      oscillator.frequency.value = frequency
+      
+      gainNode.gain.setValueAtTime(volume, this.audioContext.currentTime)
+      gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration)
+      
+      oscillator.start()
+      oscillator.stop(this.audioContext.currentTime + duration)
+    } catch (e) {
+      console.debug('Sound play error:', e)
     }
   }
 
   play(name) {
-    if (!this.enabled || !this.initialized || !this.sounds[name]) return
-
-    try {
-      // 再生位置をリセットして連続再生可能にする
-      const sound = this.sounds[name]
-      sound.currentTime = 0
-      sound.play().catch(e => {
-        // 自動再生ポリシーなどでブロックされた場合は無視
-        console.debug('Sound play blocked:', e)
-      })
-    } catch (e) {
-      console.error('Error playing sound:', e)
+    if (!this.enabled) return
+    this.init()
+    
+    switch (name) {
+      case 'click':
+        // 軽いクリック音
+        this.beep(800, 0.05, 'sine', 0.2)
+        break
+        
+      case 'buy':
+        // コイン音（上昇音）
+        this.beep(523, 0.08, 'sine', 0.25)
+        setTimeout(() => this.beep(659, 0.08, 'sine', 0.25), 50)
+        setTimeout(() => this.beep(784, 0.1, 'sine', 0.2), 100)
+        break
+        
+      case 'levelup':
+        // レベルアップ音（ファンファーレ）
+        this.beep(523, 0.1, 'sine', 0.3)
+        setTimeout(() => this.beep(659, 0.1, 'sine', 0.3), 100)
+        setTimeout(() => this.beep(784, 0.15, 'sine', 0.3), 200)
+        setTimeout(() => this.beep(1047, 0.2, 'sine', 0.25), 350)
+        break
+        
+      case 'milestone':
+        // マイルストーン達成音（壮大なファンファーレ）
+        this.beep(392, 0.15, 'sine', 0.3)
+        setTimeout(() => this.beep(523, 0.15, 'sine', 0.3), 150)
+        setTimeout(() => this.beep(659, 0.15, 'sine', 0.3), 300)
+        setTimeout(() => this.beep(784, 0.2, 'sine', 0.35), 450)
+        setTimeout(() => this.beep(1047, 0.3, 'sine', 0.3), 600)
+        setTimeout(() => this.beep(1319, 0.4, 'triangle', 0.25), 800)
+        break
+        
+      case 'prestige':
+        // 転生音（荘厳なサウンド）
+        for (let i = 0; i < 5; i++) {
+          setTimeout(() => this.beep(261.63 * Math.pow(2, i / 3), 0.3, 'sine', 0.2), i * 150)
+        }
+        setTimeout(() => {
+          this.beep(523, 0.5, 'triangle', 0.3)
+          this.beep(659, 0.5, 'triangle', 0.25)
+          this.beep(784, 0.5, 'triangle', 0.2)
+        }, 800)
+        break
+        
+      default:
+        this.beep(440, 0.05, 'sine', 0.15)
     }
   }
 

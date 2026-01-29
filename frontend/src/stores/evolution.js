@@ -1004,7 +1004,7 @@ export const useEvolutionStore = defineStore('evolution', () => {
       } else {
         soundManager.play('buy')
       }
-      
+
       triggerEvent('onPurchase', { facility, amount: purchased })
       checkAchievements()
       saveToLocalStorage()
