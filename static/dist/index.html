@@ -3,16 +3,126 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Study Guardian</title>
   <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap" rel="stylesheet">
-  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script type="module" crossorigin src="/static/dist/assets/index-B0I3OE6f.js"></script>
+  <style>
+    /* Initial Loading Screen */
+    body { margin: 0; font-family: 'M PLUS Rounded 1c', sans-serif; }
+    #initial-loader {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.5s ease-out;
+    }
+    #initial-loader.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .loader-icon {
+      font-size: 64px;
+      animation: bounce 1s ease-in-out infinite;
+    }
+    .loader-title {
+      color: white;
+      font-size: 24px;
+      font-weight: 700;
+      margin: 16px 0 8px;
+    }
+    .loader-status {
+      color: rgba(255,255,255,0.8);
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+    .loader-progress-container {
+      width: 200px;
+      height: 8px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .loader-progress-bar {
+      height: 100%;
+      background: white;
+      border-radius: 4px;
+      transition: width 0.3s ease;
+      width: 0%;
+    }
+    .loader-percent {
+      color: rgba(255,255,255,0.9);
+      font-size: 12px;
+      margin-top: 8px;
+    }
+    .loader-error {
+      color: #fecaca;
+      font-size: 12px;
+      margin-top: 16px;
+      max-width: 280px;
+      text-align: center;
+      display: none;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+  </style>
+  <script type="module" crossorigin src="/static/dist/assets/index-DpgHDtiT.js"></script>
   <link rel="stylesheet" crossorigin href="/static/dist/assets/index-Bmh9RP9e.css">
 </head>
 
 <body>
-  <div id="app"></div>
+  <!-- Initial Loading Screen -->
+  <div id="initial-loader">
+    <div class="loader-icon">📚</div>
+    <div class="loader-title">Study Guardian</div>
+    <div class="loader-status" id="loader-status">起動中...</div>
+    <div class="loader-progress-container">
+      <div class="loader-progress-bar" id="loader-progress"></div>
+    </div>
+    <div class="loader-percent" id="loader-percent">0%</div>
+    <div class="loader-error" id="loader-error"></div>
+  </div>
+
+  <div id="app"></div>
+
+  <script>
+    // Progress tracking
+    window.loadProgress = 0;
+    window.updateProgress = function(percent, status) {
+      window.loadProgress = percent;
+      var bar = document.getElementById('loader-progress');
+      var text = document.getElementById('loader-percent');
+      var statusEl = document.getElementById('loader-status');
+      if (bar) bar.style.width = percent + '%';
+      if (text) text.textContent = percent + '%';
+      if (statusEl && status) statusEl.textContent = status;
+    };
+    window.showError = function(msg) {
+      var errorEl = document.getElementById('loader-error');
+      if (errorEl) {
+        errorEl.style.display = 'block';
+        errorEl.textContent = msg;
+      }
+    };
+    window.hideLoader = function() {
+      var loader = document.getElementById('initial-loader');
+      if (loader) loader.classList.add('fade-out');
+      setTimeout(function() {
+        if (loader) loader.style.display = 'none';
+      }, 500);
+    };
+    // Initial progress
+    window.updateProgress(10, 'リソース読み込み中...');
+  </script>
+
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js" onload="window.updateProgress(30, 'LINE SDK 読み込み完了')"></script>
 </body>
 
 </html>
