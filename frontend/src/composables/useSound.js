@@ -1,15 +1,15 @@
 import { ref } from 'vue'
 
 const sounds = {
-  poweron: '/static/assets/sounds/poweron.mp3',
-  click: '/static/assets/sounds/click.mp3',
+  poweron: '/static/assets/sounds/Power-on.mp3',
+  click: '/static/assets/sounds/mouse_click.mp3',
   select1: '/static/assets/sounds/select1.mp3',
   select2: '/static/assets/sounds/select2.mp3',
   select3: '/static/assets/sounds/select3.mp3',
-  levelup: '/static/assets/sounds/levelup.mp3',
-  attack: '/static/assets/sounds/attack.mp3',
-  defeat: '/static/assets/sounds/defeat.mp3',
-  coin: '/static/assets/sounds/coin.mp3'
+  levelup: '/static/assets/sounds/Correct5.mp3',
+  attack: '/static/assets/sounds/select6.mp3',
+  defeat: '/static/assets/sounds/error2.mp3',
+  coin: '/static/assets/sounds/confirm1.mp3'
 }
 
 const audioCache = {}

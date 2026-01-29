@@ -154,6 +154,60 @@ class GSheetService:
         return False
 
     @staticmethod
+    def get_user_active_session(user_id, user_name=None):
+        """ユーザーのアクティブセッション（STARTED）を取得"""
+        sheet = GSheetService.get_worksheet("study_log")
+        if not sheet:
+            return None
+
+        all_records = sheet.get_all_values()
+        if not all_records:
+            return None
+
+        headers = all_records[0]
+        col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+        idx_uid = col_map.get("user_id")
+        idx_name = col_map.get("display_name")
+        idx_status = col_map.get("status")
+        idx_start = col_map.get("start_time")
+        idx_subj = col_map.get("subject")
+
+        if idx_status is None:
+            return None
+
+        # 後ろから検索
+        for i in range(len(all_records), 1, -1):
+            row = all_records[i - 1]
+            if not row:
+                continue
+
+            def get_val(idx):
+                return (
+                    str(row[idx]).strip() if idx is not None and idx < len(row) else ""
+                )
+
+            # Match Logic
+            is_match = False
+            if idx_uid is not None and get_val(idx_uid) == str(user_id):
+                is_match = True
+            elif user_name and idx_name is not None and get_val(idx_name) == str(user_name):
+                is_match = True
+
+            if is_match:
+                status_val = get_val(idx_status)
+                if status_val == "STARTED":
+                    start_time = get_val(idx_start) if idx_start is not None else ""
+                    subject = get_val(idx_subj) if idx_subj is not None else ""
+                    return {
+                        "row_index": i,
+                        "start_time": start_time,
+                        "subject": subject
+                    }
+                return None # 最新の記録がSTARTEDでなければアクティブなし
+        return None
+
+    @staticmethod
     def update_end_time(user_id, end_time, user_name=None):
         """終了時刻を study_log シートに更新（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("study_log")

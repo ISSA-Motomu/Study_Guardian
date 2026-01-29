@@ -269,14 +269,18 @@ def api_start_study():
 @web_bp.route("/api/user/<user_id>/active_session")
 def api_user_active_session(user_id):
     """ユーザーのアクティブな勉強セッションを確認"""
-    status, data = HistoryService.get_active_session(
-        user_id
-    )  # Note: Need to verify if this method exists or use GSheet logic directly
-    # Actually logic was in study.py, let's use a simpler check or move logic.
-    # checking study store implementation... it calls /api/user/{userId}/active_session
-    # Wait, I am editing web.py to ADD stats endpoint, not fix active_session.
-    # Where to insert?
-    pass
+    try:
+        session = GSheetService.get_user_active_session(user_id)
+        if session:
+            return jsonify({
+                "status": "ok",
+                "active": True,
+                "data": session
+            })
+        return jsonify({"status": "ok", "active": False})
+    except Exception as e:
+        print(f"Active Session Check Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 @web_bp.route("/api/user/<user_id>/stats")
@@ -285,12 +289,6 @@ def api_user_stats(user_id):
     stats = HistoryService.get_user_study_stats(user_id)
     return jsonify({"status": "ok", "data": stats})
 
-
-@web_bp.route("/api/user/<user_id>/active_session")
-def api_active_session(user_id):
-    # 簡易実装: リクエストがあればアクティブとみなすか、本来はDB問い合わせが必要
-    # ユーザーが「勉強中」かどうかを判定するロジック
-    return jsonify({"status": "ok", "active": False})
 
 
 @web_bp.route("/api/study/finish", methods=["POST"])
@@ -472,20 +470,31 @@ def api_get_evolution(user_id):
         for row in records[1:]:
             if len(row) > idx_uid and str(row[idx_uid]) == str(user_id):
                 import json
-                levels_str = row[idx_levels] if idx_levels is not None and idx_levels < len(row) else "{}"
+
+                levels_str = (
+                    row[idx_levels]
+                    if idx_levels is not None and idx_levels < len(row)
+                    else "{}"
+                )
                 try:
                     levels = json.loads(levels_str) if levels_str else {}
                 except:
                     levels = {}
 
-                return jsonify({
-                    "status": "ok",
-                    "data": {
-                        "knowledge_points": int(row[idx_kp]) if idx_kp is not None and row[idx_kp] else 0,
-                        "total_earned": int(row[idx_total]) if idx_total is not None and row[idx_total] else 0,
-                        "facility_levels": levels
+                return jsonify(
+                    {
+                        "status": "ok",
+                        "data": {
+                            "knowledge_points": int(row[idx_kp])
+                            if idx_kp is not None and row[idx_kp]
+                            else 0,
+                            "total_earned": int(row[idx_total])
+                            if idx_total is not None and row[idx_total]
+                            else 0,
+                            "facility_levels": levels,
+                        },
                     }
-                })
+                )
 
         return jsonify({"status": "ok", "data": None})
 
@@ -498,6 +507,7 @@ def api_get_evolution(user_id):
 def api_sync_evolution():
     """進化ゲームのデータを同期（保存）"""
     import json
+
     data = request.json
     user_id = data.get("user_id")
     knowledge_points = data.get("knowledge_points", 0)
@@ -510,14 +520,34 @@ def api_sync_evolution():
             # シートがない場合は新規作成
             spreadsheet = GSheetService.get_spreadsheet()
             if spreadsheet:
-                sheet = spreadsheet.add_worksheet(title="evolution_data", rows=100, cols=10)
-                sheet.append_row(["user_id", "knowledge_points", "total_earned", "facility_levels", "last_sync"])
+                sheet = spreadsheet.add_worksheet(
+                    title="evolution_data", rows=100, cols=10
+                )
+                sheet.append_row(
+                    [
+                        "user_id",
+                        "knowledge_points",
+                        "total_earned",
+                        "facility_levels",
+                        "last_sync",
+                    ]
+                )
 
         if not sheet:
             return jsonify({"status": "error", "message": "Cannot access sheet"}), 500
 
         records = sheet.get_all_values()
-        headers = records[0] if records else ["user_id", "knowledge_points", "total_earned", "facility_levels", "last_sync"]
+        headers = (
+            records[0]
+            if records
+            else [
+                "user_id",
+                "knowledge_points",
+                "total_earned",
+                "facility_levels",
+                "last_sync",
+            ]
+        )
         col_map = {str(h).strip(): i for i, h in enumerate(headers)}
 
         idx_uid = col_map.get("user_id", 0)
