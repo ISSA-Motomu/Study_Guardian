@@ -641,6 +641,10 @@ def finalize_study(event, user_id, state_data, concentration):
         # IDは文字列である必要があるため変換
         admin_ids = [str(u["user_id"]) for u in admins if u.get("user_id")]
 
+        print(
+            f"[DEBUG] Admin notification: Found {len(admins)} admins, IDs: {admin_ids}"
+        )
+
         if admin_ids:
             now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
             timestamp = now.strftime("%H:%M")
@@ -663,8 +667,16 @@ def finalize_study(event, user_id, state_data, concentration):
                 admin_ids,
                 FlexSendMessage(alt_text="勉強完了報告", contents=approve_flex),
             )
+            print(
+                f"[DEBUG] Admin notification sent successfully to {len(admin_ids)} admins"
+            )
+        else:
+            print(f"[WARNING] No admin users found for notification!")
     except Exception as e:
         print(f"Admin通知エラー: {e}")
+        import traceback
+
+        traceback.print_exc()
 
 
 def process_timeout_sessions(sessions):

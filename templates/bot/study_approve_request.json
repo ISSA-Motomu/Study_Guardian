@@ -9,7 +9,8 @@
         "type": "text",
         "text": "📖 勉強完了報告",
         "color": "#ffffff",
-        "weight": "bold"
+        "weight": "bold",
+        "size": "lg"
       }
     ]
   },
@@ -19,68 +20,142 @@
     "contents": [
       {
         "type": "text",
-        "text": "${user_name} が勉強を終えました！"
+        "text": "${user_name} が勉強を終えました！",
+        "weight": "bold",
+        "color": "#333333"
       },
       {
-        "type": "text",
-        "text": "教科: ${subject}",
-        "weight": "bold",
-        "size": "md",
+        "type": "box",
+        "layout": "horizontal",
+        "margin": "md",
+        "contents": [
+          {
+            "type": "text",
+            "text": "📚 教科",
+            "size": "sm",
+            "color": "#aaaaaa",
+            "flex": 1
+          },
+          {
+            "type": "text",
+            "text": "${subject}",
+            "weight": "bold",
+            "size": "sm",
+            "color": "#27ACB2",
+            "flex": 2,
+            "align": "end"
+          }
+        ]
+      },
+      {
+        "type": "box",
+        "layout": "horizontal",
         "margin": "sm",
-        "color": "#27ACB2"
+        "contents": [
+          {
+            "type": "text",
+            "text": "⏱️ 勉強時間",
+            "size": "sm",
+            "color": "#aaaaaa",
+            "flex": 1
+          },
+          {
+            "type": "text",
+            "text": "${hours}時間 ${mins}分",
+            "weight": "bold",
+            "size": "lg",
+            "color": "#333333",
+            "flex": 2,
+            "align": "end"
+          }
+        ]
       },
       {
-        "type": "text",
-        "text": "時間: ${hours}時間 ${mins}分",
-        "weight": "bold",
-        "size": "xl",
-        "margin": "md"
-      },
-      {
-        "type": "text",
-        "text": "獲得予定: ${earned_exp} EXP",
-        "color": "#ff5555"
+        "type": "box",
+        "layout": "horizontal",
+        "margin": "sm",
+        "contents": [
+          {
+            "type": "text",
+            "text": "💰 獲得予定",
+            "size": "sm",
+            "color": "#aaaaaa",
+            "flex": 1
+          },
+          {
+            "type": "text",
+            "text": "+${earned_exp} EXP",
+            "weight": "bold",
+            "size": "md",
+            "color": "#ff5555",
+            "flex": 2,
+            "align": "end"
+          }
+        ]
       },
       {
         "type": "separator",
+        "margin": "lg"
+      },
+      {
+        "type": "text",
+        "text": "📝 成果メモ",
+        "size": "xs",
+        "color": "#aaaaaa",
         "margin": "md"
       },
       {
         "type": "text",
-        "text": "📝 ${comment}",
+        "text": "${comment}",
         "wrap": true,
+        "margin": "sm",
+        "size": "sm",
+        "color": "#555555"
+      },
+      {
+        "type": "box",
+        "layout": "horizontal",
         "margin": "md",
-        "size": "sm",
-        "color": "#555555"
-      },
-      {
-        "type": "text",
-        "text": "🔥 集中度: ${concentration}/5",
-        "margin": "sm",
-        "size": "sm",
-        "color": "#555555"
-      },
-      {
-        "type": "text",
-        "text": "🕒 ${timestamp}",
-        "size": "xs",
-        "color": "#aaaaaa",
-        "margin": "sm",
-        "align": "end"
+        "contents": [
+          {
+            "type": "text",
+            "text": "🔥 集中度: ${concentration}/5",
+            "size": "sm",
+            "color": "#555555"
+          },
+          {
+            "type": "text",
+            "text": "${timestamp}",
+            "size": "xs",
+            "color": "#aaaaaa",
+            "align": "end"
+          }
+        ]
       }
     ]
   },
   "footer": {
     "type": "box",
-    "layout": "vertical",
+    "layout": "horizontal",
+    "spacing": "sm",
     "contents": [
       {
         "type": "button",
         "style": "primary",
         "action": {
           "type": "postback",
-          "label": "承認する",
-          "data": "action=study_approve&target=${user_id}&minutes=${minutes}&exp=${earned_exp}&row_id=${row_index}"
+          "label": "✅ 承認",
+          "data": "action=study_approve&target=${user_id}&minutes=${minutes}&exp=${earned_exp}&row_id=${row_index}&time=${timestamp}"
+        },
+        "color": "#27ACB2"
+      },
+      {
+        "type": "button",
+        "style": "secondary",
+        "action": {
+          "type": "postback",
+          "label": "❌ 却下",
+          "data": "action=study_reject&target=${user_id}&row_id=${row_index}"
         }
       }
     ]

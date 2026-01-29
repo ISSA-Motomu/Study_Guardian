@@ -32,7 +32,7 @@ export function useLiff() {
   const initLiff = async () => {
     try {
       updateProgress(65, 'LINE認証を初期化中...')
-      
+
       // Check if LIFF SDK is loaded
       if (typeof liff === 'undefined') {
         throw new Error('LIFF SDK not loaded')
@@ -53,16 +53,16 @@ export function useLiff() {
       const userId = profile.userId
 
       userStore.setUserId(userId)
-      
+
       updateProgress(85, 'ユーザーデータ取得中...')
       await userStore.fetchUserData(userId)
-      
+
       updateProgress(90, 'セッション確認中...')
       await studyStore.checkActiveSession(userId)
 
       updateProgress(100, '準備完了！')
       userStore.setLoading(false)
-      
+
       // Hide loader after a short delay
       setTimeout(hideLoader, 300)
     } catch (e) {
@@ -72,20 +72,20 @@ export function useLiff() {
       // Development fallback or non-LINE browser
       const isDev = import.meta.env.DEV || window.location.hostname === 'localhost'
       const isNonLineBrowser = !window.location.href.includes('liff.line.me')
-      
+
       if (isDev || isNonLineBrowser) {
         console.warn('Using development/browser mode')
         updateProgress(80, 'ブラウザモードで起動中...')
-        
+
         // Try to get user from URL or use mock
         const urlParams = new URLSearchParams(window.location.search)
         const mockUserId = urlParams.get('user_id') || 'dev_user_123'
-        
+
         userStore.setUserId(mockUserId)
-        
+
         updateProgress(90, 'ユーザーデータ取得中...')
         await userStore.fetchUserData(mockUserId)
-        
+
         updateProgress(100, '準備完了！')
         userStore.setLoading(false)
         setTimeout(hideLoader, 300)

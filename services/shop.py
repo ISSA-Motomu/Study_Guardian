@@ -76,7 +76,9 @@ class ShopService:
                         # Ensure request_id exists
                         if not row_dict.get("request_id"):
                             # Try alternative keys
-                            row_dict["request_id"] = row_dict.get("id") or row_dict.get("req_id") or ""
+                            row_dict["request_id"] = (
+                                row_dict.get("id") or row_dict.get("req_id") or ""
+                            )
                         pending.append(row_dict)
         except Exception as e:
             print(f"Shop Pending Error: {e}")

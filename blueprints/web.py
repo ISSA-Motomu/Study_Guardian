@@ -427,6 +427,8 @@ def api_finish_study():
         try:
             admins = EconomyService.get_admin_users()
             admin_ids = [str(u["user_id"]) for u in admins if u.get("user_id")]
+            
+            print(f"[DEBUG] Web Admin notification: Found {len(admins)} admins, IDs: {admin_ids}")
 
             if admin_ids:
                 timestamp_str = now.strftime("%H:%M")
@@ -448,8 +450,13 @@ def api_finish_study():
                     admin_ids,
                     FlexSendMessage(alt_text="勉強完了報告", contents=approve_flex),
                 )
+                print(f"[DEBUG] Web Admin notification sent successfully to {len(admin_ids)} admins")
+            else:
+                print(f"[WARNING] No admin users found for Web notification!")
         except Exception as admin_err:
             print(f"Admin Notify Error: {admin_err}")
+            import traceback
+            traceback.print_exc()
 
         return jsonify({"status": "ok", "minutes": minutes})
 

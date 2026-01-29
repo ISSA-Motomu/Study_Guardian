@@ -10,7 +10,11 @@
   <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap" rel="stylesheet">
   <style>
     /* Initial Loading Screen */
-    body { margin: 0; font-family: 'M PLUS Rounded 1c', sans-serif; }
+    body {
+      margin: 0;
+      font-family: 'M PLUS Rounded 1c', sans-serif;
+    }
+
     #initial-loader {
       position: fixed;
       inset: 0;
@@ -22,32 +26,38 @@
       z-index: 9999;
       transition: opacity 0.5s ease-out;
     }
+
     #initial-loader.fade-out {
       opacity: 0;
       pointer-events: none;
     }
+
     .loader-icon {
       font-size: 64px;
       animation: bounce 1s ease-in-out infinite;
     }
+
     .loader-title {
       color: white;
       font-size: 24px;
       font-weight: 700;
       margin: 16px 0 8px;
     }
+
     .loader-status {
-      color: rgba(255,255,255,0.8);
+      color: rgba(255, 255, 255, 0.8);
       font-size: 14px;
       margin-bottom: 24px;
     }
+
     .loader-progress-container {
       width: 200px;
       height: 8px;
-      background: rgba(255,255,255,0.2);
+      background: rgba(255, 255, 255, 0.2);
       border-radius: 4px;
       overflow: hidden;
     }
+
     .loader-progress-bar {
       height: 100%;
       background: white;
@@ -55,11 +65,13 @@
       transition: width 0.3s ease;
       width: 0%;
     }
+
     .loader-percent {
-      color: rgba(255,255,255,0.9);
+      color: rgba(255, 255, 255, 0.9);
       font-size: 12px;
       margin-top: 8px;
     }
+
     .loader-error {
       color: #fecaca;
       font-size: 12px;
@@ -68,9 +80,17 @@
       text-align: center;
       display: none;
     }
+
     @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-10px); }
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-10px);
+      }
     }
   </style>
   <script type="module" crossorigin src="/static/dist/assets/index-DpgHDtiT.js"></script>
@@ -95,7 +115,7 @@
   <script>
     // Progress tracking
     window.loadProgress = 0;
-    window.updateProgress = function(percent, status) {
+    window.updateProgress = function (percent, status) {
       window.loadProgress = percent;
       var bar = document.getElementById('loader-progress');
       var text = document.getElementById('loader-percent');
@@ -104,17 +124,17 @@
       if (text) text.textContent = percent + '%';
       if (statusEl && status) statusEl.textContent = status;
     };
-    window.showError = function(msg) {
+    window.showError = function (msg) {
       var errorEl = document.getElementById('loader-error');
       if (errorEl) {
         errorEl.style.display = 'block';
         errorEl.textContent = msg;
       }
     };
-    window.hideLoader = function() {
+    window.hideLoader = function () {
       var loader = document.getElementById('initial-loader');
       if (loader) loader.classList.add('fade-out');
-      setTimeout(function() {
+      setTimeout(function () {
         if (loader) loader.style.display = 'none';
       }, 500);
     };
@@ -122,7 +142,8 @@
     window.updateProgress(10, 'リソース読み込み中...');
   </script>
 
-  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js" onload="window.updateProgress(30, 'LINE SDK 読み込み完了')"></script>
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"
+    onload="window.updateProgress(30, 'LINE SDK 読み込み完了')"></script>
 </body>
 
 </html>
