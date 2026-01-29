@@ -81,8 +81,8 @@
               <span class="text-gray-600">+{{ facility.production.toFixed(1) }}/分</span>
             </div>
             <div class="flex items-center gap-1">
-              <span class="text-amber-500">💰</span>
-              <span class="text-gray-600">{{ formatNumber(facility.currentCost) }}</span>
+              <span class="text-indigo-500">💡</span>
+              <span class="text-gray-600">{{ formatNumber(facility.currentCost) }} KP</span>
             </div>
           </div>
         </div>
@@ -105,7 +105,7 @@
       <div v-if="facility.level > 0" class="mt-3">
         <div class="flex justify-between text-xs text-gray-500 mb-1">
           <span>次のレベル効果</span>
-          <span>+{{ (facility.baseMultiplier).toFixed(1) }}/分</span>
+          <span>+{{ (facility.baseMultiplier).toFixed(1) }} KP/分</span>
         </div>
         <div class="h-1.5 bg-gray-200 rounded-full overflow-hidden">
           <div 

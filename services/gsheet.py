@@ -191,7 +191,11 @@ class GSheetService:
             is_match = False
             if idx_uid is not None and get_val(idx_uid) == str(user_id):
                 is_match = True
-            elif user_name and idx_name is not None and get_val(idx_name) == str(user_name):
+            elif (
+                user_name
+                and idx_name is not None
+                and get_val(idx_name) == str(user_name)
+            ):
                 is_match = True
 
             if is_match:
@@ -202,9 +206,9 @@ class GSheetService:
                     return {
                         "row_index": i,
                         "start_time": start_time,
-                        "subject": subject
+                        "subject": subject,
                     }
-                return None # 最新の記録がSTARTEDでなければアクティブなし
+                return None  # 最新の記録がSTARTEDでなければアクティブなし
         return None
 
     @staticmethod

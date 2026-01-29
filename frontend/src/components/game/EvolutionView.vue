@@ -1,18 +1,41 @@
 <template>
   <div class="space-y-6 mt-8 pb-8">
-    <!-- Header Stats -->
+    <!-- Currency Display Header -->
     <div class="sticky top-0 z-20 -mx-6 px-6 py-3 bg-gradient-to-r from-indigo-600/90 to-purple-600/90 backdrop-blur-lg rounded-b-2xl shadow-lg">
+      <!-- Dual Currency Display -->
+      <div class="grid grid-cols-2 gap-3 mb-3">
+        <!-- KP (Game Currency) -->
+        <div class="bg-white/20 rounded-xl p-2 text-center">
+          <div class="flex items-center justify-center gap-1">
+            <span class="text-lg">💡</span>
+            <span class="text-xs text-white/80">KP</span>
+          </div>
+          <p class="text-xl font-bold text-white">{{ formatNumber(evolutionStore.knowledgePoints) }}</p>
+          <p class="text-[10px] text-white/60">ゲーム内専用</p>
+        </div>
+        <!-- XP (Shop Currency) - Read Only Display -->
+        <div class="bg-black/20 rounded-xl p-2 text-center">
+          <div class="flex items-center justify-center gap-1">
+            <span class="text-lg">⭐</span>
+            <span class="text-xs text-white/80">XP</span>
+          </div>
+          <p class="text-xl font-bold text-amber-300">{{ formatNumber(userStore.user.xp || 0) }}</p>
+          <p class="text-[10px] text-white/60">ショップ用</p>
+        </div>
+      </div>
+
+      <!-- Multiplier & Stats -->
       <div class="flex items-center justify-between text-white">
         <div class="flex items-center gap-2">
-          <span class="text-2xl">💡</span>
+          <span class="text-lg">🔬</span>
           <div>
-            <p class="text-xs opacity-80">Knowledge Points</p>
-            <p class="text-xl font-bold">{{ formatNumber(evolutionStore.knowledgePoints) }}</p>
+            <p class="text-xs opacity-80">研究効率</p>
+            <p class="text-lg font-semibold">×{{ evolutionStore.totalMultiplier.toFixed(1) }}</p>
           </div>
         </div>
         <div class="text-right">
-          <p class="text-xs opacity-80">倍率</p>
-          <p class="text-lg font-semibold">×{{ evolutionStore.totalMultiplier.toFixed(1) }}</p>
+          <p class="text-xs opacity-80">累計KP</p>
+          <p class="text-lg font-semibold">{{ formatNumber(evolutionStore.totalEarnedPoints) }}</p>
         </div>
       </div>
       
@@ -30,6 +53,20 @@
         </div>
       </div>
     </div>
+
+    <!-- Currency Info Card -->
+    <GlassPanel class="!p-3">
+      <div class="flex items-start gap-3">
+        <span class="text-2xl">💡</span>
+        <div class="flex-1">
+          <p class="text-sm font-bold text-gray-800">KP（Knowledge Points）とは？</p>
+          <p class="text-xs text-gray-500 mt-1">
+            勉強時間で獲得できるゲーム内専用通貨。施設のアップグレードにのみ使用可能。
+            <span class="text-amber-600 font-medium">ショップのXPとは別物です。</span>
+          </p>
+        </div>
+      </div>
+    </GlassPanel>
 
     <!-- Summary Card -->
     <GlassPanel class="text-center">
@@ -114,10 +151,12 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { useEvolutionStore } from '@/stores/evolution'
+import { useUserStore } from '@/stores/user'
 import GlassPanel from '@/components/common/GlassPanel.vue'
 import FacilityCard from './FacilityCard.vue'
 
 const evolutionStore = useEvolutionStore()
+const userStore = useUserStore()
 const isDev = ref(import.meta.env.DEV)
 
 onMounted(async () => {

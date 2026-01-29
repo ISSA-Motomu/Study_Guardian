@@ -186,9 +186,17 @@ export const useEvolutionStore = defineStore('evolution', () => {
   const userStore = useUserStore()
 
   // ===== State =====
-  // ポイント（勉強時間連動）
-  const knowledgePoints = ref(0)
-  const totalEarnedPoints = ref(0) // 累計獲得（アンロック判定用）
+  /**
+   * KP (Knowledge Points) - ゲーム内専用通貨
+   * 
+   * 【重要】XP（ショップ用通貨）とは完全に分離されています
+   * - KP: 進化ゲーム内の施設購入・アップグレード専用
+   * - XP: ショップでのアイテム購入専用（user.jsで管理）
+   * 
+   * ゲーム内の生産・消費はKPのみで完結します
+   */
+  const knowledgePoints = ref(0)        // 現在のKP残高
+  const totalEarnedPoints = ref(0)       // 累計獲得KP（アンロック判定用）
 
   // 施設レベル
   const facilityLevels = ref({})

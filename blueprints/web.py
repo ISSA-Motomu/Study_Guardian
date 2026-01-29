@@ -272,11 +272,7 @@ def api_user_active_session(user_id):
     try:
         session = GSheetService.get_user_active_session(user_id)
         if session:
-            return jsonify({
-                "status": "ok",
-                "active": True,
-                "data": session
-            })
+            return jsonify({"status": "ok", "active": True, "data": session})
         return jsonify({"status": "ok", "active": False})
     except Exception as e:
         print(f"Active Session Check Error: {e}")
@@ -288,7 +284,6 @@ def api_user_stats(user_id):
     """ユーザーの学習統計詳細を取得"""
     stats = HistoryService.get_user_study_stats(user_id)
     return jsonify({"status": "ok", "data": stats})
-
 
 
 @web_bp.route("/api/study/finish", methods=["POST"])
