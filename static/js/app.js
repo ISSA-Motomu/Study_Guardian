@@ -26,6 +26,8 @@ createApp({
         level: 1,
         exp: 0,
         next_exp: 100,
+        gold: 0,
+        gems: 0,
         pt: 0,
         total_hours: 0,
         rank_name: "Beginner",
@@ -44,7 +46,7 @@ createApp({
       subjects: {},
       studying: false,
       currentUserId: null,
-      view: 'dashboard', // dashboard, timer
+      view: 'study', // study, game, data
       currentSubject: '',
       currentSubjectColor: '#000',
       startTime: null,
@@ -148,8 +150,8 @@ createApp({
           name: "勇者アルス",
           level: 12,
           exp: 1450,
-          next_exp: 2000,
-          pt: 3500,
+          next_exp: 2000, gold: 500,
+          gems: 5, pt: 3500,
           total_hours: 42.5,
           rank_name: "Rank C: 熟練者",
           avatar_url: "https://cdn-icons-png.flaticon.com/512/4333/4333609.png"
@@ -255,7 +257,7 @@ createApp({
           this.currentSubject = subject;
           this.currentSubjectColor = this.subjects[subject];
           this.startTime = new Date();
-          this.view = 'timer';
+          // this.view = 'timer'; // タイマー画面はStudyビュー内のオーバーレイとして扱う
           this.startTimerTick();
         } else {
           alert("開始失敗: " + json.message);
@@ -300,7 +302,7 @@ createApp({
           alert(`お疲れ様でした！\n${json.minutes}分 勉強しました。`);
           this.studying = false;
           clearInterval(this.timerInterval);
-          this.view = 'dashboard';
+          this.view = 'study';
           // 最新のデータを再取得（EXP/コイン反映のため）
           await this.fetchUserData(this.currentUserId);
         } else {
@@ -357,7 +359,7 @@ createApp({
           if (closeApp) {
             liff.closeWindow();
           } else {
-            this.view = 'dashboard';
+            this.view = 'study';
             await this.fetchUserData(this.currentUserId);
           }
         } else {
@@ -383,7 +385,7 @@ createApp({
           if (startDate > now) startDate.setDate(startDate.getDate() - 1);
 
           this.startTime = startDate;
-          this.view = 'timer';
+          this.view = 'study'; // 元のビューに関わらずStudyを表示
           this.startTimerTick();
         }
       } catch (e) { console.error(e); }

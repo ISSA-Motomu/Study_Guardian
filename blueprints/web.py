@@ -20,7 +20,13 @@ web_bp = Blueprint("web", __name__)
 def api_admin_users():
     """全ユーザーリストを返す"""
     users = EconomyService.get_all_users()
-    return jsonify({"status": "ok", "data": users})
+    # フロントエンドで使いやすい形式に整形
+    user_list = []
+    for u in users:
+        user_list.append(
+            {"user_id": u.get("user_id"), "user_name": u.get("display_name", "Unknown")}
+        )
+    return jsonify({"status": "success", "users": user_list})
 
 
 @web_bp.route("/api/admin/add_task", methods=["POST"])
@@ -29,16 +35,17 @@ def api_admin_add_task():
     data = request.json
     title = data.get("title")
     reward = data.get("reward")
-    client_id = data.get("user_id")  # 操作している管理者ID
+    # client_id = data.get("user_id") # 未使用のためコメントアウト
 
-    if not title or not reward:
-        return jsonify({"status": "error", "message": "Missing fields"}), 400
+    if not title:
+        return jsonify({"status": "error", "message": "Title required"}), 400
 
-    success, result = JobService.create_job(title, int(reward), "", client_id)
+    # JobService.add_jobを使用するように修正（create_jobは前回までの実装か誤記）
+    success, msg = JobService.add_job(title, reward)
     if success:
-        return jsonify({"status": "ok", "job_id": result})
+        return jsonify({"status": "success", "job_id": msg})
     else:
-        return jsonify({"status": "error", "message": result}), 500
+        return jsonify({"status": "error", "message": msg}), 500
 
 
 @web_bp.route("/api/admin/add_item", methods=["POST"])
@@ -49,12 +56,11 @@ def api_admin_add_item():
     cost = data.get("cost")
     description = data.get("description", "")
 
-    if not name or not cost:
-        return jsonify({"status": "error", "message": "Missing fields"}), 400
+    if not name:
+        return jsonify({"status": "error", "message": "Name required"}), 400
 
-    item_key = ShopService.add_item(name, int(cost), description)
-    if item_key:
-        return jsonify({"status": "ok", "item_key": item_key})
+    if ShopService.add_item(name, cost, description):
+        return jsonify({"status": "success"})
     else:
         return jsonify({"status": "error", "message": "Failed to add item"}), 500
 
@@ -63,18 +69,16 @@ def api_admin_add_item():
 def api_admin_grant_points():
     """ポイント付与"""
     data = request.json
-    target_id = data.get("target_id")
+    user_id = data.get("user_id")
     amount = data.get("amount")
-    reason = data.get("reason", "ADMIN_GRANT")
 
-    if not target_id or amount is None:
-        return jsonify({"status": "error", "message": "Missing fields"}), 400
+    if not user_id or amount is None:
+        return jsonify({"status": "error", "message": "Missing params"}), 400
 
-    result = EconomyService.add_exp(target_id, int(amount), reason)
-    if result:
-        return jsonify({"status": "ok"})
+    if EconomyService.add_exp(user_id, int(amount), "ADMIN_GRANT"):
+        return jsonify({"status": "success"})
     else:
-        return jsonify({"status": "error", "message": "Failed to grant points"}), 500
+        return jsonify({"status": "error", "message": "Failed to grant"}), 500
 
 
 @web_bp.route("/app/dashboard")
@@ -334,59 +338,3 @@ def api_pause_study():
 
 
 # --- ADMIN API ---
-@web_bp.route("/api/admin/users")
-def api_admin_users():
-    users = EconomyService.get_all_users()
-    # フロントエンドで使いやすい形式に整形
-    user_list = []
-    for u in users:
-        user_list.append(
-            {"user_id": u.get("user_id"), "user_name": u.get("display_name", "Unknown")}
-        )
-    return jsonify({"status": "success", "users": user_list})
-
-
-@web_bp.route("/api/admin/add_task", methods=["POST"])
-def api_admin_add_task():
-    data = request.json
-    title = data.get("title")
-    reward = data.get("reward")
-    if not title:
-        return jsonify({"status": "error", "message": "Title required"}), 400
-
-    success, msg = JobService.add_job(title, reward)
-    if success:
-        return jsonify({"status": "success", "job_id": msg})
-    else:
-        return jsonify({"status": "error", "message": msg}), 500
-
-
-@web_bp.route("/api/admin/add_item", methods=["POST"])
-def api_admin_add_item():
-    data = request.json
-    name = data.get("name")
-    cost = data.get("cost")
-    desc = data.get("description", "")
-
-    if not name:
-        return jsonify({"status": "error", "message": "Name required"}), 400
-
-    if ShopService.add_item(name, cost, desc):
-        return jsonify({"status": "success"})
-    else:
-        return jsonify({"status": "error", "message": "Failed to add item"}), 500
-
-
-@web_bp.route("/api/admin/grant_points", methods=["POST"])
-def api_admin_grant_points():
-    data = request.json
-    user_id = data.get("user_id")
-    amount = data.get("amount")
-
-    if not user_id or amount is None:
-        return jsonify({"status": "error", "message": "Missing params"}), 400
-
-    if EconomyService.add_exp(user_id, int(amount), "ADMIN_GRANT"):
-        return jsonify({"status": "success"})
-    else:
-        return jsonify({"status": "error", "message": "Failed to grant"}), 500
