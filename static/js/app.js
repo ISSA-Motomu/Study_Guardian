@@ -323,8 +323,14 @@ createApp({
       } catch (e) { alert("通信エラー"); }
     },
     async pauseStudy() {
+      await this.handlePauseRequest(true);
+    },
+    async navBackFromStudy() {
+      await this.handlePauseRequest(false);
+    },
+    async handlePauseRequest(closeApp) {
       playSound('click');
-      if (!confirm("勉強を一時中断しますか？\n(時間はここでストップします)")) return;
+      if (!confirm("勉強を一時中断してメニューに戻りますか？\n(時間はここでストップします)")) return;
 
       try {
         const res = await fetch('/api/study/pause', {
@@ -334,15 +340,20 @@ createApp({
         });
         const json = await res.json();
         if (json.status === 'ok') {
-          alert(`一時中断しました。\n(経過時間: ${json.minutes}分)\n再開はLINEメニューから行ってください。`);
-          liff.closeWindow();
+          // alert(`一時中断しました。\n(経過時間: ${json.minutes}分)`);
+          this.studying = false;
+          clearInterval(this.timerInterval);
+          if (closeApp) {
+            liff.closeWindow();
+          } else {
+            this.view = 'dashboard';
+            await this.fetchUserData(this.currentUserId);
+          }
         } else {
           alert("中断処理に失敗しました");
-          liff.closeWindow();
         }
       } catch (e) {
         alert("通信エラー");
-        liff.closeWindow();
       }
     },
     async checkActiveSession(userId) {

@@ -48,7 +48,11 @@
       </div>
 
       <!-- Timer View (Studying) -->
-      <div v-else-if="view === 'timer'" class="text-center">
+      <div v-else-if="view === 'timer'" class="text-center relative">
+        <button @click="navBackFromStudy"
+          class="absolute top-4 left-0 z-20 text-white text-xl p-2 rounded-full hover:bg-black/10 transition-colors">
+          ←
+        </button>
         <div class="glass-panel p-8 mb-6 mt-10">
           <h2 class="text-gray-500 font-bold mb-2">STUDYING</h2>
           <div class="text-3xl font-bold mb-8" :style="{ color: currentSubjectColor }">{{ currentSubject }}</div>
@@ -89,7 +93,13 @@
       <!-- Shop View -->
       <div v-else-if="view === 'shop'" class="pb-24">
         <div class="flex justify-between items-center mb-6">
-          <h2 class="text-white text-2xl font-bold drop-shadow-sm">SHOP</h2>
+          <div class="flex items-center gap-2">
+            <button @click="view = 'dashboard'"
+              class="text-white text-xl p-2 rounded-full hover:bg-white/20 transition-colors">
+              ←
+            </button>
+            <h2 class="text-white text-2xl font-bold drop-shadow-sm">SHOP</h2>
+          </div>
           <div class="bg-white/90 backdrop-blur rounded-full px-4 py-1 text-sm font-bold text-yellow-600 shadow-sm">
             💰 {{ user.coins.toLocaleString() }} pt
           </div>
