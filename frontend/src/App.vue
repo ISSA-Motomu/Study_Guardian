@@ -1,0 +1,119 @@
+<template>
+  <div class="min-h-screen pb-20 max-w-md mx-auto relative overflow-hidden bg-slate-50">
+    <!-- Header Background -->
+    <div class="absolute top-0 left-0 w-full h-48 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-b-[40px] z-0" />
+
+    <!-- Main Content -->
+    <div class="relative z-10 px-6 pt-8">
+      <LoadingSpinner v-if="userStore.loading" />
+      
+      <template v-else>
+        <TimerView v-if="view === 'timer'" @back="view = 'study'" />
+        <GameView v-else-if="view === 'game'" />
+        <AdminView v-else-if="view === 'admin'" @exit="view = 'study'" />
+        <DataView v-else-if="view === 'data'" @admin="view = 'admin'" />
+        <StudyView v-else @timer="view = 'timer'" />
+      </template>
+    </div>
+
+    <!-- Global Modals -->
+    <SubjectModal 
+      v-if="studyStore.showSubjectModal" 
+      @close="studyStore.showSubjectModal = false"
+      @start="handleStartStudy"
+    />
+    
+    <MemoConfirmDialog
+      v-if="studyStore.showMemoConfirm"
+      :memo="studyStore.memoToSend"
+      @confirm="handleFinishStudy"
+      @cancel="studyStore.showMemoConfirm = false"
+    />
+
+    <BuyModal
+      v-if="shopStore.showBuyModal"
+      :item="shopStore.selectedItem"
+      @confirm="handleBuy"
+      @cancel="shopStore.showBuyModal = false"
+    />
+
+    <!-- Bottom Navigation -->
+    <BottomNav v-model="view" :in-session="studyStore.inSession" />
+    
+    <!-- Floating Action Button -->
+    <FloatingButton 
+      v-if="view === 'study'" 
+      :in-session="studyStore.inSession"
+      @click="handleFabClick"
+    />
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useUserStore } from '@/stores/user'
+import { useStudyStore } from '@/stores/study'
+import { useGameStore } from '@/stores/game'
+import { useShopStore } from '@/stores/shop'
+import { useLiff } from '@/composables/useLiff'
+import { useSound } from '@/composables/useSound'
+
+// Components
+import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import BottomNav from '@/components/common/BottomNav.vue'
+import FloatingButton from '@/components/common/FloatingButton.vue'
+import StudyView from '@/components/study/StudyView.vue'
+import TimerView from '@/components/study/TimerView.vue'
+import SubjectModal from '@/components/study/SubjectModal.vue'
+import MemoConfirmDialog from '@/components/study/MemoConfirmDialog.vue'
+import GameView from '@/components/game/GameView.vue'
+import DataView from '@/components/data/DataView.vue'
+import AdminView from '@/components/admin/AdminView.vue'
+import BuyModal from '@/components/shop/BuyModal.vue'
+
+// Stores
+const userStore = useUserStore()
+const studyStore = useStudyStore()
+const gameStore = useGameStore()
+const shopStore = useShopStore()
+
+// Composables
+const { initLiff } = useLiff()
+const { playSound } = useSound()
+
+// State
+const view = ref('study')
+
+// Lifecycle
+onMounted(async () => {
+  playSound('poweron')
+  await initLiff()
+  gameStore.startBattleLoop()
+})
+
+// Handlers
+const handleFabClick = () => {
+  if (studyStore.inSession) {
+    view.value = 'timer'
+  } else {
+    studyStore.openSubjectModal()
+  }
+}
+
+const handleStartStudy = async (subject) => {
+  await studyStore.startStudy(subject)
+  view.value = 'timer'
+}
+
+const handleFinishStudy = async () => {
+  const minutes = await studyStore.finishStudy()
+  if (minutes > 0) {
+    gameStore.applyStudyDamage(minutes)
+  }
+  view.value = 'study'
+}
+
+const handleBuy = async (comment) => {
+  await shopStore.confirmBuy(comment)
+}
+</script>

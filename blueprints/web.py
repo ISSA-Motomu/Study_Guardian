@@ -84,7 +84,15 @@ def api_admin_grant_points():
 @web_bp.route("/app/dashboard")
 def liff_dashboard():
     """LIFFのトップページ (ダッシュボード) を返す"""
-    directory = os.path.join(current_app.root_path, "templates", "liff")
+    # Vueでビルドされた静的ファイルを返す
+    directory = os.path.join(current_app.root_path, "static", "dist")
+    if not os.path.exists(directory):
+        # ビルド前の場合のフォールバック (またはエラー表示)
+        # 開発中は旧画面を出すか、ビルドを促すメッセージを出す
+        return (
+            "Frontend not built. Please run 'npm run build' in frontend directory.",
+            503,
+        )
     return send_from_directory(directory, "index.html")
 
 
