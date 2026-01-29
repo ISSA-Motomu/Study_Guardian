@@ -3,6 +3,11 @@
     <!-- Header Background -->
     <div class="absolute top-0 left-0 w-full h-48 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-b-[40px] z-0" />
 
+    <!-- Notification Bell (Top Right) -->
+    <div class="absolute top-4 right-4 z-30">
+      <NotificationBell @navigate="handleNotificationNavigate" />
+    </div>
+
     <!-- Main Content -->
     <div class="relative z-10 px-6 pt-8">
       <LoadingSpinner v-if="userStore.loading" />
@@ -68,6 +73,7 @@ import { useSound } from '@/composables/useSound'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import BottomNav from '@/components/common/BottomNav.vue'
 import FloatingButton from '@/components/common/FloatingButton.vue'
+import NotificationBell from '@/components/common/NotificationBell.vue'
 import StudyView from '@/components/study/StudyView.vue'
 import TimerView from '@/components/study/TimerView.vue'
 import SubjectModal from '@/components/study/SubjectModal.vue'
@@ -130,5 +136,11 @@ const handleFinishStudy = async () => {
 
 const handleBuy = async (comment) => {
   await shopStore.confirmBuy(comment)
+}
+
+const handleNotificationNavigate = (target) => {
+  if (target === 'admin') {
+    view.value = 'admin'
+  }
 }
 </script>

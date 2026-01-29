@@ -91,19 +91,19 @@
       />
 
       <!-- Bottom Progress Bar - iPhone safe area aware -->
-      <div class="absolute bottom-28 left-4 right-4 z-20">
-        <div v-if="evolutionStore.nextUnlock" class="bg-black/50 backdrop-blur-xl rounded-2xl p-4 border border-white/20 shadow-lg">
+      <div class="absolute bottom-24 left-3 right-3 z-20 sm:bottom-28 sm:left-4 sm:right-4">
+        <div v-if="evolutionStore.nextUnlock" class="bg-black/50 backdrop-blur-xl rounded-2xl p-3 sm:p-4 border border-white/20 shadow-lg">
           <div class="flex justify-between text-xs text-white/80 mb-2">
             <span class="flex items-center gap-1.5">
               <span class="text-base">🔮</span>
-              <span class="font-medium">次の解放:</span>
-              <span class="text-cyan-300 font-bold">
+              <span class="font-medium hidden sm:inline">次の解放:</span>
+              <span class="text-cyan-300 font-bold text-xs sm:text-sm truncate max-w-[100px] sm:max-w-none">
                 {{ evolutionStore.nextUnlock.state === 'revealed' ? evolutionStore.nextUnlock.name : '???' }}
               </span>
             </span>
             <span class="text-yellow-300 font-bold tabular-nums">{{ Math.floor(evolutionStore.nextUnlock.progressToUnlock) }}%</span>
           </div>
-          <div class="h-4 bg-white/10 rounded-full overflow-hidden relative">
+          <div class="h-3 sm:h-4 bg-white/10 rounded-full overflow-hidden relative">
             <div 
               class="h-full transition-all duration-500 rounded-full relative"
               :class="progressBarClass"
@@ -116,36 +116,36 @@
       </div>
 
       <!-- Navigation Buttons - iOS style -->
-      <div class="absolute bottom-4 left-2 right-2 z-20 ios-safe-bottom">
-        <p class="text-[10px] text-white/50 text-center mb-2 uppercase tracking-widest">タップしてKPを獲得</p>
-        <div class="flex gap-1.5 justify-center">
+      <div class="absolute bottom-2 left-1 right-1 z-20 ios-safe-bottom sm:bottom-4 sm:left-2 sm:right-2">
+        <p class="text-[9px] sm:text-[10px] text-white/50 text-center mb-1 sm:mb-2 uppercase tracking-widest">タップでKP獲得</p>
+        <div class="flex gap-1 sm:gap-1.5 justify-center px-1">
           <button 
             @click.stop="navigate('list')"
             class="ios-nav-button"
           >
-            <span class="text-3xl mb-1">📋</span>
-            <span class="text-xs font-bold">施設</span>
+            <span class="text-2xl sm:text-3xl">📋</span>
+            <span class="text-[10px] sm:text-xs font-bold">施設</span>
           </button>
           <button 
             @click.stop="navigate('tree')"
             class="ios-nav-button"
           >
-            <span class="text-3xl mb-1">🌳</span>
-            <span class="text-xs font-bold">ツリー</span>
+            <span class="text-2xl sm:text-3xl">🌳</span>
+            <span class="text-[10px] sm:text-xs font-bold">ツリー</span>
           </button>
           <button 
             @click.stop="navigate('upgrade')"
             class="ios-nav-button"
           >
-            <span class="text-3xl mb-1">🔬</span>
-            <span class="text-xs font-bold">強化</span>
+            <span class="text-2xl sm:text-3xl">🔬</span>
+            <span class="text-[10px] sm:text-xs font-bold">強化</span>
           </button>
           <button 
             @click.stop="navigate('prestige')"
             class="ios-nav-button prestige-button"
           >
-            <span class="text-3xl mb-1">🔄</span>
-            <span class="text-xs font-bold">転生</span>
+            <span class="text-2xl sm:text-3xl">🔄</span>
+            <span class="text-[10px] sm:text-xs font-bold">転生</span>
           </button>
         </div>
       </div>
@@ -374,14 +374,24 @@ onMounted(() => {
   padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
 }
 
-/* iOS-style Navigation Buttons - Larger for better tap targets */
+/* iOS-style Navigation Buttons - Compact for small screens */
 .ios-nav-button {
-  @apply flex flex-col items-center justify-center gap-1 bg-white/15 backdrop-blur-xl rounded-2xl border border-white/30 text-white transition-all;
-  min-width: 72px;
-  min-height: 64px;
-  padding: 10px 8px;
+  @apply flex flex-col items-center justify-center bg-white/15 backdrop-blur-xl rounded-xl sm:rounded-2xl border border-white/30 text-white transition-all;
+  min-width: 60px;
+  min-height: 52px;
+  padding: 6px 4px;
   flex: 1;
-  max-width: 90px;
+  max-width: 80px;
+  gap: 2px;
+}
+
+@media (min-width: 640px) {
+  .ios-nav-button {
+    min-width: 72px;
+    min-height: 64px;
+    padding: 10px 8px;
+    max-width: 90px;
+  }
 }
 
 .ios-nav-button:active {

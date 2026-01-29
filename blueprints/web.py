@@ -664,6 +664,22 @@ def api_pause_study():
 # ===== ADMIN API =====
 
 
+@web_bp.route("/api/user/<user_id>/notifications")
+def api_user_notifications(user_id):
+    """ユーザー向けの通知を取得（未読の承認結果など）"""
+    try:
+        # 通知用シートから未読通知を取得
+        notifications = []
+        
+        # 現状はシンプルに空配列を返す（将来的には通知テーブルを追加）
+        # 実際の通知はLINEで送られるので、Web用は補助的
+        
+        return jsonify({"status": "ok", "notifications": notifications})
+    except Exception as e:
+        print(f"User Notifications Error: {e}")
+        return jsonify({"status": "error", "notifications": []})
+
+
 @web_bp.route("/api/admin/pending")
 def api_admin_pending():
     """承認待ちの全項目を取得"""
