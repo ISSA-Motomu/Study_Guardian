@@ -148,50 +148,51 @@ const orbitStyle = (index) => {
 
 <style scoped>
 .evolution-stage {
-  width: 200px;
-  height: 200px;
+  width: 240px;
+  height: 240px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: transform 0.1s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .evolution-stage.active {
-  transform: scale(0.95);
+  transform: scale(0.92);
 }
 
 .evolution-stage:active {
-  transform: scale(0.95);
+  transform: scale(0.92);
 }
 
-/* Glow Ring */
+/* Glow Ring - Larger */
 .glow-ring {
   position: absolute;
-  inset: -20px;
+  inset: -30px;
   border-radius: 50%;
   opacity: 0.5;
   animation: pulse-glow 3s ease-in-out infinite;
 }
 
-.glow-blue { background: radial-gradient(circle, rgba(59,130,246,0.4) 0%, transparent 70%); }
-.glow-cyan { background: radial-gradient(circle, rgba(34,211,238,0.4) 0%, transparent 70%); }
-.glow-silver { background: radial-gradient(circle, rgba(203,213,225,0.5) 0%, transparent 70%); }
-.glow-orange { background: radial-gradient(circle, rgba(249,115,22,0.4) 0%, transparent 70%); }
-.glow-purple { background: radial-gradient(circle, rgba(168,85,247,0.4) 0%, transparent 70%); }
-.glow-gold { background: radial-gradient(circle, rgba(250,204,21,0.5) 0%, transparent 70%); }
+.glow-blue { background: radial-gradient(circle, rgba(59,130,246,0.5) 0%, transparent 70%); }
+.glow-cyan { background: radial-gradient(circle, rgba(34,211,238,0.5) 0%, transparent 70%); }
+.glow-silver { background: radial-gradient(circle, rgba(203,213,225,0.6) 0%, transparent 70%); }
+.glow-orange { background: radial-gradient(circle, rgba(249,115,22,0.5) 0%, transparent 70%); }
+.glow-purple { background: radial-gradient(circle, rgba(168,85,247,0.5) 0%, transparent 70%); }
+.glow-gold { background: radial-gradient(circle, rgba(250,204,21,0.6) 0%, transparent 70%); }
 
 @keyframes pulse-glow {
   0%, 100% { transform: scale(1); opacity: 0.5; }
-  50% { transform: scale(1.1); opacity: 0.8; }
+  50% { transform: scale(1.15); opacity: 0.9; }
 }
 
-/* Main Visual */
+/* Main Visual - Larger for iPhone */
 .stage-visual {
   position: relative;
-  width: 140px;
-  height: 140px;
+  width: 180px;
+  height: 180px;
   border-radius: 50%;
   display: flex;
   flex-direction: column;
@@ -262,30 +263,31 @@ const orbitStyle = (index) => {
 }
 
 .stage-icon {
-  font-size: 3.5rem;
-  filter: drop-shadow(0 0 10px rgba(255,255,255,0.5));
+  font-size: 4.5rem;
+  filter: drop-shadow(0 0 15px rgba(255,255,255,0.6));
   animation: float 3s ease-in-out infinite;
 }
 
 @keyframes float {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
+  50% { transform: translateY(-8px); }
 }
 
 .stage-name {
   position: absolute;
-  bottom: -30px;
+  bottom: -35px;
   white-space: nowrap;
   color: white;
-  font-size: 0.875rem;
-  font-weight: 600;
-  text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+  font-size: 1rem;
+  font-weight: 700;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.9);
+  letter-spacing: 0.025em;
 }
 
-/* Orbiting Elements */
+/* Orbiting Elements - Larger radius */
 .orbiting-elements {
   position: absolute;
-  inset: -30px;
+  inset: -40px;
   animation: rotate-slow 30s linear infinite;
 }
 
@@ -293,24 +295,24 @@ const orbitStyle = (index) => {
   position: absolute;
   top: 50%;
   left: 50%;
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   animation: orbit var(--orbit-duration) linear infinite;
   transform-origin: center;
 }
 
 @keyframes orbit {
   0% {
-    transform: rotate(var(--orbit-angle)) translateX(90px) rotate(calc(var(--orbit-angle) * -1));
+    transform: rotate(var(--orbit-angle)) translateX(110px) rotate(calc(var(--orbit-angle) * -1));
   }
   100% {
-    transform: rotate(calc(var(--orbit-angle) + 360deg)) translateX(90px) rotate(calc((var(--orbit-angle) + 360deg) * -1));
+    transform: rotate(calc(var(--orbit-angle) + 360deg)) translateX(110px) rotate(calc((var(--orbit-angle) + 360deg) * -1));
   }
 }
 
-/* Tap Indicator */
+/* Tap Indicator - More visible */
 .tap-indicator {
   position: absolute;
-  bottom: -60px;
+  bottom: -70px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -319,13 +321,14 @@ const orbitStyle = (index) => {
 }
 
 .tap-text {
-  font-size: 0.75rem;
-  color: rgba(255,255,255,0.5);
+  font-size: 0.875rem;
+  color: rgba(255,255,255,0.6);
+  font-weight: 500;
 }
 
 .tap-arrow {
-  font-size: 1rem;
-  color: rgba(255,255,255,0.4);
+  font-size: 1.25rem;
+  color: rgba(255,255,255,0.5);
   animation: bounce-arrow 1s ease-in-out infinite;
 }
 
@@ -336,6 +339,6 @@ const orbitStyle = (index) => {
 
 @keyframes bounce-arrow {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(5px); }
+  50% { transform: translateY(8px); }
 }
 </style>

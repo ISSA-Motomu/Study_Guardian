@@ -5,25 +5,25 @@
       <SpaceBackground :progress="evolutionStore.totalEarnedPoints" :parallaxOffset="parallaxOffset" />
     </div>
 
-    <!-- Header -->
-    <div class="sticky top-0 z-30 bg-black/80 backdrop-blur-lg border-b border-white/10">
-      <div class="p-4 flex items-center gap-4">
+    <!-- Header - iOS Safe Area -->
+    <div class="sticky top-0 z-30 bg-black/85 backdrop-blur-xl border-b border-white/10 ios-safe-top">
+      <div class="p-4 flex items-center gap-3">
         <button 
           @click="$emit('navigate', 'main')"
-          class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-all"
+          class="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center text-white active:bg-white/30 active:scale-95 transition-all text-lg"
         >
           ←
         </button>
         <div class="flex-1">
-          <h1 class="text-lg font-bold text-white">テックツリー</h1>
-          <p class="text-xs text-white/60">ドラッグ＆ズームで探索</p>
+          <h1 class="text-xl font-bold text-white">テックツリー</h1>
+          <p class="text-xs text-white/60 mt-0.5">ドラッグ＆ズームで探索</p>
         </div>
         <!-- Current KP -->
-        <div class="bg-white/10 rounded-xl px-3 py-2 flex items-center gap-2">
-          <span class="text-lg">💡</span>
+        <div class="bg-white/15 rounded-2xl px-4 py-2.5 flex items-center gap-2 border border-white/10">
+          <span class="text-xl">💡</span>
           <AnimatedCounter 
             :value="evolutionStore.knowledgePoints"
-            class="text-lg font-bold text-yellow-300"
+            class="text-xl font-bold text-yellow-300 tabular-nums"
           />
         </div>
       </div>
@@ -37,8 +37,8 @@
       @mousemove="onDrag"
       @mouseup="endDrag"
       @mouseleave="endDrag"
-      @touchstart="startDrag"
-      @touchmove="onDrag"
+      @touchstart.passive="startDrag"
+      @touchmove.passive="onDrag"
       @touchend="endDrag"
       @wheel.prevent="onWheel"
     >
@@ -98,24 +98,26 @@
       </div>
     </div>
 
-    <!-- Zoom Controls -->
-    <div class="fixed bottom-24 right-4 flex flex-col gap-2 z-40">
+    <!-- Zoom Controls - Larger for iOS -->
+    <div class="fixed bottom-32 right-4 flex flex-col gap-3 z-40">
       <button @click="zoomIn" class="zoom-btn">+</button>
       <button @click="zoomOut" class="zoom-btn">−</button>
-      <button @click="resetView" class="zoom-btn text-sm">🎯</button>
+      <button @click="resetView" class="zoom-btn text-base">🎯</button>
     </div>
 
-    <!-- Selected Node Panel -->
+    <!-- Selected Node Panel - iOS optimized -->
     <transition name="slide-up">
       <div 
         v-if="selectedNode"
-        class="fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-xl rounded-t-3xl p-4 pb-8 shadow-2xl border-t border-white/10"
+        class="fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-xl rounded-t-3xl shadow-2xl border-t border-white/10 ios-safe-bottom"
+        style="padding: 20px 20px calc(env(safe-area-inset-bottom, 0px) + 20px) 20px;"
       >
         <div class="flex items-start gap-4">
           <!-- Icon -->
           <div 
-            class="w-16 h-16 rounded-2xl flex items-center justify-center text-4xl"
+            class="w-18 h-18 rounded-2xl flex items-center justify-center text-5xl"
             :class="getTierBgClass(selectedNode.tier)"
+            style="min-width: 72px; min-height: 72px;"
           >
             {{ selectedNode.icon }}
           </div>
@@ -124,17 +126,17 @@
             <h3 class="text-xl font-bold text-white">
               {{ selectedNode.state === 'unlocked' || selectedNode.state === 'revealed' ? selectedNode.name : '???' }}
             </h3>
-            <p class="text-sm text-white/60 mt-1">
+            <p class="text-sm text-white/60 mt-1 leading-relaxed">
               {{ selectedNode.state === 'unlocked' ? selectedNode.description : '施設の詳細は解放後に公開' }}
             </p>
-            <div class="flex items-center gap-4 mt-3 text-sm">
-              <span class="text-yellow-300">💡 {{ formatNumber(selectedNode.currentCost) }} KP</span>
-              <span class="text-green-400">⚡ +{{ selectedNode.production.toFixed(1) }}/分</span>
-              <span class="text-purple-300">Lv.{{ selectedNode.level }}</span>
+            <div class="flex items-center gap-4 mt-3 text-sm flex-wrap">
+              <span class="text-yellow-300 font-medium">💡 {{ formatNumber(selectedNode.currentCost) }} KP</span>
+              <span class="text-green-400 font-medium">⚡ +{{ selectedNode.production.toFixed(1) }}/分</span>
+              <span class="text-purple-300 font-medium">Lv.{{ selectedNode.level }}</span>
             </div>
           </div>
           <!-- Close -->
-          <button @click="selectedNode = null" class="p-2 text-white/40 hover:text-white">✕</button>
+          <button @click="selectedNode = null" class="w-10 h-10 flex items-center justify-center text-white/60 active:text-white bg-white/10 rounded-full">✕</button>
         </div>
 
         <!-- Action Button -->
@@ -142,7 +144,7 @@
           v-if="selectedNode.state === 'unlocked'"
           @click="handleBuyFromPanel"
           :disabled="!selectedNode.canAfford"
-          class="w-full mt-4 py-4 rounded-xl font-bold text-lg transition-all"
+          class="w-full mt-5 py-4 rounded-2xl font-bold text-lg transition-all active:scale-95"
           :class="selectedNode.canAfford 
             ? 'bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 text-white shadow-lg' 
             : 'bg-white/10 text-white/40'"
@@ -151,10 +153,10 @@
         </button>
         <div 
           v-else 
-          class="w-full mt-4 py-4 rounded-xl bg-white/5 text-center text-white/50"
+          class="w-full mt-5 py-4 rounded-2xl bg-white/5 text-center text-white/50"
         >
           🔒 {{ formatNumber(selectedNode.unlockCondition) }} KP で解放可能
-          <div class="mt-2 h-2 bg-white/10 rounded-full overflow-hidden mx-8">
+          <div class="mt-3 h-3 bg-white/10 rounded-full overflow-hidden mx-8">
             <div 
               class="h-full bg-gradient-to-r from-amber-400 to-yellow-300"
               :style="{ width: selectedNode.progressToUnlock + '%' }"
@@ -164,21 +166,21 @@
       </div>
     </transition>
 
-    <!-- Bottom Navigation -->
-    <div class="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black to-transparent z-30">
+    <!-- Bottom Navigation - iOS Safe Area -->
+    <div class="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black via-black/90 to-transparent z-30 ios-safe-bottom">
       <div class="flex gap-3 max-w-md mx-auto">
         <button 
           @click="$emit('navigate', 'main')"
-          class="flex-1 py-3 bg-white/10 backdrop-blur rounded-xl text-white font-semibold flex items-center justify-center gap-2"
+          class="flex-1 py-4 bg-white/15 backdrop-blur-xl rounded-2xl text-white font-bold flex items-center justify-center gap-2 border border-white/20 active:bg-white/30 active:scale-95 transition-all text-base"
         >
-          <span>🌍</span>
+          <span class="text-xl">🌍</span>
           <span>メイン</span>
         </button>
         <button 
           @click="$emit('navigate', 'list')"
-          class="flex-1 py-3 bg-white/10 backdrop-blur rounded-xl text-white font-semibold flex items-center justify-center gap-2"
+          class="flex-1 py-4 bg-white/15 backdrop-blur-xl rounded-2xl text-white font-bold flex items-center justify-center gap-2 border border-white/20 active:bg-white/30 active:scale-95 transition-all text-base"
         >
-          <span>📋</span>
+          <span class="text-xl">📋</span>
           <span>施設</span>
         </button>
       </div>
@@ -360,13 +362,26 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.tech-tree-advanced {
+  -webkit-overflow-scrolling: touch;
+}
+
+.ios-safe-top {
+  padding-top: max(env(safe-area-inset-top, 0px), 8px);
+}
+
+.ios-safe-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 16px);
+}
+
 .tree-viewport {
   position: relative;
   width: 100%;
   height: calc(100vh - 180px);
   overflow: hidden;
   cursor: grab;
-  touch-action: none;
+  touch-action: pan-x pan-y pinch-zoom;
+  -webkit-overflow-scrolling: touch;
 }
 
 .tree-viewport:active {
@@ -380,8 +395,10 @@ onMounted(() => {
   transition: transform 0.05s linear;
 }
 
+/* Zoom buttons - Larger for iOS touch targets */
 .zoom-btn {
-  @apply w-12 h-12 bg-black/60 backdrop-blur-lg rounded-full flex items-center justify-center text-white text-xl font-bold border border-white/20 hover:bg-white/20 transition-all;
+  @apply w-14 h-14 bg-black/70 backdrop-blur-xl rounded-2xl flex items-center justify-center text-white text-2xl font-bold border border-white/20 active:bg-white/30 active:scale-95 transition-all;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .animate-flow {

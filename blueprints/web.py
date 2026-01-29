@@ -282,8 +282,13 @@ def api_user_active_session(user_id):
 @web_bp.route("/api/user/<user_id>/stats")
 def api_user_stats(user_id):
     """ユーザーの学習統計詳細を取得"""
-    stats = HistoryService.get_user_study_stats(user_id)
-    return jsonify({"status": "ok", "data": stats})
+    try:
+        stats = HistoryService.get_user_study_stats(user_id)
+        # weekly, subject, recent, total が含まれる
+        return jsonify(stats)
+    except Exception as e:
+        print(f"Stats API Error: {e}")
+        return jsonify({"weekly": [], "subject": [], "recent": [], "total": 0})
 
 
 @web_bp.route("/api/study/finish", methods=["POST"])

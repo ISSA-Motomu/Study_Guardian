@@ -180,11 +180,11 @@
           </div>
         </div>
 
-        <!-- Buy Button -->
+        <!-- Buy Button - Larger for iOS -->
         <button
           @click.stop="$emit('buy', facility.id)"
           :disabled="!facility.canAfford"
-          class="px-4 py-3 rounded-xl font-bold text-sm transition-all shrink-0"
+          class="px-5 py-4 rounded-2xl font-bold text-base transition-all shrink-0 min-w-[52px] min-h-[52px]"
           :class="buyButtonClass"
         >
           <span v-if="facility.level === 0">🔓</span>

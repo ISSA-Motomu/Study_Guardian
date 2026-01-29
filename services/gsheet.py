@@ -353,6 +353,9 @@ class GSheetService:
             idx_date = col_map.get("date")
             idx_start = col_map.get("start_time")
             idx_end = col_map.get("end_time")
+            idx_subject = col_map.get("subject")
+            idx_comment = col_map.get("comment")
+            idx_duration = col_map.get("duration_min")
 
             if idx_status is None:
                 return []
@@ -378,6 +381,9 @@ class GSheetService:
                             "date": get_val(idx_date),
                             "start_time": get_val(idx_start),
                             "end_time": get_val(idx_end),
+                            "subject": get_val(idx_subject) or "勉強",
+                            "comment": get_val(idx_comment),
+                            "duration_min": get_val(idx_duration),
                         }
                     )
         except Exception as e:

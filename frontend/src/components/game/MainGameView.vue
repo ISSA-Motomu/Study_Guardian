@@ -2,7 +2,8 @@
   <div 
     class="main-game-view relative min-h-[calc(100vh-180px)] overflow-hidden"
     @click="handleTap"
-    @touchstart="handleTouchStart"
+    @touchstart.passive="handleTouchStart"
+    @touchmove.passive="handleTouchMove"
   >
     <!-- Parallax Space Background -->
     <SpaceBackground 
@@ -16,24 +17,24 @@
     <!-- Screen Shake Container -->
     <div :class="{ 'animate-shake': isShaking }">
       
-      <!-- Top Stats Bar -->
+      <!-- Top Stats Bar - iPhone Optimized with Safe Area -->
       <div 
-        class="absolute top-0 left-0 right-0 z-30 p-4"
+        class="absolute top-0 left-0 right-0 z-30 ios-safe-top"
         ref="kpTargetRef"
       >
-        <div class="flex justify-between items-start">
-          <!-- KP Display -->
+        <div class="flex justify-between items-start p-4 gap-2">
+          <!-- KP Display - Larger touch target -->
           <div 
-            class="kp-display bg-black/40 backdrop-blur-lg rounded-2xl px-4 py-3 border border-white/10"
+            class="kp-display bg-black/50 backdrop-blur-xl rounded-2xl px-4 py-3 border border-white/20 shadow-lg flex-1"
             :class="{ 'animate-glow-pulse': isKpGlowing }"
           >
-            <div class="flex items-center gap-2">
-              <span class="text-2xl">💡</span>
+            <div class="flex items-center gap-3">
+              <span class="text-3xl">💡</span>
               <div>
-                <p class="text-xs text-white/60 font-medium">Knowledge Points</p>
+                <p class="text-[10px] text-white/70 font-medium uppercase tracking-wider">Knowledge</p>
                 <AnimatedCounter 
                   :value="evolutionStore.knowledgePoints" 
-                  class="text-2xl font-bold text-yellow-300"
+                  class="text-2xl font-bold text-yellow-300 tabular-nums"
                   :duration="300"
                 />
               </div>
@@ -41,32 +42,44 @@
           </div>
 
           <!-- Multiplier Display -->
-          <div class="bg-black/40 backdrop-blur-lg rounded-2xl px-4 py-3 border border-white/10">
+          <div class="bg-black/50 backdrop-blur-xl rounded-2xl px-4 py-3 border border-white/20 shadow-lg">
             <div class="flex items-center gap-2">
               <span class="text-2xl">🔬</span>
-              <div>
-                <p class="text-xs text-white/60 font-medium">研究効率</p>
-                <p class="text-xl font-bold text-cyan-300">×{{ evolutionStore.totalMultiplier.toFixed(1) }}</p>
+              <div class="text-right">
+                <p class="text-[10px] text-white/70 font-medium uppercase tracking-wider">効率</p>
+                <p class="text-xl font-bold text-cyan-300 tabular-nums">×{{ evolutionStore.totalMultiplier.toFixed(1) }}</p>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- XP (Shop Currency) - Smaller -->
-        <div class="mt-2 bg-black/30 backdrop-blur rounded-xl px-3 py-2 inline-flex items-center gap-2">
-          <span>⭐</span>
-          <span class="text-sm text-amber-300 font-semibold">{{ userStore.user.xp || 0 }} XP</span>
-          <span class="text-xs text-white/40">ショップ用</span>
+        <!-- XP (Shop Currency) - Pill style -->
+        <div class="px-4">
+          <div class="bg-black/40 backdrop-blur-lg rounded-full px-4 py-2 inline-flex items-center gap-2">
+            <span class="text-lg">⭐</span>
+            <span class="text-sm text-amber-300 font-bold tabular-nums">{{ userStore.user.xp || 0 }}</span>
+            <span class="text-[10px] text-white/50">XP</span>
+          </div>
         </div>
       </div>
 
-      <!-- Central Evolution Visual -->
+      <!-- Central Evolution Visual - Better touch feedback -->
       <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
         <EvolutionStage 
           :totalKP="evolutionStore.totalEarnedPoints"
           :isActive="tapFeedbackActive"
-          class="pointer-events-auto"
+          class="pointer-events-auto transform-gpu"
         />
+      </div>
+
+      <!-- Floating Tap Indicator -->
+      <div 
+        v-for="floater in floatingNumbers" 
+        :key="floater.id"
+        class="floating-number"
+        :style="{ left: floater.x + 'px', top: floater.y + 'px' }"
+      >
+        +{{ floater.value }}
       </div>
 
       <!-- Tap Feedback Ripple -->
@@ -77,20 +90,20 @@
         :style="{ left: ripple.x + 'px', top: ripple.y + 'px' }"
       />
 
-      <!-- Bottom Progress Bar -->
-      <div class="absolute bottom-24 left-4 right-4 z-20">
-        <div v-if="evolutionStore.nextUnlock" class="bg-black/40 backdrop-blur-lg rounded-2xl p-3 border border-white/10">
-          <div class="flex justify-between text-xs text-white/70 mb-2">
-            <span class="flex items-center gap-1">
-              <span>🔮</span>
-              次の解放: 
-              <span class="text-cyan-300 font-semibold">
+      <!-- Bottom Progress Bar - iPhone safe area aware -->
+      <div class="absolute bottom-28 left-4 right-4 z-20">
+        <div v-if="evolutionStore.nextUnlock" class="bg-black/50 backdrop-blur-xl rounded-2xl p-4 border border-white/20 shadow-lg">
+          <div class="flex justify-between text-xs text-white/80 mb-2">
+            <span class="flex items-center gap-1.5">
+              <span class="text-base">🔮</span>
+              <span class="font-medium">次の解放:</span>
+              <span class="text-cyan-300 font-bold">
                 {{ evolutionStore.nextUnlock.state === 'revealed' ? evolutionStore.nextUnlock.name : '???' }}
               </span>
             </span>
-            <span class="text-yellow-300">{{ Math.floor(evolutionStore.nextUnlock.progressToUnlock) }}%</span>
+            <span class="text-yellow-300 font-bold tabular-nums">{{ Math.floor(evolutionStore.nextUnlock.progressToUnlock) }}%</span>
           </div>
-          <div class="h-3 bg-white/10 rounded-full overflow-hidden relative">
+          <div class="h-4 bg-white/10 rounded-full overflow-hidden relative">
             <div 
               class="h-full transition-all duration-500 rounded-full relative"
               :class="progressBarClass"
@@ -102,23 +115,23 @@
         </div>
       </div>
 
-      <!-- Navigation Hint -->
-      <div class="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 text-center">
-        <p class="text-xs text-white/40 mb-2">画面をタップしてKPを獲得</p>
-        <div class="flex gap-3">
+      <!-- Navigation Buttons - iOS style -->
+      <div class="absolute bottom-4 left-4 right-4 z-20 ios-safe-bottom">
+        <p class="text-[10px] text-white/50 text-center mb-3 uppercase tracking-widest">タップしてKPを獲得</p>
+        <div class="flex gap-3 justify-center">
           <button 
             @click.stop="$emit('navigate', 'list')"
-            class="nav-button"
+            class="ios-nav-button"
           >
-            <span class="text-lg">📋</span>
-            <span class="text-xs">施設</span>
+            <span class="text-2xl">📋</span>
+            <span class="text-[10px] font-medium">施設</span>
           </button>
           <button 
             @click.stop="$emit('navigate', 'tree')"
-            class="nav-button"
+            class="ios-nav-button"
           >
-            <span class="text-lg">🌳</span>
-            <span class="text-xs">ツリー</span>
+            <span class="text-2xl">🌳</span>
+            <span class="text-[10px] font-medium">ツリー</span>
           </button>
         </div>
       </div>
@@ -128,17 +141,17 @@
     <transition name="celebrate">
       <div 
         v-if="showUnlockCelebration"
-        class="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+        class="absolute inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md ios-safe-area"
         @click="showUnlockCelebration = false"
       >
-        <div class="unlock-celebration text-center">
-          <div class="text-6xl mb-4 animate-bounce-in">{{ unlockingFacility?.icon }}</div>
-          <h2 class="text-2xl font-bold text-white mb-2">🎉 解放！</h2>
-          <p class="text-xl text-yellow-300 font-semibold">{{ unlockingFacility?.name }}</p>
-          <p class="text-sm text-white/60 mt-2">{{ unlockingFacility?.description }}</p>
+        <div class="unlock-celebration text-center px-8">
+          <div class="text-7xl mb-6 animate-bounce-in">{{ unlockingFacility?.icon }}</div>
+          <h2 class="text-3xl font-bold text-white mb-2">🎉 解放！</h2>
+          <p class="text-2xl text-yellow-300 font-bold">{{ unlockingFacility?.name }}</p>
+          <p class="text-sm text-white/70 mt-3 leading-relaxed">{{ unlockingFacility?.description }}</p>
           <button 
             @click.stop="showUnlockCelebration = false"
-            class="mt-6 px-6 py-3 bg-gradient-to-r from-yellow-400 to-amber-500 text-black font-bold rounded-xl"
+            class="mt-8 px-8 py-4 bg-gradient-to-r from-yellow-400 to-amber-500 text-black font-bold rounded-2xl text-lg shadow-lg active:scale-95 transition-transform"
           >
             続ける
           </button>
@@ -201,12 +214,19 @@ const handleTap = (e) => {
     tapRipples.value = tapRipples.value.filter(r => r.id !== id)
   }, 600)
 
+  // Add floating number
+  const tapKP = Math.max(1, Math.floor(evolutionStore.totalMultiplier * 0.1))
+  const fid = floatId++
+  floatingNumbers.value.push({ id: fid, x, y, value: tapKP })
+  setTimeout(() => {
+    floatingNumbers.value = floatingNumbers.value.filter(f => f.id !== fid)
+  }, 1000)
+
   // Tap feedback
   tapFeedbackActive.value = true
   setTimeout(() => tapFeedbackActive.value = false, 100)
 
   // Add KP (tap bonus)
-  const tapKP = Math.max(1, Math.floor(evolutionStore.totalMultiplier * 0.1))
   evolutionStore.addPoints(tapKP)
 
   // Emit particles toward KP counter
@@ -230,10 +250,26 @@ const handleTap = (e) => {
   }
 }
 
+// Floating numbers for tap feedback
+const floatingNumbers = ref([])
+let floatId = 0
+
 const handleTouchStart = (e) => {
-  // Prevent double-tap zoom on mobile
+  // Prevent default only for single-finger taps to avoid zoom
+  // passive listener won't block, but we still track
+}
+
+const handleTouchMove = (e) => {
+  // Update parallax on touch move for interactive feel
   if (e.touches.length === 1) {
-    e.preventDefault()
+    const touch = e.touches[0]
+    const rect = e.currentTarget.getBoundingClientRect()
+    const centerX = rect.width / 2
+    const centerY = rect.height / 2
+    parallaxOffset.value = {
+      x: (touch.clientX - rect.left - centerX) * 0.015,
+      y: (touch.clientY - rect.top - centerY) * 0.015
+    }
   }
 }
 
@@ -293,27 +329,71 @@ onMounted(() => {
 .main-game-view {
   touch-action: manipulation;
   user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
 }
 
-.nav-button {
-  @apply flex flex-col items-center gap-1 px-4 py-2 bg-white/10 backdrop-blur-lg rounded-xl border border-white/20 text-white transition-all;
+/* iOS Safe Areas */
+.ios-safe-top {
+  padding-top: max(env(safe-area-inset-top, 0px), 12px);
 }
 
-.nav-button:hover {
-  @apply bg-white/20;
+.ios-safe-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 12px);
 }
 
-.nav-button:active {
-  @apply scale-95;
+.ios-safe-area {
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
 }
 
-/* Tap Ripple Effect */
+/* iOS-style Navigation Buttons - 44px min touch target */
+.ios-nav-button {
+  @apply flex flex-col items-center justify-center gap-1.5 bg-white/15 backdrop-blur-xl rounded-2xl border border-white/30 text-white transition-all;
+  min-width: 72px;
+  min-height: 60px;
+  padding: 12px 16px;
+}
+
+.ios-nav-button:active {
+  @apply bg-white/30 scale-95;
+  transition: transform 0.1s ease-out, background-color 0.1s ease-out;
+}
+
+/* Floating tap numbers */
+.floating-number {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: 24px;
+  font-weight: bold;
+  color: #facc15;
+  text-shadow: 0 0 10px rgba(250, 204, 21, 0.8), 0 2px 4px rgba(0,0,0,0.5);
+  pointer-events: none;
+  animation: float-up 1s ease-out forwards;
+  z-index: 40;
+}
+
+@keyframes float-up {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  20% {
+    transform: translate(-50%, -70%) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -150%) scale(1);
+  }
+}
+
+/* Tap Ripple Effect - Larger for mobile */
 .tap-ripple {
   position: absolute;
-  width: 20px;
-  height: 20px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.4) 40%, transparent 70%);
   transform: translate(-50%, -50%);
   animation: ripple-expand 0.6s ease-out forwards;
   pointer-events: none;
@@ -321,13 +401,13 @@ onMounted(() => {
 
 @keyframes ripple-expand {
   0% {
-    width: 20px;
-    height: 20px;
+    width: 30px;
+    height: 30px;
     opacity: 1;
   }
   100% {
-    width: 150px;
-    height: 150px;
+    width: 200px;
+    height: 200px;
     opacity: 0;
   }
 }

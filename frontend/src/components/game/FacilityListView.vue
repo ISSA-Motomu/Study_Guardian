@@ -1,43 +1,43 @@
 <template>
-  <div class="facility-list-view min-h-screen pb-24">
+  <div class="facility-list-view min-h-screen pb-32">
     <!-- Space Background (Subtle) -->
     <div class="fixed inset-0 -z-10">
       <div class="absolute inset-0 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900" />
       <div class="star-layer-subtle" />
     </div>
 
-    <!-- Header -->
-    <div class="sticky top-0 z-30 bg-slate-900/95 backdrop-blur-lg border-b border-white/10">
-      <div class="p-4 flex items-center gap-4">
+    <!-- Header - iOS Safe Area -->
+    <div class="sticky top-0 z-30 bg-slate-900/95 backdrop-blur-lg border-b border-white/10 ios-safe-top">
+      <div class="p-4 flex items-center gap-3">
         <button 
           @click="$emit('navigate', 'main')"
-          class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-all"
+          class="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center text-white active:bg-white/30 active:scale-95 transition-all text-lg"
         >
           ←
         </button>
         <div class="flex-1">
-          <h1 class="text-lg font-bold text-white">研究施設</h1>
-          <p class="text-xs text-white/60">{{ stats.unlockedCount }}/{{ stats.totalFacilities }} 解放済み</p>
+          <h1 class="text-xl font-bold text-white">研究施設</h1>
+          <p class="text-xs text-white/60 mt-0.5">{{ stats.unlockedCount }}/{{ stats.totalFacilities }} 解放済み</p>
         </div>
         <!-- Current KP -->
-        <div class="bg-white/10 rounded-xl px-3 py-2 flex items-center gap-2">
-          <span class="text-lg">💡</span>
+        <div class="bg-white/15 rounded-2xl px-4 py-2.5 flex items-center gap-2 border border-white/10">
+          <span class="text-xl">💡</span>
           <AnimatedCounter 
             :value="evolutionStore.knowledgePoints"
-            class="text-lg font-bold text-yellow-300"
+            class="text-xl font-bold text-yellow-300 tabular-nums"
           />
         </div>
       </div>
 
       <!-- Multiplier Bar -->
-      <div class="px-4 pb-3 flex items-center gap-3">
-        <div class="flex-1 bg-white/10 rounded-lg p-2 flex items-center justify-between">
+      <div class="px-4 pb-4 flex items-center gap-3">
+        <div class="flex-1 bg-white/10 rounded-xl p-3 flex items-center justify-between">
           <span class="text-xs text-white/60">研究効率</span>
-          <span class="text-lg font-bold text-cyan-300">×{{ evolutionStore.totalMultiplier.toFixed(1) }}</span>
+          <span class="text-xl font-bold text-cyan-300 tabular-nums">×{{ evolutionStore.totalMultiplier.toFixed(1) }}</span>
         </div>
-        <div class="flex-1 bg-white/10 rounded-lg p-2 flex items-center justify-between">
+        <div class="flex-1 bg-white/10 rounded-xl p-3 flex items-center justify-between">
           <span class="text-xs text-white/60">所持レベル</span>
-          <span class="text-lg font-bold text-purple-300">{{ stats.totalOwned }}</span>
+          <span class="text-xl font-bold text-purple-300 tabular-nums">{{ stats.totalOwned }}</span>
         </div>
       </div>
     </div>
@@ -51,20 +51,20 @@
       >
         <!-- Tier Header -->
         <div 
-          class="sticky top-[120px] z-20 -mx-2 px-3 py-2 rounded-lg mb-3 backdrop-blur-md"
+          class="sticky top-[140px] z-20 -mx-2 px-4 py-3 rounded-2xl mb-4 backdrop-blur-md"
           :class="getTierHeaderClass(tierGroup.tier)"
         >
           <div class="flex items-center gap-3">
             <!-- Tier Badge -->
             <div 
-              class="w-10 h-10 rounded-full bg-gradient-to-br flex items-center justify-center text-white font-bold shadow-lg"
+              class="w-12 h-12 rounded-2xl bg-gradient-to-br flex items-center justify-center text-white font-bold shadow-lg text-lg"
               :class="tierGroup.color"
             >
               {{ tierGroup.tier }}
             </div>
             <!-- Tier Info -->
             <div class="flex-1">
-              <p class="font-bold text-white">{{ tierGroup.name }}</p>
+              <p class="font-bold text-white text-lg">{{ tierGroup.name }}</p>
               <p class="text-xs text-white/60">
                 {{ tierGroup.facilities.filter(f => f.state === 'unlocked').length }}/{{ tierGroup.facilities.length }} 解放
               </p>
@@ -73,7 +73,7 @@
             <div class="text-right">
               <CircularProgress 
                 :progress="getTierProgress(tierGroup)" 
-                :size="36"
+                :size="44"
                 :color="getTierColor(tierGroup.tier)"
               />
             </div>
@@ -92,21 +92,21 @@
       </div>
     </div>
 
-    <!-- Bottom Navigation -->
-    <div class="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-900 to-transparent">
+    <!-- Bottom Navigation - iOS Safe Area -->
+    <div class="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-900 via-slate-900/95 to-transparent ios-safe-bottom">
       <div class="flex gap-3 max-w-md mx-auto">
         <button 
           @click="$emit('navigate', 'main')"
-          class="flex-1 py-3 bg-white/10 backdrop-blur rounded-xl text-white font-semibold flex items-center justify-center gap-2"
+          class="flex-1 py-4 bg-white/15 backdrop-blur-xl rounded-2xl text-white font-bold flex items-center justify-center gap-2 border border-white/20 active:bg-white/30 active:scale-95 transition-all text-base"
         >
-          <span>🌍</span>
+          <span class="text-xl">🌍</span>
           <span>メイン</span>
         </button>
         <button 
           @click="$emit('navigate', 'tree')"
-          class="flex-1 py-3 bg-white/10 backdrop-blur rounded-xl text-white font-semibold flex items-center justify-center gap-2"
+          class="flex-1 py-4 bg-white/15 backdrop-blur-xl rounded-2xl text-white font-bold flex items-center justify-center gap-2 border border-white/20 active:bg-white/30 active:scale-95 transition-all text-base"
         >
-          <span>🌳</span>
+          <span class="text-xl">🌳</span>
           <span>ツリー</span>
         </button>
       </div>
@@ -162,6 +162,18 @@ const getTierProgress = (tierGroup) => {
 </script>
 
 <style scoped>
+.facility-list-view {
+  -webkit-overflow-scrolling: touch;
+}
+
+.ios-safe-top {
+  padding-top: max(env(safe-area-inset-top, 0px), 8px);
+}
+
+.ios-safe-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 16px);
+}
+
 .star-layer-subtle {
   position: absolute;
   inset: 0;
