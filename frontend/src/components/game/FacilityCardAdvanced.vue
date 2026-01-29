@@ -182,20 +182,21 @@
             </div>
             <div class="flex items-center gap-1 text-gray-500">
               <span>💡</span>
-              <span>{{ formatNumber(facility.currentCost) }} KP</span>
+              <span>{{ formatNumber(displayCost) }} KP</span>
             </div>
           </div>
         </div>
 
         <!-- Buy Button - Larger for iOS -->
         <button
-          @click.stop="$emit('buy', facility.id)"
-          :disabled="!facility.canAfford"
-          class="px-5 py-4 rounded-2xl font-bold text-base transition-all shrink-0 min-w-[52px] min-h-[52px]"
+          @click.stop="emit('buy', { facilityId: facility.id, amount: buyAmount })"
+          :disabled="!canAffordMultiple"
+          class="px-4 py-3 rounded-2xl font-bold text-sm transition-all shrink-0 min-w-[60px] min-h-[52px] flex flex-col items-center justify-center gap-0.5"
           :class="buyButtonClass"
         >
           <span v-if="facility.level === 0">🔓</span>
           <span v-else>⬆️</span>
+          <span v-if="displayAmount" class="text-[10px]">{{ displayAmount }}</span>
         </button>
       </div>
 
@@ -226,16 +227,62 @@ import { computed } from 'vue'
 import { useEvolutionStore } from '@/stores/evolution'
 
 const props = defineProps({
-  facility: { type: Object, required: true }
+  facility: { type: Object, required: true },
+  buyAmount: { type: Number, default: 1 }
 })
 
-defineEmits(['buy'])
+const emit = defineEmits(['buy'])
 
 const evolutionStore = useEvolutionStore()
 const currentTotalPoints = computed(() => evolutionStore.totalEarnedPoints)
 
 // Use store's formatNumber
 const formatNumber = (num) => evolutionStore.formatNumber(num)
+
+// 購入可能数と合計コストを計算
+const purchaseInfo = computed(() => {
+  if (props.facility.state !== 'unlocked') {
+    return { canBuy: 0, totalCost: 0 }
+  }
+  
+  const targetAmount = props.buyAmount === -1 ? 1000 : props.buyAmount
+  let totalCost = 0
+  let canBuy = 0
+  let tempKP = evolutionStore.knowledgePoints
+  let tempLevel = props.facility.level || 0
+  
+  for (let i = 0; i < targetAmount; i++) {
+    const cost = evolutionStore.calculateCost(props.facility.baseCost, tempLevel)
+    if (tempKP >= cost) {
+      tempKP -= cost
+      totalCost += cost
+      tempLevel++
+      canBuy++
+    } else {
+      break
+    }
+  }
+  
+  return { canBuy, totalCost }
+})
+
+const displayCost = computed(() => {
+  if (props.buyAmount === 1) {
+    return props.facility.currentCost
+  }
+  return purchaseInfo.value.totalCost
+})
+
+const displayAmount = computed(() => {
+  if (props.buyAmount === -1) {
+    return purchaseInfo.value.canBuy > 0 ? `×${purchaseInfo.value.canBuy}` : 'MAX'
+  }
+  return props.buyAmount > 1 ? `×${props.buyAmount}` : ''
+})
+
+const canAffordMultiple = computed(() => {
+  return purchaseInfo.value.canBuy > 0
+})
 
 // SVG circle circumference
 const circumference = 2 * Math.PI * 28
@@ -271,7 +318,7 @@ const cardClass = computed(() => {
 })
 
 const buyButtonClass = computed(() => {
-  if (props.facility.canAfford) {
+  if (canAffordMultiple.value) {
     return 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg hover:shadow-xl active:scale-95'
   }
   return 'bg-gray-200 text-gray-400 cursor-not-allowed'
