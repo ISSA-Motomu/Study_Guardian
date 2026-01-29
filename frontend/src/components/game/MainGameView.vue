@@ -118,7 +118,7 @@
       <!-- Navigation Buttons - iOS style -->
       <div class="absolute bottom-4 left-4 right-4 z-20 ios-safe-bottom">
         <p class="text-[10px] text-white/50 text-center mb-3 uppercase tracking-widest">タップしてKPを獲得</p>
-        <div class="flex gap-3 justify-center">
+        <div class="flex gap-2 justify-center flex-wrap">
           <button 
             @click.stop="$emit('navigate', 'list')"
             class="ios-nav-button"
@@ -132,6 +132,20 @@
           >
             <span class="text-2xl">🌳</span>
             <span class="text-[10px] font-medium">ツリー</span>
+          </button>
+          <button 
+            @click.stop="$emit('navigate', 'upgrade')"
+            class="ios-nav-button"
+          >
+            <span class="text-2xl">🔬</span>
+            <span class="text-[10px] font-medium">強化</span>
+          </button>
+          <button 
+            @click.stop="$emit('navigate', 'prestige')"
+            class="ios-nav-button prestige-button"
+          >
+            <span class="text-2xl">🔄</span>
+            <span class="text-[10px] font-medium">転生</span>
           </button>
         </div>
       </div>
@@ -350,14 +364,23 @@ onMounted(() => {
 /* iOS-style Navigation Buttons - 44px min touch target */
 .ios-nav-button {
   @apply flex flex-col items-center justify-center gap-1.5 bg-white/15 backdrop-blur-xl rounded-2xl border border-white/30 text-white transition-all;
-  min-width: 72px;
-  min-height: 60px;
-  padding: 12px 16px;
+  min-width: 64px;
+  min-height: 56px;
+  padding: 10px 14px;
 }
 
 .ios-nav-button:active {
   @apply bg-white/30 scale-95;
   transition: transform 0.1s ease-out, background-color 0.1s ease-out;
+}
+
+/* Prestige button special styling */
+.ios-nav-button.prestige-button {
+  @apply bg-gradient-to-br from-amber-500/30 to-orange-500/30 border-amber-400/50;
+}
+
+.ios-nav-button.prestige-button:active {
+  @apply from-amber-500/50 to-orange-500/50;
 }
 
 /* Floating tap numbers */

@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template
+from flask import Flask, render_template, send_from_directory
 from dotenv import load_dotenv
 
 from services.history import HistoryService
@@ -20,6 +20,16 @@ app = Flask(__name__, template_folder="templates/html")
 # Register Blueprints
 app.register_blueprint(bot_bp)
 app.register_blueprint(web_bp)
+
+
+@app.route("/favicon.ico")
+def favicon():
+    """faviconを返す（404回避）"""
+    return send_from_directory(
+        os.path.join(app.root_path, "static"),
+        "favicon.ico",
+        mimetype="image/vnd.microsoft.icon",
+    )
 
 
 @app.route("/")

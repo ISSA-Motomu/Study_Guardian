@@ -455,21 +455,25 @@ class GSheetService:
         """学習記録を承認済みに更新（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("study_log")
         if not sheet:
+            print(f"approve_study: sheet not found")
             return False
         try:
             headers = sheet.row_values(1)
             col_map = {str(h).strip(): i for i, h in enumerate(headers)}
             idx_status = col_map.get("status")
             if idx_status is None:
+                print(f"approve_study: status column not found in headers: {headers}")
                 return False  # Status column not found
 
             current_status = sheet.cell(row_index, idx_status + 1).value
             if current_status == "APPROVED":
+                print(f"approve_study: row {row_index} already approved")
                 return False
 
             sheet.update_cell(row_index, idx_status + 1, "APPROVED")
             return True
-        except:
+        except Exception as e:
+            print(f"approve_study error: {e}")
             return False
 
     @staticmethod
@@ -477,21 +481,25 @@ class GSheetService:
         """学習記録を却下（REJECTED）に更新（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("study_log")
         if not sheet:
+            print(f"reject_study: sheet not found")
             return False
         try:
             headers = sheet.row_values(1)
             col_map = {str(h).strip(): i for i, h in enumerate(headers)}
             idx_status = col_map.get("status")
             if idx_status is None:
+                print(f"reject_study: status column not found in headers: {headers}")
                 return False
 
             current_status = sheet.cell(row_index, idx_status + 1).value
             if current_status == "APPROVED":
+                print(f"reject_study: row {row_index} already approved, cannot reject")
                 return False
 
             sheet.update_cell(row_index, idx_status + 1, "REJECTED")
             return True
-        except:
+        except Exception as e:
+            print(f"reject_study error: {e}")
             return False
 
     @staticmethod

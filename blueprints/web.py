@@ -623,15 +623,18 @@ def api_admin_pending():
 def api_admin_approve_study():
     """勉強記録を承認"""
     data = request.json
+    print(f"[DEBUG] approve_study received: {data}")
     row_index = data.get("row_index")
     user_id = data.get("user_id")
     minutes = data.get("minutes", 0)
 
     if not row_index:
+        print(f"[DEBUG] Missing row_index in data: {data}")
         return jsonify({"status": "error", "message": "Missing row_index"}), 400
 
     try:
         # 承認処理
+        print(f"[DEBUG] Calling approve_study with row_index={row_index}")
         if GSheetService.approve_study(int(row_index)):
             # EXP付与
             earned_exp = int(minutes) if minutes else 0
@@ -739,16 +742,25 @@ def api_admin_reject_job():
 def api_admin_approve_shop():
     """ショップリクエストを承認"""
     data = request.json
+    print(f"[DEBUG] approve_shop received: {data}")
     request_id = data.get("request_id")
 
     if not request_id:
+        print(f"[DEBUG] Missing request_id in data: {data}")
         return jsonify({"status": "error", "message": "Missing request_id"}), 400
 
     try:
-        if ShopService.approve_request(request_id):
+        result = ShopService.approve_request(request_id)
+        print(f"[DEBUG] approve_request result: {result}")
+        if result:
             return jsonify({"status": "ok"})
         else:
-            return jsonify({"status": "error", "message": "Failed to approve"}), 500
+            return jsonify(
+                {
+                    "status": "error",
+                    "message": "Failed to approve - request not found or already processed",
+                }
+            ), 500
     except Exception as e:
         print(f"Approve Shop Error: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -758,21 +770,30 @@ def api_admin_approve_shop():
 def api_admin_reject_shop():
     """ショップリクエストを却下（返金）"""
     data = request.json
+    print(f"[DEBUG] reject_shop received: {data}")
     request_id = data.get("request_id")
     user_id = data.get("user_id")
     cost = data.get("cost", 0)
 
     if not request_id:
+        print(f"[DEBUG] Missing request_id in data: {data}")
         return jsonify({"status": "error", "message": "Missing request_id"}), 400
 
     try:
-        if ShopService.deny_request(request_id):
+        result = ShopService.deny_request(request_id)
+        print(f"[DEBUG] deny_request result: {result}")
+        if result:
             # 返金処理
             if user_id and cost:
                 EconomyService.add_exp(user_id, int(cost), f"REFUND_{request_id}")
             return jsonify({"status": "ok"})
         else:
-            return jsonify({"status": "error", "message": "Failed to reject"}), 500
+            return jsonify(
+                {
+                    "status": "error",
+                    "message": "Failed to reject - request not found or already processed",
+                }
+            ), 500
     except Exception as e:
         print(f"Reject Shop Error: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
