@@ -425,6 +425,16 @@ export const useEvolutionStore = defineStore('evolution', () => {
     saveToLocalStorage()
   }
 
+  // タップ等でポイント追加（ゲーム内アクション用）
+  function addPoints(amount) {
+    if (amount <= 0) return
+    knowledgePoints.value += amount
+    totalEarnedPoints.value += amount
+    isDirty.value = true
+    // タップのたびに保存はしない（パフォーマンス）
+    // 一定間隔で自動保存する仕組みを別途追加可能
+  }
+
   return {
     // State
     knowledgePoints,
@@ -446,6 +456,7 @@ export const useEvolutionStore = defineStore('evolution', () => {
     initialize,
     saveToLocalStorage,
     debugAddPoints,
+    addPoints,
     // Constants
     TIER_INFO
   }
