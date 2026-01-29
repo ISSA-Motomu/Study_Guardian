@@ -219,6 +219,40 @@
         </div>
       </div>
     </GlassPanel>
+
+    <!-- Global Activity Board -->
+    <GlassPanel>
+      <h3 class="font-bold text-gray-700 mb-4">🌍 みんなの活動</h3>
+      <div v-if="globalActivity.length === 0" class="text-center text-gray-500 py-4">
+        活動履歴がありません
+      </div>
+      <div class="space-y-2 max-h-72 overflow-y-auto">
+        <div 
+          v-for="(item, idx) in globalActivity" 
+          :key="idx"
+          class="flex items-center gap-3 py-2 px-3 border-b last:border-0 border-gray-100 bg-gradient-to-r from-white to-gray-50 rounded-lg"
+        >
+          <!-- Icon -->
+          <div class="text-2xl flex-shrink-0">
+            {{ item.icon }}
+          </div>
+          <!-- Content -->
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-indigo-600 truncate">{{ item.user_name }}</span>
+              <span 
+                class="text-xs px-2 py-0.5 rounded-full"
+                :class="item.type === 'study' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'"
+              >
+                {{ item.type === 'study' ? '勉強' : 'お手伝い' }}
+              </span>
+            </div>
+            <p class="text-sm text-gray-600 truncate">{{ item.description }}</p>
+            <p class="text-xs text-gray-400">{{ formatTimestamp(item.timestamp) }}</p>
+          </div>
+        </div>
+      </div>
+    </GlassPanel>
   </div>
 </template>
 
@@ -242,6 +276,7 @@ const activeTab = ref('weekly')
 const allData = ref([])
 const subjectData = ref([])
 const recentActivity = ref([])
+const globalActivity = ref([])
 
 // Navigation offsets
 const weekOffset = ref(0)
@@ -264,6 +299,36 @@ const subjectLegend = computed(() => {
 
 const getSubjectColor = (subject) => {
   return subjectColors[subject] || subjectColors['その他']
+}
+
+// Format timestamp for display
+const formatTimestamp = (timestamp) => {
+  if (!timestamp) return ''
+  try {
+    const parts = timestamp.split(' ')
+    const datePart = parts[0] || ''
+    const timePart = parts[1] || ''
+    
+    // Parse date
+    if (datePart) {
+      const today = new Date()
+      const targetDate = new Date(datePart)
+      const diffDays = Math.floor((today - targetDate) / (1000 * 60 * 60 * 24))
+      
+      if (diffDays === 0) {
+        return timePart ? `今日 ${timePart.substring(0, 5)}` : '今日'
+      } else if (diffDays === 1) {
+        return timePart ? `昨日 ${timePart.substring(0, 5)}` : '昨日'
+      } else if (diffDays < 7) {
+        return `${diffDays}日前`
+      } else {
+        return datePart.substring(5) // MM-DD
+      }
+    }
+    return timestamp
+  } catch {
+    return timestamp
+  }
 }
 
 // Week calculations
@@ -447,7 +512,21 @@ const fetchData = async () => {
   }
 }
 
+// Fetch global activity
+const fetchGlobalActivity = async () => {
+  try {
+    const res = await fetch('/api/activity/recent')
+    const data = await res.json()
+    if (data.status === 'ok') {
+      globalActivity.value = data.data || []
+    }
+  } catch (e) {
+    console.error('Failed to fetch global activity:', e)
+  }
+}
+
 onMounted(() => {
   fetchData()
+  fetchGlobalActivity()
 })
 </script>

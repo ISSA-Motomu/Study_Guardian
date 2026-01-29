@@ -796,3 +796,89 @@ class HistoryService:
         except Exception as e:
             print(f"Weekly Ranking Error: {e}")
             return []
+
+    @staticmethod
+    def get_all_recent_activity(limit=10):
+        """全ユーザーの最近の勉強・お手伝い履歴を取得"""
+        recent_items = []
+
+        # 1) 勉強履歴を取得
+        try:
+            study_sheet = GSheetService.get_worksheet("study_log")
+            if study_sheet:
+                records = study_sheet.get_all_values()
+                if len(records) > 1:
+                    headers = records[0]
+                    col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+                    idx_name = col_map.get("display_name")
+                    idx_date = col_map.get("date")
+                    idx_dur = col_map.get("duration_min")
+                    idx_subj = col_map.get("subject")
+                    idx_stat = col_map.get("status")
+                    idx_time = col_map.get("start_time")
+
+                    for row in records[1:]:
+                        # DONEのもののみ
+                        status = row[idx_stat] if idx_stat and len(row) > idx_stat else ""
+                        if status.upper() != "DONE":
+                            continue
+
+                        duration_str = row[idx_dur] if idx_dur and len(row) > idx_dur else "0"
+                        if not duration_str.isdigit() or int(duration_str) == 0:
+                            continue
+
+                        name = row[idx_name] if idx_name and len(row) > idx_name else "Unknown"
+                        date = row[idx_date] if idx_date and len(row) > idx_date else ""
+                        subject = row[idx_subj] if idx_subj and len(row) > idx_subj else ""
+                        start_time = row[idx_time] if idx_time and len(row) > idx_time else ""
+
+                        # タイムスタンプ用にdate + start_timeを結合
+                        timestamp = f"{date} {start_time}" if start_time else date
+
+                        recent_items.append({
+                            "type": "study",
+                            "user_name": name,
+                            "description": f"{subject} {duration_str}分",
+                            "timestamp": timestamp,
+                            "icon": "📚"
+                        })
+        except Exception as e:
+            print(f"Study Activity Error: {e}")
+
+        # 2) お手伝い(ジョブ)履歴を取得
+        try:
+            job_sheet = GSheetService.get_worksheet("job_log")
+            if job_sheet:
+                records = job_sheet.get_all_values()
+                if len(records) > 1:
+                    headers = records[0]
+                    col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+                    idx_name = col_map.get("user_name")
+                    idx_title = col_map.get("title")
+                    idx_stat = col_map.get("status")
+                    idx_time = col_map.get("completed_at") or col_map.get("applied_at")
+
+                    for row in records[1:]:
+                        status = row[idx_stat] if idx_stat and len(row) > idx_stat else ""
+                        if status.upper() not in ["COMPLETED", "DONE", "APPROVED"]:
+                            continue
+
+                        name = row[idx_name] if idx_name and len(row) > idx_name else "Unknown"
+                        title = row[idx_title] if idx_title and len(row) > idx_title else "お手伝い"
+                        timestamp = row[idx_time] if idx_time and len(row) > idx_time else ""
+
+                        recent_items.append({
+                            "type": "job",
+                            "user_name": name,
+                            "description": title,
+                            "timestamp": timestamp,
+                            "icon": "🏠"
+                        })
+        except Exception as e:
+            print(f"Job Activity Error: {e}")
+
+        # 3) タイムスタンプでソートして最新をlimit件返す
+        recent_items.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+        return recent_items[:limit]

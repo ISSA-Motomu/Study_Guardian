@@ -241,8 +241,8 @@ const handleTap = (e) => {
     tapRipples.value = tapRipples.value.filter(r => r.id !== id)
   }, 600)
 
-  // Add floating number
-  const tapKP = Math.max(1, Math.floor(evolutionStore.totalMultiplier * 0.1))
+  // Add floating number (タップは基本1KP、倍率によって最大でも数KP程度)
+  const tapKP = Math.max(1, Math.floor(evolutionStore.totalMultiplier * 0.01))
   const fid = floatId++
   floatingNumbers.value.push({ id: fid, x, y, value: tapKP })
   setTimeout(() => {

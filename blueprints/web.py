@@ -291,6 +291,17 @@ def api_user_stats(user_id):
         return jsonify({"weekly": [], "subject": [], "recent": [], "total": 0})
 
 
+@web_bp.route("/api/activity/recent")
+def api_recent_activity():
+    """全ユーザーの最近の勉強・お手伝い履歴を取得（最新10件）"""
+    try:
+        recent = HistoryService.get_all_recent_activity(limit=10)
+        return jsonify({"status": "ok", "data": recent})
+    except Exception as e:
+        print(f"Recent Activity Error: {e}")
+        return jsonify({"status": "error", "data": []})
+
+
 @web_bp.route("/api/study/finish", methods=["POST"])
 def api_finish_study():
     data = request.json

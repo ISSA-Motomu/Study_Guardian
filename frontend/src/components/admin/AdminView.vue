@@ -88,7 +88,7 @@
                 ✅ 承認
               </button>
               <button
-                @click="reject(item)"
+                @click="promptReject(item)"
                 :disabled="processing"
                 class="bg-red-500 hover:bg-red-600 disabled:bg-gray-300 text-white px-4 py-1.5 rounded text-sm font-medium transition-colors"
               >
@@ -99,6 +99,35 @@
         </div>
       </div>
     </GlassPanel>
+
+    <!-- 却下確認ダイアログ -->
+    <div 
+      v-if="showRejectConfirm"
+      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      @click.self="showRejectConfirm = false"
+    >
+      <div class="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl">
+        <h3 class="text-lg font-bold text-gray-800 mb-3">⚠️ 却下の確認</h3>
+        <p class="text-gray-600 mb-4">
+          「{{ rejectTarget?.title }}」を本当に却下しますか？
+        </p>
+        <div class="flex gap-3">
+          <button
+            @click="showRejectConfirm = false"
+            class="flex-1 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300"
+          >
+            キャンセル
+          </button>
+          <button
+            @click="confirmReject"
+            :disabled="processing"
+            class="flex-1 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 disabled:bg-gray-300"
+          >
+            却下する
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- 処理結果メッセージ -->
     <div 
@@ -125,6 +154,8 @@ const pendingItems = ref([])
 const activeTab = ref('all')
 const message = ref('')
 const messageType = ref('success')
+const showRejectConfirm = ref(false)
+const rejectTarget = ref(null)
 
 const tabs = [
   { key: 'all', label: 'すべて', icon: '📋' },
@@ -327,6 +358,20 @@ const approve = async (item) => {
   } finally {
     processing.value = false
   }
+}
+
+// 却下ボタンが押されたら確認ダイアログを表示
+const promptReject = (item) => {
+  rejectTarget.value = item
+  showRejectConfirm.value = true
+}
+
+// 確認後に実際に却下を実行
+const confirmReject = async () => {
+  if (!rejectTarget.value) return
+  showRejectConfirm.value = false
+  await reject(rejectTarget.value)
+  rejectTarget.value = null
 }
 
 const reject = async (item) => {

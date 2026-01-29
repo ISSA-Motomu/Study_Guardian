@@ -1,6 +1,7 @@
 from linebot.models import TextSendMessage, FlexSendMessage
 from bot_instance import line_bot_api
 from services.economy import EconomyService
+from services.history import HistoryService
 from utils.template_loader import load_template
 import random
 
@@ -320,6 +321,12 @@ def handle_message(event, text):
     # (毎回APIを叩くのはコストが高いが、現状のアーキテクチャでは許容)
     user_info = EconomyService.get_user_info(user_id)
 
+    # --- ランキング表示 (登録済みユーザー向け) ---
+    if text in ["ランキング", "ranking", "週間ランキング"]:
+        if user_info:
+            show_weekly_ranking(event.reply_token, user_id)
+            return True
+
     # --- 開発用: 権限変更コマンド ---
     # 通常のユーザーには見えない隠しコマンド
     if text == "デバッグモード有効":
@@ -422,3 +429,47 @@ def handle_message(event, text):
                 ),
             )
         return True
+
+def show_weekly_ranking(reply_token, current_user_id):
+    """週間ポイントランキングを表示"""
+    ranking = HistoryService.get_weekly_exp_ranking()
+    
+    if not ranking:
+        line_bot_api.reply_message(
+            reply_token,
+            TextSendMessage(text="まだランキングデータがないよ！\n勉強やお手伝いを頑張ろう！")
+        )
+        return
+    
+    # ランキングメッセージ作成
+    medal_emojis = ["🥇", "🥈", "🥉"]
+    lines = ["📊 週間ポイントランキング\n"]
+    
+    for i, entry in enumerate(ranking[:10]):
+        medal = medal_emojis[i] if i < 3 else f"{i + 1}."
+        name = entry.get("display_name", "Unknown")[:8]
+        exp = entry.get("weekly_exp", 0)
+        
+        # 自分の場合はマーク
+        is_me = str(entry.get("user_id")) == str(current_user_id)
+        marker = " ⭐" if is_me else ""
+        
+        lines.append(f"{medal} {name}: {exp}pt{marker}")
+    
+    # 自分が10位以下の場合は自分の順位も表示
+    my_rank = None
+    for i, entry in enumerate(ranking):
+        if str(entry.get("user_id")) == str(current_user_id):
+            my_rank = i + 1
+            my_exp = entry.get("weekly_exp", 0)
+            break
+    
+    if my_rank and my_rank > 10:
+        lines.append(f"\n...\n{my_rank}. あなた: {my_exp}pt ⭐")
+    
+    lines.append("\n頑張って上位を目指そう！💪")
+    
+    line_bot_api.reply_message(
+        reply_token,
+        TextSendMessage(text="\n".join(lines))
+    )
