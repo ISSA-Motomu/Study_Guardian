@@ -560,82 +560,82 @@
       </div>
     </div>
 
-  </div>
-
-  <!-- メモ確認ダイアログ -->
-  <div v-if="showMemoConfirm" class="fixed inset-0 flex items-center justify-center p-4" style="z-index: 9999;">
-    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeMemoConfirm"></div>
-    <div class="bg-white rounded-3xl p-6 w-full max-w-sm relative z-10 shadow-2xl overflow-hidden">
-      <h3 class="text-xl font-bold text-center text-gray-800 mb-6">勉強内容の確認</h3>
-      <div class="mb-4">
-        <div class="text-gray-600 text-sm mb-2">今回の勉強内容・メモ</div>
-        <div class="bg-gray-100 rounded-xl p-3 min-h-[60px] text-gray-800 whitespace-pre-line">{{ memoToSend ||
-          '（未入力）' }}</div>
-      </div>
-      <div class="flex gap-4 mt-6">
-        <button onclick="alert('クリック到達確認！')" @click="onConfirmFinish" style="position: relative; z-index: 10001;"
-          class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl active:scale-95 transition-transform">記録して終了</button>
-        <button @click="closeMemoConfirm" style="position: relative; z-index: 10001;"
-          class="flex-1 py-3 bg-gray-200 text-gray-600 font-bold rounded-xl active:scale-95 transition-transform">戻る</button>
+    <!-- メモ確認ダイアログ -->
+    <div v-if="showMemoConfirm" class="fixed inset-0 flex items-center justify-center p-4" style="z-index: 9999;">
+      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeMemoConfirm"></div>
+      <div class="bg-white rounded-3xl p-6 w-full max-w-sm relative z-10 shadow-2xl overflow-hidden">
+        <h3 class="text-xl font-bold text-center text-gray-800 mb-6">勉強内容の確認</h3>
+        <div class="mb-4">
+          <div class="text-gray-600 text-sm mb-2">今回の勉強内容・メモ</div>
+          <div class="bg-gray-100 rounded-xl p-3 min-h-[60px] text-gray-800 whitespace-pre-line">{{ memoToSend ||
+            '（未入力）' }}</div>
+        </div>
+        <div class="flex gap-4 mt-6">
+          <button @click="onConfirmFinish"
+            class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl active:scale-95 transition-transform">記録して終了</button>
+          <button @click="closeMemoConfirm"
+            class="flex-1 py-3 bg-gray-200 text-gray-600 font-bold rounded-xl active:scale-95 transition-transform">戻る</button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Bottom Nav -->
-  <div
-    class="fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur shadow-lg border-t border-gray-100 flex justify-around items-center px-4 py-3 pb-6 z-50 rounded-t-3xl max-w-md mx-auto left-0 right-0">
+    <!-- Bottom Nav -->
+    <div
+      class="fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur shadow-lg border-t border-gray-100 flex justify-around items-center px-4 py-3 pb-6 z-50 rounded-t-3xl max-w-md mx-auto left-0 right-0">
 
-    <!-- Study Tab -->
-    <button @click="view = 'study'" class="flex flex-col items-center gap-1 transition-all duration-300"
-      :class="view === 'study' ? 'text-indigo-600 scale-110' : 'text-gray-400'">
-      <span class="text-2xl" :class="view === 'study' ? 'drop-shadow-md' : ''">⏱️</span>
-      <span class="text-[10px] font-bold">Study</span>
-    </button>
+      <!-- Study Tab -->
+      <button @click="view = 'study'" class="flex flex-col items-center gap-1 transition-all duration-300"
+        :class="view === 'study' ? 'text-indigo-600 scale-110' : 'text-gray-400'">
+        <span class="text-2xl" :class="view === 'study' ? 'drop-shadow-md' : ''">⏱️</span>
+        <span class="text-[10px] font-bold">Study</span>
+      </button>
 
-    <!-- Game Tab -->
-    <button @click="inSession ? view = 'timer' : view = 'game'"
-      class="flex flex-col items-center gap-1 transition-all duration-300"
-      :class="view === 'game' ? 'text-amber-500 scale-110' : 'text-gray-400'">
-      <span class="text-2xl" :class="view === 'game' ? 'drop-shadow-md' : ''">⚔️</span>
-      <span class="text-[10px] font-bold">Game</span>
-    </button>
+      <!-- Game Tab -->
+      <button @click="inSession ? view = 'timer' : view = 'game'"
+        class="flex flex-col items-center gap-1 transition-all duration-300"
+        :class="view === 'game' ? 'text-amber-500 scale-110' : 'text-gray-400'">
+        <span class="text-2xl" :class="view === 'game' ? 'drop-shadow-md' : ''">⚔️</span>
+        <span class="text-[10px] font-bold">Game</span>
+      </button>
 
-    <!-- Data Tab -->
-    <button @click="view = 'data'" class="flex flex-col items-center gap-1 transition-all duration-300"
-      :class="view === 'data' ? 'text-emerald-500 scale-110' : 'text-gray-400'">
-      <span class="text-2xl" :class="view === 'data' ? 'drop-shadow-md' : ''">📊</span>
-      <span class="text-[10px] font-bold">Data</span>
-    </button>
+      <!-- Data Tab -->
+      <button @click="view = 'data'" class="flex flex-col items-center gap-1 transition-all duration-300"
+        :class="view === 'data' ? 'text-emerald-500 scale-110' : 'text-gray-400'">
+        <span class="text-2xl" :class="view === 'data' ? 'drop-shadow-md' : ''">📊</span>
+        <span class="text-[10px] font-bold">Data</span>
+      </button>
 
-  </div>
+    </div>
 
-  <!-- Floating Action Button (Only on Study Tab) -->
-  <div v-if="view === 'study'">
-    <!-- Session Resume Component for Pending Study -->
-    <div v-if="inSession" @click="view = 'timer'"
-      class="fixed bottom-24 left-4 right-4 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-300 text-white p-4 flex items-center justify-between active:scale-95 transition-transform z-40 cursor-pointer animate-bounce-slow">
-      <div class="flex items-center gap-4">
-        <div class="bg-white/20 p-2 rounded-full">
-          <span class="text-2xl">⏳</span>
-        </div>
-        <div>
-          <div class="text-xs font-bold opacity-80">勉強中 <span class="font-mono ml-1">{{ lastSessionTime }}</span>
+    <!-- Floating Action Button (Only on Study Tab) -->
+    <div v-if="view === 'study'">
+      <!-- Session Resume Component for Pending Study -->
+      <div v-if="inSession" @click="view = 'timer'"
+        class="fixed bottom-24 left-4 right-4 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-300 text-white p-4 flex items-center justify-between active:scale-95 transition-transform z-40 cursor-pointer animate-bounce-slow">
+        <div class="flex items-center gap-4">
+          <div class="bg-white/20 p-2 rounded-full">
+            <span class="text-2xl">⏳</span>
           </div>
-          <div class="text-lg font-bold">{{ currentSubject }}</div>
+          <div>
+            <div class="text-xs font-bold opacity-80">勉強中 <span class="font-mono ml-1">{{ lastSessionTime }}</span>
+            </div>
+            <div class="text-lg font-bold">{{ currentSubject }}</div>
+          </div>
         </div>
+        <div class="bg-white text-indigo-600 px-4 py-1 rounded-full text-xs font-bold">再開</div>
       </div>
-      <div class="bg-white text-indigo-600 px-4 py-1 rounded-full text-xs font-bold">再開</div>
+
+      <!-- New Study Button (Only if NOT in session) -->
+      <button v-else @click="openModal"
+        class="fixed bottom-24 right-6 w-14 h-14 bg-indigo-600 rounded-full shadow-lg shadow-indigo-300 text-white flex items-center justify-center text-2xl active:scale-90 transition-transform z-40 animate-bounce-slow">
+        <span>✏️</span>
+      </button>
     </div>
 
-    <!-- New Study Button (Only if NOT in session) -->
-    <button v-else @click="openModal"
-      class="fixed bottom-24 right-6 w-14 h-14 bg-indigo-600 rounded-full shadow-lg shadow-indigo-300 text-white flex items-center justify-center text-2xl active:scale-90 transition-transform z-40 animate-bounce-slow">
-      <span>✏️</span>
-    </button>
   </div>
   </div>
 
-  <script type="module" src="/static/js/app.js?v=3"></script>
+  <script type="module" src="/static/js/app.js?v=4"></script>
 </body>
 
 </html>
