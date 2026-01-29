@@ -78,10 +78,6 @@ class ApprovalService:
         shop_items = ShopService.get_items()
 
         for s in shops:
-            # デバッグ: ショップデータの内容を確認
-            print(f"[DEBUG] Shop pending item keys: {s.keys()}")
-            print(f"[DEBUG] Shop pending item: {s}")
-
             uid = str(s.get("user_id", ""))
             saved_name = s.get("user_name") or s.get("display_name")
             uname = saved_name if saved_name else user_map.get(uid, uid)
@@ -94,9 +90,11 @@ class ApprovalService:
                 else item_key
             )
 
-            # request_id を複数のキーで探す
-            req_id = s.get("request_id") or s.get("id") or s.get("req_id")
-            print(f"[DEBUG] Resolved request_id: {req_id}")
+            # request_id を取得（shop.py側で既に正規化されているはず）
+            req_id = s.get("request_id", "")
+            if not req_id:
+                print(f"[WARNING] Shop request missing request_id: {s}")
+                continue
 
             data = {
                 "request_id": req_id,

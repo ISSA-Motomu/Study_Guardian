@@ -29,65 +29,65 @@
         </div>
       </div>
 
-      <!-- Multiplier Bar -->
-      <div class="px-4 pb-3 flex items-center gap-3">
-        <div class="flex-1 bg-white/10 rounded-xl p-3 flex items-center justify-between">
-          <span class="text-xs text-white/60">研究効率</span>
-          <span class="text-xl font-bold text-cyan-300 tabular-nums">×{{ evolutionStore.totalMultiplier.toFixed(1) }}</span>
+      <!-- Production Stats Bar -->
+      <div class="px-4 pb-3 flex items-center gap-2">
+        <div class="flex-1 bg-gradient-to-r from-green-900/50 to-emerald-900/50 rounded-xl p-3 border border-green-400/20">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-green-300/80">⚡ 総生産</span>
+            <span class="text-lg font-bold text-green-400 tabular-nums">+{{ evolutionStore.formatNumber(evolutionStore.currentProduction) }}/分</span>
+          </div>
         </div>
-        <div class="flex-1 bg-white/10 rounded-xl p-3 flex items-center justify-between">
-          <span class="text-xs text-white/60">所持レベル</span>
-          <span class="text-xl font-bold text-purple-300 tabular-nums">{{ stats.totalOwned }}</span>
+        <div class="bg-white/10 rounded-xl p-3">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-xs text-white/60">×</span>
+            <span class="text-lg font-bold text-cyan-300 tabular-nums">{{ evolutionStore.totalMultiplier.toFixed(1) }}</span>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Facility List by Tier -->
-    <div class="p-4 space-y-6">
+    <!-- Facility List by Tier - Horizontal Scroll -->
+    <div class="py-4 space-y-6">
       <div
         v-for="tierGroup in evolutionStore.facilitiesByTier"
         :key="tierGroup.tier"
         class="tier-section"
       >
         <!-- Tier Header -->
-        <div 
-          class="sticky top-[140px] z-20 -mx-2 px-4 py-3 rounded-2xl mb-4 backdrop-blur-md"
-          :class="getTierHeaderClass(tierGroup.tier)"
-        >
+        <div class="px-4 mb-3">
           <div class="flex items-center gap-3">
             <!-- Tier Badge -->
             <div 
-              class="w-12 h-12 rounded-2xl bg-gradient-to-br flex items-center justify-center text-white font-bold shadow-lg text-lg"
+              class="w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center text-white font-bold shadow-lg"
               :class="tierGroup.color"
             >
               {{ tierGroup.tier }}
             </div>
             <!-- Tier Info -->
             <div class="flex-1">
-              <p class="font-bold text-white text-lg">{{ tierGroup.name }}</p>
+              <p class="font-bold text-white">{{ tierGroup.name }}</p>
               <p class="text-xs text-white/60">
                 {{ tierGroup.facilities.filter(f => f.state === 'unlocked').length }}/{{ tierGroup.facilities.length }} 解放
               </p>
             </div>
-            <!-- Tier Progress -->
+            <!-- Tier Production -->
             <div class="text-right">
-              <CircularProgress 
-                :progress="getTierProgress(tierGroup)" 
-                :size="44"
-                :color="getTierColor(tierGroup.tier)"
-              />
+              <p class="text-xs text-white/50">Tier生産</p>
+              <p class="text-sm font-bold text-green-400">+{{ getTierProduction(tierGroup) }}/分</p>
             </div>
           </div>
         </div>
 
-        <!-- Facility Cards -->
-        <div class="space-y-3">
-          <FacilityCardAdvanced
-            v-for="facility in tierGroup.facilities"
-            :key="facility.id"
-            :facility="facility"
-            @buy="handleBuy"
-          />
+        <!-- Horizontal Scroll Facility Cards -->
+        <div class="overflow-x-auto scrollbar-hide">
+          <div class="flex gap-3 px-4 pb-2" style="min-width: min-content;">
+            <FacilityCardHorizontal
+              v-for="facility in tierGroup.facilities"
+              :key="facility.id"
+              :facility="facility"
+              @buy="handleBuy"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -119,8 +119,7 @@ import { computed } from 'vue'
 import { useEvolutionStore } from '@/stores/evolution'
 import { soundManager } from '@/utils/sound'
 import AnimatedCounter from './AnimatedCounter.vue'
-import FacilityCardAdvanced from './FacilityCardAdvanced.vue'
-import CircularProgress from './CircularProgress.vue'
+import FacilityCardHorizontal from './FacilityCardHorizontal.vue'
 
 const evolutionStore = useEvolutionStore()
 
@@ -142,33 +141,12 @@ const handleBuy = ({ facilityId, amount }) => {
   }
 }
 
-const getTierHeaderClass = (tier) => {
-  const classes = {
-    1: 'bg-slate-700/80',
-    2: 'bg-blue-900/80',
-    3: 'bg-purple-900/80',
-    4: 'bg-orange-900/80',
-    5: 'bg-pink-900/80',
-    6: 'bg-amber-900/80'
-  }
-  return classes[tier] || 'bg-slate-700/80'
-}
-
-const getTierColor = (tier) => {
-  const colors = {
-    1: '#64748b',
-    2: '#3b82f6',
-    3: '#8b5cf6',
-    4: '#f97316',
-    5: '#ec4899',
-    6: '#f59e0b'
-  }
-  return colors[tier] || '#64748b'
-}
-
-const getTierProgress = (tierGroup) => {
-  const unlocked = tierGroup.facilities.filter(f => f.state === 'unlocked').length
-  return (unlocked / tierGroup.facilities.length) * 100
+// Tier別の総生産量を計算
+const getTierProduction = (tierGroup) => {
+  const total = tierGroup.facilities
+    .filter(f => f.state === 'unlocked' && f.level > 0)
+    .reduce((sum, f) => sum + f.production, 0)
+  return evolutionStore.formatNumber(total)
 }
 </script>
 
@@ -194,5 +172,14 @@ const getTierProgress = (tierGroup) => {
     radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.3) 100%, transparent);
   background-size: 200px 200px;
   opacity: 0.5;
+}
+
+/* Hide scrollbar but keep scroll functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
 </style>

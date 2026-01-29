@@ -73,6 +73,10 @@ class ShopService:
                         # Ensure 'time' exists if timestamp was used
                         if "time" not in row_dict and "timestamp" in row_dict:
                             row_dict["time"] = row_dict["timestamp"]
+                        # Ensure request_id exists
+                        if not row_dict.get("request_id"):
+                            # Try alternative keys
+                            row_dict["request_id"] = row_dict.get("id") or row_dict.get("req_id") or ""
                         pending.append(row_dict)
         except Exception as e:
             print(f"Shop Pending Error: {e}")
