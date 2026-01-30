@@ -3,6 +3,7 @@ import json
 import datetime
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+from utils.cache import goals_cache, cached
 
 
 class GSheetService:
@@ -751,6 +752,7 @@ class GSheetService:
             return False, str(e)
 
     @staticmethod
+    @cached(goals_cache)
     def get_all_goals():
         """全ユーザーの目標を取得（ACTIVEのみ）"""
         sheet = GSheetService.get_or_create_goals_sheet()
@@ -952,7 +954,9 @@ class GSheetService:
                     if status == "DELETED":
                         continue
 
-                    book = {h: (row[i] if i < len(row) else "") for h, i in col_map.items()}
+                    book = {
+                        h: (row[i] if i < len(row) else "") for h, i in col_map.items()
+                    }
                     # 進捗計算
                     total = int(book.get("total_pages") or 0)
                     current = int(book.get("current_page") or 0)
@@ -964,7 +968,9 @@ class GSheetService:
             return []
 
     @staticmethod
-    def add_book(user_id, title, author="", subject="その他", cover_url="", total_pages=None):
+    def add_book(
+        user_id, title, author="", subject="その他", cover_url="", total_pages=None
+    ):
         """本を本棚に追加"""
         sheet = GSheetService.get_or_create_bookshelf_sheet()
         if not sheet:
@@ -1026,8 +1032,14 @@ class GSheetService:
             for i, row in enumerate(all_records[1:], start=2):
                 if len(row) > idx_id and row[idx_id] == str(book_id):
                     if len(row) > idx_uid and row[idx_uid] == str(user_id):
-                        total = int(row[idx_total]) if len(row) > idx_total and row[idx_total] else 0
-                        progress = int((int(current_page) / total) * 100) if total > 0 else 0
+                        total = (
+                            int(row[idx_total])
+                            if len(row) > idx_total and row[idx_total]
+                            else 0
+                        )
+                        progress = (
+                            int((int(current_page) / total) * 100) if total > 0 else 0
+                        )
 
                         sheet.update_cell(i, idx_current + 1, str(current_page))
                         sheet.update_cell(i, idx_progress + 1, str(progress))
@@ -1061,4 +1073,165 @@ class GSheetService:
             return False
         except Exception as e:
             print(f"【Error】本の削除エラー: {e}")
+            return False
+
+    # ============== 通知機能 ==============
+
+    @staticmethod
+    def get_or_create_notifications_sheet():
+        """notificationsシートを取得または作成"""
+        sheet = GSheetService.get_worksheet("notifications")
+        if sheet:
+            return sheet
+
+        try:
+            spreadsheet = GSheetService.get_spreadsheet()
+            if not spreadsheet:
+                return None
+
+            sheet = spreadsheet.add_worksheet(title="notifications", rows=1000, cols=10)
+            headers = [
+                "id",
+                "user_id",
+                "type",
+                "title",
+                "message",
+                "icon",
+                "read",
+                "created_at",
+            ]
+            sheet.append_row(headers)
+            print("【Info】notificationsシートを作成しました")
+            return sheet
+        except Exception as e:
+            print(f"【Error】notificationsシート作成エラー: {e}")
+            return None
+
+    @staticmethod
+    def add_notification(user_id, type_str, title, message, icon="📢"):
+        """ユーザーに通知を追加"""
+        sheet = GSheetService.get_or_create_notifications_sheet()
+        if not sheet:
+            return False
+
+        try:
+            import uuid
+
+            notif_id = str(uuid.uuid4())[:8]
+            now = datetime.datetime.now(
+                datetime.timezone(datetime.timedelta(hours=9))
+            ).strftime("%Y-%m-%d %H:%M:%S")
+
+            headers = sheet.row_values(1)
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+            row_data = [""] * len(headers)
+
+            def set_val(name, val):
+                if name in col_map:
+                    row_data[col_map[name]] = val
+
+            set_val("id", notif_id)
+            set_val("user_id", user_id)
+            set_val("type", type_str)
+            set_val("title", title)
+            set_val("message", message)
+            set_val("icon", icon)
+            set_val("read", "false")
+            set_val("created_at", now)
+
+            sheet.append_row(row_data)
+            return True
+        except Exception as e:
+            print(f"【Error】通知追加エラー: {e}")
+            return False
+
+    @staticmethod
+    def get_user_notifications(user_id, unread_only=True):
+        """ユーザーの通知を取得"""
+        sheet = GSheetService.get_or_create_notifications_sheet()
+        if not sheet:
+            return []
+
+        try:
+            all_records = sheet.get_all_values()
+            if len(all_records) <= 1:
+                return []
+
+            headers = all_records[0]
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+            idx_uid = col_map.get("user_id", 1)
+            idx_read = col_map.get("read", 6)
+
+            notifications = []
+            for row in all_records[1:]:
+                if len(row) > idx_uid and row[idx_uid] == str(user_id):
+                    is_read = row[idx_read].lower() == "true" if len(row) > idx_read else False
+                    if unread_only and is_read:
+                        continue
+
+                    notif = {h: (row[i] if i < len(row) else "") for h, i in col_map.items()}
+                    notifications.append(notif)
+
+            # 最新順にソート
+            notifications.reverse()
+            return notifications[:20]  # 最大20件
+        except Exception as e:
+            print(f"【Error】通知取得エラー: {e}")
+            return []
+
+    @staticmethod
+    def mark_notification_read(notif_id, user_id):
+        """通知を既読にする"""
+        sheet = GSheetService.get_or_create_notifications_sheet()
+        if not sheet:
+            return False
+
+        try:
+            all_records = sheet.get_all_values()
+            headers = all_records[0]
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+            idx_id = col_map.get("id", 0)
+            idx_uid = col_map.get("user_id", 1)
+            idx_read = col_map.get("read", 6)
+
+            for i, row in enumerate(all_records[1:], start=2):
+                if len(row) > idx_id and row[idx_id] == str(notif_id):
+                    if len(row) > idx_uid and row[idx_uid] == str(user_id):
+                        sheet.update_cell(i, idx_read + 1, "true")
+                        return True
+            return False
+        except Exception as e:
+            print(f"【Error】通知既読更新エラー: {e}")
+            return False
+
+    @staticmethod
+    def mark_all_notifications_read(user_id):
+        """ユーザーの全通知を既読にする"""
+        sheet = GSheetService.get_or_create_notifications_sheet()
+        if not sheet:
+            return False
+
+        try:
+            all_records = sheet.get_all_values()
+            headers = all_records[0]
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+            idx_uid = col_map.get("user_id", 1)
+            idx_read = col_map.get("read", 6)
+
+            updates = []
+            for i, row in enumerate(all_records[1:], start=2):
+                if len(row) > idx_uid and row[idx_uid] == str(user_id):
+                    if len(row) > idx_read and row[idx_read].lower() != "true":
+                        updates.append((i, idx_read + 1, "true"))
+
+            # バッチ更新
+            for row_idx, col_idx, val in updates:
+                sheet.update_cell(row_idx, col_idx, val)
+            return True
+        except Exception as e:
+            print(f"【Error】全通知既読更新エラー: {e}")
             return False

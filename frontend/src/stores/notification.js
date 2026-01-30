@@ -107,15 +107,17 @@ export const useNotificationStore = defineStore('notification', () => {
   const startPolling = () => {
     if (pollingInterval.value) return
 
-    // 初回チェック
-    checkPendingForAdmin()
-    checkApprovalResults()
+    // 初回チェック（少し遅延させて初期化完了を待つ）
+    setTimeout(() => {
+      checkPendingForAdmin()
+      checkApprovalResults()
+    }, 5000)
 
-    // 30秒ごとにチェック
+    // 60秒ごとにチェック（API負荷軽減）
     pollingInterval.value = setInterval(() => {
       checkPendingForAdmin()
       checkApprovalResults()
-    }, 30000)
+    }, 60000)
   }
 
   // ポーリング停止

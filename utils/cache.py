@@ -22,16 +22,40 @@ class SimpleCache:
     def clear(self):
         self.cache = {}
 
+    def invalidate(self, key):
+        """特定のキーのキャッシュを無効化"""
+        if key in self.cache:
+            del self.cache[key]
+
 
 # グローバルキャッシュインスタンス
-# 商品リストはあまり変わらないので長め (10分) -> 変更頻度を考慮して1分に短縮
-shop_items_cache = SimpleCache(ttl=60)
+# 商品リストはあまり変わらないので長め (5分)
+shop_items_cache = SimpleCache(ttl=300)
 
 # ジョブリストはステータスが変わるので短め (1分)
 job_list_cache = SimpleCache(ttl=60)
 
 # ユーザーの状態管理 (5分)
 user_state_cache = SimpleCache(ttl=300)
+
+# ===== 新規キャッシュ（API 429対策）=====
+# 週間ランキング (2分)
+ranking_cache = SimpleCache(ttl=120)
+
+# ユーザー統計 (2分)
+user_stats_cache = SimpleCache(ttl=120)
+
+# 最近のアクティビティ (1分)
+activity_cache = SimpleCache(ttl=60)
+
+# 承認待ちリスト (30秒)
+pending_cache = SimpleCache(ttl=30)
+
+# 全レコードキャッシュ (シート単位、30秒)
+sheet_data_cache = SimpleCache(ttl=30)
+
+# 目標データ (2分)
+goals_cache = SimpleCache(ttl=120)
 
 
 def cached(cache_instance, key_func=None):
@@ -63,3 +87,16 @@ def cached(cache_instance, key_func=None):
         return wrapper
 
     return decorator
+
+
+def invalidate_all_caches():
+    """全キャッシュをクリア"""
+    shop_items_cache.clear()
+    job_list_cache.clear()
+    user_state_cache.clear()
+    ranking_cache.clear()
+    user_stats_cache.clear()
+    activity_cache.clear()
+    pending_cache.clear()
+    sheet_data_cache.clear()
+    goals_cache.clear()

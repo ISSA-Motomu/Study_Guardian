@@ -1221,12 +1221,12 @@ export const useEvolutionStore = defineStore('evolution', () => {
     }
     calculateOfflineReward()
 
-    // 定期的にサーバーに同期（30秒ごと）
+    // 定期的にサーバーに同期（60秒ごと、API負荷軽減）
     setInterval(() => {
       if (isDirty.value) {
         syncToServer()
       }
-    }, 30000)
+    }, 60000)
 
     // ページ離脱時にも同期
     window.addEventListener('beforeunload', () => {

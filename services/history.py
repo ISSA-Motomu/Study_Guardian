@@ -1,6 +1,7 @@
 import datetime
 from services.gsheet import GSheetService
 from services.economy import EconomyService
+from utils.cache import ranking_cache, user_stats_cache, activity_cache, cached
 
 
 class HistoryService:
@@ -725,6 +726,7 @@ class HistoryService:
             return users
 
     @staticmethod
+    @cached(ranking_cache)
     def get_weekly_exp_ranking():
         """今週の獲得EXPランキング（USERのみ）"""
         sheet = GSheetService.get_worksheet("transactions")
@@ -804,6 +806,7 @@ class HistoryService:
             return []
 
     @staticmethod
+    @cached(activity_cache, key_func=lambda limit=10: f"recent_activity_{limit}")
     def get_all_recent_activity(limit=10):
         """全ユーザーの最近の勉強・お手伝い履歴を取得"""
         recent_items = []

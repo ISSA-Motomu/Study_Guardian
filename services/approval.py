@@ -3,10 +3,12 @@ from services.job import JobService
 from services.shop import ShopService
 from services.economy import EconomyService
 from services.mission import MissionService
+from utils.cache import pending_cache, cached
 
 
 class ApprovalService:
     @staticmethod
+    @cached(pending_cache)
     def get_all_pending():
         """全ての承認待ち項目をフラットなリストで取得"""
         results = []

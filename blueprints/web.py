@@ -721,15 +721,30 @@ def api_user_notifications(user_id):
     """ユーザー向けの通知を取得（未読の承認結果など）"""
     try:
         # 通知用シートから未読通知を取得
-        notifications = []
-
-        # 現状はシンプルに空配列を返す（将来的には通知テーブルを追加）
-        # 実際の通知はLINEで送られるので、Web用は補助的
-
+        notifications = GSheetService.get_user_notifications(user_id, unread_only=True)
         return jsonify({"status": "ok", "notifications": notifications})
     except Exception as e:
         print(f"User Notifications Error: {e}")
         return jsonify({"status": "error", "notifications": []})
+
+
+@web_bp.route("/api/user/<user_id>/notifications/read", methods=["POST"])
+def api_mark_notifications_read(user_id):
+    """通知を既読にする"""
+    data = request.json
+    notif_id = data.get("notification_id") if data else None
+
+    try:
+        if notif_id:
+            # 個別の通知を既読
+            GSheetService.mark_notification_read(notif_id, user_id)
+        else:
+            # 全通知を既読
+            GSheetService.mark_all_notifications_read(user_id)
+        return jsonify({"status": "ok"})
+    except Exception as e:
+        print(f"Mark Notifications Read Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 @web_bp.route("/api/admin/pending")
@@ -769,8 +784,17 @@ def api_admin_approve_study():
                 # 累計勉強時間も更新
                 EconomyService.add_study_time(user_id, earned_exp)
 
-            # ユーザーに通知
+            # ユーザーに通知（LINE + アプリ内）
             if user_id:
+                # アプリ内通知を保存
+                GSheetService.add_notification(
+                    user_id,
+                    "approval",
+                    "勉強記録が承認されました",
+                    f"+{earned_exp} XP 獲得！",
+                    "✅"
+                )
+                # LINE通知
                 try:
                     line_bot_api.push_message(
                         user_id,
@@ -801,8 +825,17 @@ def api_admin_reject_study():
 
     try:
         if GSheetService.reject_study(int(row_index)):
-            # ユーザーに通知
+            # ユーザーに通知（LINE + アプリ内）
             if user_id:
+                # アプリ内通知を保存
+                GSheetService.add_notification(
+                    user_id,
+                    "rejection",
+                    "勉強記録が却下されました",
+                    "記録に問題があった可能性があります。",
+                    "❌"
+                )
+                # LINE通知
                 try:
                     line_bot_api.push_message(
                         user_id,
@@ -832,11 +865,35 @@ def api_admin_approve_job():
         return jsonify({"status": "error", "message": "Missing job_id"}), 400
 
     try:
-        success, msg = JobService.approve_job(job_id)
+        success, result = JobService.approve_job(job_id)
         if success:
-            return jsonify({"status": "ok", "message": msg})
+            # ユーザーに通知（LINE + アプリ内）
+            worker_id = result.get("worker_id")
+            title = result.get("title", "お手伝い")
+            reward = result.get("reward", 0)
+
+            if worker_id:
+                # アプリ内通知
+                GSheetService.add_notification(
+                    worker_id,
+                    "approval",
+                    "お手伝いが承認されました",
+                    f"「{title}」完了！+{reward} XP 獲得！",
+                    "🎉"
+                )
+                # LINE通知
+                try:
+                    line_bot_api.push_message(
+                        worker_id,
+                        TextSendMessage(
+                            text=f"🎉 お手伝いが承認されました！\n「{title}」完了！\n+{reward} XP 獲得！"
+                        ),
+                    )
+                except:
+                    pass
+            return jsonify({"status": "ok", "message": result})
         else:
-            return jsonify({"status": "error", "message": msg}), 500
+            return jsonify({"status": "error", "message": result}), 500
     except Exception as e:
         print(f"Approve Job Error: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -849,14 +906,37 @@ def api_admin_reject_job():
 
     data = request.json
     job_id = data.get("job_id")
+    user_id = data.get("user_id")  # ワーカーID
 
     if not job_id:
         return jsonify({"status": "error", "message": "Missing job_id"}), 400
 
     try:
-        success, msg = JobService.reject_job(job_id)
+        success, result = JobService.reject_job(job_id)
         if success:
-            return jsonify({"status": "ok", "message": msg})
+            title = result.get("title", "お手伝い") if isinstance(result, dict) else "お手伝い"
+            worker_id = result.get("worker_id") if isinstance(result, dict) else user_id
+
+            if worker_id:
+                # アプリ内通知
+                GSheetService.add_notification(
+                    worker_id,
+                    "rejection",
+                    "お手伝いが却下されました",
+                    f"「{title}」の完了報告に問題がありました。",
+                    "❌"
+                )
+                # LINE通知
+                try:
+                    line_bot_api.push_message(
+                        worker_id,
+                        TextSendMessage(
+                            text=f"❌ お手伝いが却下されました。\n「{title}」の完了報告に問題がありました。"
+                        ),
+                    )
+                except:
+                    pass
+            return jsonify({"status": "ok", "message": result})
         else:
             return jsonify({"status": "error", "message": msg}), 500
     except Exception as e:
@@ -870,6 +950,8 @@ def api_admin_approve_shop():
     data = request.json
     print(f"[DEBUG] approve_shop received: {data}")
     request_id = data.get("request_id")
+    user_id = data.get("user_id")
+    item_name = data.get("item_name", "アイテム")
 
     if not request_id:
         print(f"[DEBUG] Missing request_id in data: {data}")
@@ -879,6 +961,26 @@ def api_admin_approve_shop():
         result = ShopService.approve_request(request_id)
         print(f"[DEBUG] approve_request result: {result}")
         if result:
+            # ユーザーに通知
+            if user_id:
+                # アプリ内通知
+                GSheetService.add_notification(
+                    user_id,
+                    "approval",
+                    "交換リクエストが承認されました",
+                    f"「{item_name}」をゲット！",
+                    "🎁"
+                )
+                # LINE通知
+                try:
+                    line_bot_api.push_message(
+                        user_id,
+                        TextSendMessage(
+                            text=f"🎁 交換リクエストが承認されました！\n「{item_name}」をゲット！"
+                        ),
+                    )
+                except:
+                    pass
             return jsonify({"status": "ok"})
         else:
             return jsonify(
@@ -900,6 +1002,7 @@ def api_admin_reject_shop():
     request_id = data.get("request_id")
     user_id = data.get("user_id")
     cost = data.get("cost", 0)
+    item_name = data.get("item_name", "アイテム")
 
     if not request_id:
         print(f"[DEBUG] Missing request_id in data: {data}")
@@ -912,6 +1015,24 @@ def api_admin_reject_shop():
             # 返金処理
             if user_id and cost:
                 EconomyService.add_exp(user_id, int(cost), f"REFUND_{request_id}")
+                # アプリ内通知
+                GSheetService.add_notification(
+                    user_id,
+                    "rejection",
+                    "交換リクエストが却下されました",
+                    f"「{item_name}」の交換がキャンセルされました。{cost} XPを返金しました。",
+                    "💰"
+                )
+                # LINE通知
+                try:
+                    line_bot_api.push_message(
+                        user_id,
+                        TextSendMessage(
+                            text=f"❌ 交換リクエストが却下されました。\n「{item_name}」の交換がキャンセルされました。\n💰 {cost} XPを返金しました。"
+                        ),
+                    )
+                except:
+                    pass
             return jsonify({"status": "ok"})
         else:
             return jsonify(
@@ -1283,7 +1404,9 @@ def api_add_book():
     total_pages = data.get("total_pages")
 
     if not user_id or not title:
-        return jsonify({"status": "error", "message": "user_id and title required"}), 400
+        return jsonify(
+            {"status": "error", "message": "user_id and title required"}
+        ), 400
 
     try:
         success, result = GSheetService.add_book(
@@ -1312,7 +1435,9 @@ def api_update_book_progress(book_id):
 
     if not user_id or current_page is None:
         return (
-            jsonify({"status": "error", "message": "user_id and current_page required"}),
+            jsonify(
+                {"status": "error", "message": "user_id and current_page required"}
+            ),
             400,
         )
 

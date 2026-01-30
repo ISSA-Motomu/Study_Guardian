@@ -996,7 +996,7 @@ onMounted(() => {
   fetchWeeklyRanking()
   fetchAllGoals()
   fetchActiveSessions()
-  // 30秒ごとに勉強中セッションを更新
-  setInterval(fetchActiveSessions, 30000)
+  // 60秒ごとに勉強中セッションを更新（API負荷軽減）
+  setInterval(fetchActiveSessions, 60000)
 })
 </script>
