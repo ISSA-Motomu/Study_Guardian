@@ -779,6 +779,10 @@ const fetchData = async () => {
     const res = await fetch(`/api/user/${userStore.currentUserId}/stats`)
     const data = await res.json()
     
+    console.log('[DEBUG] Stats API response:', data)
+    console.log('[DEBUG] all_records count:', data.all_records?.length || 0)
+    console.log('[DEBUG] weekly data:', data.weekly)
+    
     // Use all_records for weekly/monthly charts (has subject info)
     if (data.all_records && data.all_records.length > 0) {
       allData.value = data.all_records.map(r => ({
@@ -800,6 +804,8 @@ const fetchData = async () => {
         subject: d.subject || 'その他'
       }))
     }
+    
+    console.log('[DEBUG] allData after processing:', allData.value)
     
     subjectData.value = data.subject || []
     recentActivity.value = data.recent || []

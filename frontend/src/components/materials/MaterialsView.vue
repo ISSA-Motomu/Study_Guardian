@@ -48,14 +48,17 @@
               :key="mat.material_id"
               class="flex gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100"
             >
-              <!-- Image -->
+              <!-- Image or Emoji -->
               <div class="w-16 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-gray-200">
                 <img 
-                  v-if="mat.image_url"
+                  v-if="mat.image_url && !mat.image_url.startsWith('emoji:')"
                   :src="mat.image_url" 
                   :alt="mat.name"
                   class="w-full h-full object-cover"
                 >
+                <div v-else-if="mat.image_url && mat.image_url.startsWith('emoji:')" class="w-full h-full flex items-center justify-center text-3xl bg-gray-100">
+                  {{ mat.image_url.replace('emoji:', '') }}
+                </div>
                 <div v-else class="w-full h-full flex items-center justify-center text-2xl">
                   📕
                 </div>
@@ -117,24 +120,48 @@
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">画像URL（任意）</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">アイコン</label>
+            <div class="mb-2">
+              <div class="flex gap-2 flex-wrap">
+                <button
+                  v-for="emoji in emojiOptions"
+                  :key="emoji"
+                  @click="selectEmoji(emoji)"
+                  :class="[
+                    'w-10 h-10 rounded-lg text-xl flex items-center justify-center transition-all',
+                    selectedEmoji === emoji 
+                      ? 'bg-green-100 border-2 border-green-500 scale-110' 
+                      : 'bg-gray-100 hover:bg-gray-200'
+                  ]"
+                >
+                  {{ emoji }}
+                </button>
+              </div>
+            </div>
+            <p class="text-xs text-gray-400 mb-2">または画像URLを入力：</p>
             <input 
               v-model="newMaterial.image_url"
               type="url"
               placeholder="https://..."
               class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-green-400 focus:outline-none"
+              @input="selectedEmoji = ''"
             >
-            <p class="text-xs text-gray-400 mt-1">※ 画像アップロード機能は今後追加予定</p>
           </div>
           
-          <!-- Image Preview -->
-          <div v-if="newMaterial.image_url" class="text-center">
-            <img 
-              :src="newMaterial.image_url" 
-              alt="Preview"
-              class="w-24 h-32 object-cover rounded-lg mx-auto border"
-              @error="newMaterial.image_url = ''"
-            >
+          <!-- Preview -->
+          <div class="text-center">
+            <div class="w-16 h-20 mx-auto rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden border">
+              <img 
+                v-if="newMaterial.image_url && !selectedEmoji"
+                :src="newMaterial.image_url" 
+                alt="Preview"
+                class="w-full h-full object-cover"
+                @error="newMaterial.image_url = ''"
+              >
+              <span v-else-if="selectedEmoji" class="text-3xl">{{ selectedEmoji }}</span>
+              <span v-else class="text-3xl">📕</span>
+            </div>
+            <p class="text-xs text-gray-400 mt-1">プレビュー</p>
           </div>
           
           <button 
@@ -170,6 +197,20 @@ const newMaterial = ref({
   description: '',
   image_url: ''
 })
+
+const selectedEmoji = ref('')
+
+// 教材用の絵文字オプション
+const emojiOptions = [
+  '📕', '📗', '📘', '📙', '📓', '📔', '📒', '📚',
+  '✏️', '📝', '📐', '📏', '🔢', '🔤', '🔬', '🧪',
+  '🌍', '🗺️', '🎨', '🎵', '💻', '🏃', '⚽', '🎯'
+]
+
+const selectEmoji = (emoji) => {
+  selectedEmoji.value = emoji
+  newMaterial.value.image_url = `emoji:${emoji}`
+}
 
 const formatDate = (dateStr) => {
   if (!dateStr) return ''
@@ -227,6 +268,7 @@ const addMaterial = async () => {
     if (data.status === 'ok') {
       alert('教材を登録しました！')
       newMaterial.value = { name: '', subject: '', description: '', image_url: '' }
+      selectedEmoji.value = ''
       activeTab.value = 'list'
       // Clear cache and refetch
       clearCache(CACHE_KEYS.MATERIALS(userStore.currentUserId))

@@ -98,7 +98,13 @@ class HistoryService:
 
                 # Status Filter (DONE or PENDING or updated ones which have duration)
                 duration_str = row[idx_dur] if len(row) > idx_dur else "0"
+                status = row[idx_stat] if idx_stat is not None and len(row) > idx_stat else ""
+                
+                # デバッグログ
+                print(f"[DEBUG STATS] user_id={row[idx_uid] if len(row) > idx_uid else 'N/A'}, duration_str='{duration_str}', status='{status}'")
+                
                 if not duration_str.isdigit() or int(duration_str) == 0:
+                    print(f"[DEBUG STATS] Skipped due to invalid duration")
                     continue
 
                 duration = int(duration_str)
@@ -161,6 +167,10 @@ class HistoryService:
 
             # Calculate total minutes
             total_minutes = sum(subject_map.values())
+
+            # デバッグログ
+            print(f"[DEBUG STATS] Final weekly_data: {weekly_data}")
+            print(f"[DEBUG STATS] Total records found: {len(all_logs)}, total_minutes: {total_minutes}")
 
             return {
                 "weekly": weekly_data,
