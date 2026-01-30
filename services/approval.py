@@ -25,38 +25,38 @@ class ApprovalService:
         try:
             studies = GSheetService.get_pending_studies()
             for s in studies:
-            # s keys: row_index, user_id, user_name, date, start_time, end_time, subject, comment
-            uid = str(s.get("user_id", ""))
-            saved_name = s.get("user_name") or s.get("display_name")
-            uname = saved_name if saved_name else user_map.get(uid, uid)
+                # s keys: row_index, user_id, user_name, date, start_time, end_time, subject, comment
+                uid = str(s.get("user_id", ""))
+                saved_name = s.get("user_name") or s.get("display_name")
+                uname = saved_name if saved_name else user_map.get(uid, uid)
 
-            # 勉強時間を計算
-            minutes = 0
-            try:
-                start = s.get("start_time", "")
-                end = s.get("end_time", "")
-                if start and end:
-                    from datetime import datetime
+                # 勉強時間を計算
+                minutes = 0
+                try:
+                    start = s.get("start_time", "")
+                    end = s.get("end_time", "")
+                    if start and end:
+                        from datetime import datetime
 
-                    start_dt = datetime.strptime(start, "%H:%M:%S")
-                    end_dt = datetime.strptime(end, "%H:%M:%S")
-                    diff = end_dt - start_dt
-                    minutes = max(0, int(diff.total_seconds() / 60))
-            except:
-                pass
+                        start_dt = datetime.strptime(start, "%H:%M:%S")
+                        end_dt = datetime.strptime(end, "%H:%M:%S")
+                        diff = end_dt - start_dt
+                        minutes = max(0, int(diff.total_seconds() / 60))
+                except:
+                    pass
 
-            data = {
-                "row_index": s.get("row_index"),
-                "user_id": uid,
-                "user_name": uname,
-                "date": s.get("date", ""),
-                "start_time": s.get("start_time", ""),
-                "end_time": s.get("end_time", ""),
-                "subject": s.get("subject", "勉強"),
-                "comment": s.get("comment", ""),
-                "minutes": minutes,
-            }
-            results.append({"type": "study", "data": data})
+                data = {
+                    "row_index": s.get("row_index"),
+                    "user_id": uid,
+                    "user_name": uname,
+                    "date": s.get("date", ""),
+                    "start_time": s.get("start_time", ""),
+                    "end_time": s.get("end_time", ""),
+                    "subject": s.get("subject", "勉強"),
+                    "comment": s.get("comment", ""),
+                    "minutes": minutes,
+                }
+                results.append({"type": "study", "data": data})
         except Exception as e:
             print(f"[ApprovalService] Error getting studies: {e}")
 
