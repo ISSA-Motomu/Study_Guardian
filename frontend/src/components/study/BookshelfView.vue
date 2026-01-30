@@ -248,9 +248,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { useSound } from '@/composables/useSound'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
+import { useToastStore } from '@/stores/toast'
 
 const userStore = useUserStore()
 const { playSound } = useSound()
+const { showConfirm } = useConfirmDialog()
+const toast = useToastStore()
 
 const emit = defineEmits(['close'])
 
@@ -333,11 +337,11 @@ const addBook = async () => {
       newBook.value = { title: '', author: '', subject: activeSubject.value, cover_url: '', total_pages: null }
       await fetchBooks()
     } else {
-      alert('追加に失敗しました: ' + (data.message || ''))
+      toast.error('追加に失敗しました: ' + (data.message || ''))
     }
   } catch (e) {
     console.error('Add book error:', e)
-    alert('追加に失敗しました')
+    toast.error('追加に失敗しました')
   } finally {
     submitting.value = false
   }
@@ -367,16 +371,24 @@ const updateProgress = async () => {
       selectedBook.value = null
       await fetchBooks()
     } else {
-      alert('更新に失敗しました')
+      toast.error('更新に失敗しました')
     }
   } catch (e) {
     console.error('Update progress error:', e)
-    alert('更新に失敗しました')
+    toast.error('更新に失敗しました')
   }
 }
 
 const deleteBook = async (bookId) => {
-  if (!confirm('この本を本棚から削除しますか？')) return
+  const confirmed = await showConfirm({
+    type: 'danger',
+    title: '本の削除',
+    message: 'この本を本棚から削除しますか？\n読書記録も一緒に削除されます。',
+    confirmText: '削除する',
+    cancelText: 'キャンセル',
+    icon: '📕'
+  })
+  if (!confirmed) return
   
   try {
     const res = await fetch(`/api/bookshelf/${bookId}`, {
@@ -390,11 +402,11 @@ const deleteBook = async (bookId) => {
       selectedBook.value = null
       await fetchBooks()
     } else {
-      alert('削除に失敗しました')
+      toast.error('削除に失敗しました')
     }
   } catch (e) {
     console.error('Delete book error:', e)
-    alert('削除に失敗しました')
+    toast.error('削除に失敗しました')
   }
 }
 

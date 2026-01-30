@@ -100,6 +100,20 @@
       :in-session="studyStore.inSession"
       @click="handleFabClick"
     />
+
+    <!-- Global Confirm Dialog -->
+    <ConfirmDialog
+      v-model="confirmState.show"
+      :type="confirmState.type"
+      :title="confirmState.title"
+      :message="confirmState.message"
+      :confirmText="confirmState.confirmText"
+      :cancelText="confirmState.cancelText"
+      :icon="confirmState.icon"
+      :confirmIcon="confirmState.confirmIcon"
+      @confirm="handleConfirm"
+      @cancel="handleCancel"
+    />
   </div>
 </template>
 
@@ -113,6 +127,7 @@ import { useEvolutionStore } from '@/stores/evolution'
 import { useToastStore } from '@/stores/toast'
 import { useLiff } from '@/composables/useLiff'
 import { useSound } from '@/composables/useSound'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 
 // Components
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
@@ -120,6 +135,7 @@ import BottomNav from '@/components/common/BottomNav.vue'
 import FloatingButton from '@/components/common/FloatingButton.vue'
 import NotificationBell from '@/components/common/NotificationBell.vue'
 import ToastContainer from '@/components/common/ToastContainer.vue'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import StudyView from '@/components/study/StudyView.vue'
 import TimerView from '@/components/study/TimerView.vue'
 import SubjectModal from '@/components/study/SubjectModal.vue'
@@ -145,6 +161,7 @@ const toastStore = useToastStore()
 // Composables
 const { initLiff } = useLiff()
 const { playSound } = useSound()
+const { state: confirmState, handleConfirm, handleCancel } = useConfirmDialog()
 
 // State
 const view = ref('study')

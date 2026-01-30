@@ -205,10 +205,14 @@
 import { ref, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { useCache, CACHE_KEYS } from '@/composables/useCache'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
+import { useToastStore } from '@/stores/toast'
 
 const emit = defineEmits(['close'])
 const userStore = useUserStore()
 const { getCache, setCache, clearCache } = useCache()
+const { showConfirm } = useConfirmDialog()
+const toast = useToastStore()
 
 const activeTab = ref('list')
 const loading = ref(true)
@@ -246,7 +250,7 @@ const handleFileSelect = async (event) => {
   
   // ファイルサイズチェック (5MB以下)
   if (file.size > 5 * 1024 * 1024) {
-    alert('画像サイズは5MB以下にしてください')
+    toast.warning('画像サイズは5MB以下にしてください')
     return
   }
   
@@ -260,7 +264,7 @@ const handleFileSelect = async (event) => {
     newMaterial.value.image_url = resizedBase64
   } catch (e) {
     console.error('Image processing error:', e)
-    alert('画像の処理に失敗しました')
+    toast.error('画像の処理に失敗しました')
   } finally {
     uploadingImage.value = false
     // inputをリセット（同じファイルを再選択できるように）
@@ -356,7 +360,7 @@ const addMaterial = async () => {
     const data = await res.json()
     
     if (data.status === 'ok') {
-      alert('教材を登録しました！')
+      toast.success('教材を登録しました！')
       newMaterial.value = { name: '', subject: '', description: '', image_url: '' }
       selectedEmoji.value = ''
       selectedImagePreview.value = ''
@@ -365,18 +369,26 @@ const addMaterial = async () => {
       clearCache(CACHE_KEYS.MATERIALS(userStore.currentUserId))
       await fetchMaterials()
     } else {
-      alert(data.message || '登録に失敗しました')
+      toast.error(data.message || '登録に失敗しました')
     }
   } catch (e) {
     console.error('Failed to add material:', e)
-    alert('エラーが発生しました')
+    toast.error('エラーが発生しました')
   } finally {
     submitting.value = false
   }
 }
 
 const deleteMaterial = async (materialId) => {
-  if (!confirm('この教材を削除しますか？')) return
+  const confirmed = await showConfirm({
+    type: 'danger',
+    title: '教材を削除',
+    message: 'この教材を削除しますか？',
+    confirmText: '削除する',
+    cancelText: 'キャンセル',
+    icon: '📕'
+  })
+  if (!confirmed) return
   
   try {
     const res = await fetch(`/api/materials/${materialId}?user_id=${userStore.currentUserId}`, {
@@ -389,7 +401,7 @@ const deleteMaterial = async (materialId) => {
       // Clear cache
       clearCache(CACHE_KEYS.MATERIALS(userStore.currentUserId))
     } else {
-      alert(data.message || '削除に失敗しました')
+      toast.error(data.message || '削除に失敗しました')
     }
   } catch (e) {
     console.error('Failed to delete material:', e)

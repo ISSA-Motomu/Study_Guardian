@@ -520,11 +520,15 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { useCache, CACHE_KEYS } from '@/composables/useCache'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
+import { useToastStore } from '@/stores/toast'
 import GlassPanel from '@/components/common/GlassPanel.vue'
 import SubjectChart from './SubjectChart.vue'
 
 const userStore = useUserStore()
 const { getCache, setCache, clearCache } = useCache()
+const { showConfirm } = useConfirmDialog()
+const toast = useToastStore()
 const emit = defineEmits(['admin'])
 
 // Tabs
@@ -996,7 +1000,15 @@ const getDaysUntilClass = (targetDate) => {
 }
 
 const completeGoal = async (goalId) => {
-  if (!confirm('この目標を達成済みにしますか？')) return
+  const confirmed = await showConfirm({
+    type: 'success',
+    title: '目標達成！',
+    message: 'この目標を達成済みにしますか？',
+    confirmText: '達成！🎉',
+    cancelText: 'キャンセル',
+    icon: '🏆'
+  })
+  if (!confirmed) return
   
   try {
     const res = await fetch(`/api/goals/${goalId}/complete`, {
@@ -1008,16 +1020,24 @@ const completeGoal = async (goalId) => {
     if (data.status === 'ok') {
       await fetchAllGoals()
     } else {
-      alert('完了処理に失敗しました')
+      toast.error('完了処理に失敗しました')
     }
   } catch (e) {
     console.error('Complete goal error:', e)
-    alert('完了処理に失敗しました')
+    toast.error('完了処理に失敗しました')
   }
 }
 
 const deleteGoal = async (goalId) => {
-  if (!confirm('この目標を削除しますか？')) return
+  const confirmed = await showConfirm({
+    type: 'danger',
+    title: '目標を削除',
+    message: 'この目標を削除しますか？\nこの操作は取り消せません。',
+    confirmText: '削除する',
+    cancelText: 'やめる',
+    icon: '🗑️'
+  })
+  if (!confirmed) return
   
   try {
     const res = await fetch(`/api/goals/${goalId}?user_id=${userStore.currentUserId}`, {
@@ -1027,11 +1047,11 @@ const deleteGoal = async (goalId) => {
     if (data.status === 'ok') {
       await fetchAllGoals()
     } else {
-      alert('削除に失敗しました')
+      toast.error('削除に失敗しました')
     }
   } catch (e) {
     console.error('Delete goal error:', e)
-    alert('削除に失敗しました')
+    toast.error('削除に失敗しました')
   }
 }
 
@@ -1153,11 +1173,11 @@ const submitComment = async () => {
       // キャッシュをクリア
       clearCache(CACHE_KEYS.ACTIVITY)
     } else {
-      alert(data.message || 'コメントの投稿に失敗しました')
+      toast.error(data.message || 'コメントの投稿に失敗しました')
     }
   } catch (e) {
     console.error('Submit comment error:', e)
-    alert('コメントの投稿に失敗しました')
+    toast.error('コメントの投稿に失敗しました')
   } finally {
     submittingComment.value = false
   }

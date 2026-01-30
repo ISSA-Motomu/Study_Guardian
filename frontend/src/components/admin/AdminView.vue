@@ -348,9 +348,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 import GlassPanel from '@/components/common/GlassPanel.vue'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 
 const emit = defineEmits(['exit', 'viewAsUser'])
 const userStore = useUserStore()
+const { showConfirm } = useConfirmDialog()
 
 const loading = ref(true)
 const processing = ref(false)
@@ -794,7 +796,15 @@ const sendAnnouncement = async () => {
                       announcement.value.target === 'users' ? 'USERのみ' : 
                       allUsers.value.find(u => u.user_id === announcement.value.targetUserId)?.user_name || '選択したユーザー'
   
-  if (!confirm(`${targetLabel}にお知らせを送信しますか？`)) return
+  const confirmed = await showConfirm({
+    type: 'info',
+    title: 'お知らせ送信確認',
+    message: `${targetLabel}にお知らせを送信しますか？\n\n「${announcement.value.message.trim().slice(0, 50)}${announcement.value.message.trim().length > 50 ? '...' : ''}」`,
+    confirmText: '送信する',
+    cancelText: 'キャンセル',
+    icon: '📢'
+  })
+  if (!confirmed) return
   
   processing.value = true
   

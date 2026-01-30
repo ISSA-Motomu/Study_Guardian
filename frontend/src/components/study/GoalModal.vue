@@ -72,6 +72,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
+import { useToastStore } from '@/stores/toast'
 
 const props = defineProps({
   editGoal: {
@@ -83,6 +84,7 @@ const props = defineProps({
 const emit = defineEmits(['close', 'created', 'updated'])
 
 const userStore = useUserStore()
+const toast = useToastStore()
 
 const title = ref('')
 const description = ref('')
@@ -146,7 +148,7 @@ const handleSubmit = async () => {
         emit('updated')
         emit('close')
       } else {
-        alert('目標の更新に失敗しました: ' + (result.message || 'Unknown error'))
+        toast.error('目標の更新に失敗しました: ' + (result.message || 'Unknown error'))
       }
     } else {
       // 新規作成
@@ -168,12 +170,12 @@ const handleSubmit = async () => {
         emit('created')
         emit('close')
       } else {
-        alert('目標の保存に失敗しました: ' + (result.message || 'Unknown error'))
+        toast.error('目標の保存に失敗しました: ' + (result.message || 'Unknown error'))
       }
     }
   } catch (e) {
     console.error('Goal save error:', e)
-    alert('目標の保存に失敗しました')
+    toast.error('目標の保存に失敗しました')
   } finally {
     submitting.value = false
   }

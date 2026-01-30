@@ -180,12 +180,16 @@ import { useUserStore } from '@/stores/user'
 import { useStudyStore } from '@/stores/study'
 import { useShopStore } from '@/stores/shop'
 import { useSound } from '@/composables/useSound'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
+import { useToastStore } from '@/stores/toast'
 import GlassPanel from '@/components/common/GlassPanel.vue'
 
 const userStore = useUserStore()
 const studyStore = useStudyStore()
 const shopStore = useShopStore()
 const { playSound } = useSound()
+const { showConfirm } = useConfirmDialog()
+const toast = useToastStore()
 
 const emit = defineEmits(['timer', 'openGoalModal', 'openMaterials', 'openBookshelf', 'editGoal'])
 
@@ -205,7 +209,7 @@ const openShop = () => {
 
 const openGacha = () => {
   playSound('select2') // Using a different sound just to acknowledge tap
-  alert('ガチャは現在準備中です！\nアップデートをお楽しみに！')
+  toast.info('ガチャは現在準備中です！\nアップデートをお楽しみに！')
 }
 
 // Fetch today's study minutes
@@ -214,7 +218,7 @@ const fetchTodayStats = async () => {
   try {
     const res = await fetch(`/api/user/${userStore.currentUserId}/stats`)
     const data = await res.json()
-    if (data.weekly && data.weekly.length > 0) {
+    if (Array.isArray(data.weekly) && data.weekly.length > 0) {
       // Get today's data (last item in weekly array)
       const today = data.weekly[data.weekly.length - 1]
       todayMinutes.value = today?.minutes || 0
@@ -271,7 +275,15 @@ const getGoalUrgencyClass = (targetDate) => {
 }
 
 const completeGoal = async (goalId) => {
-  if (!confirm('この目標を達成済みにしますか？🎉')) return
+  const confirmed = await showConfirm({
+    type: 'success',
+    title: '目標達成！🎉',
+    message: 'この目標を達成済みにしますか？\nおめでとう！頑張ったね！',
+    confirmText: '達成！',
+    cancelText: 'まだ続ける',
+    icon: '🏆'
+  })
+  if (!confirmed) return
   
   try {
     const res = await fetch(`/api/goals/${goalId}/complete`, {
@@ -284,11 +296,11 @@ const completeGoal = async (goalId) => {
       playSound('success')
       await fetchMyGoals()
     } else {
-      alert('完了処理に失敗しました')
+      toast.error('完了処理に失敗しました')
     }
   } catch (e) {
     console.error('Complete goal error:', e)
-    alert('完了処理に失敗しました')
+    toast.error('完了処理に失敗しました')
   }
 }
 
