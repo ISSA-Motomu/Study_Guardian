@@ -1,11 +1,15 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useUserStore } from './user'
+import { useToastStore } from './toast'
 import { useSound } from '@/composables/useSound'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 
 export const useStudyStore = defineStore('study', () => {
   const userStore = useUserStore()
+  const toastStore = useToastStore()
   const { playSound } = useSound()
+  const { showConfirm } = useConfirmDialog()
 
   // State
   const subjects = ref({})
@@ -117,26 +121,36 @@ export const useStudyStore = defineStore('study', () => {
         })
       })
 
-      if (!res.ok) throw new Error(`Server returned ${res.status}`)
+      if (!res.ok) {
+        throw new Error(`HTTPステータス: ${res.status} (${res.statusText})`)
+      }
 
       const json = await res.json()
       if (json.status === 'ok') {
-        alert(`お疲れ様でした！\n${json.minutes}分 勉強しました。`)
+        toastStore.success(`お疲れ様でした！\n${json.minutes}分 勉強しました。`)
         resetSession()
         await userStore.fetchUserData(userStore.currentUserId)
         return json.minutes
       } else {
-        alert('終了処理に失敗しました: ' + json.message)
+        toastStore.error('終了処理に失敗しました: ' + json.message)
       }
     } catch (e) {
       console.error(e)
-      alert('通信エラーが発生しました。')
+      toastStore.error(`通信エラーが発生しました\n${e.message}`)
     }
     return 0
   }
 
   const cancelStudy = async () => {
-    if (!confirm('本当に記録を取り消しますか？\n(この時間はカウントされません)')) return
+    const confirmed = await showConfirm({
+      type: 'warning',
+      title: '記録の取消',
+      message: '本当に記録を取り消しますか？\n(時間はカウントされません)',
+      confirmText: '取り消す',
+      cancelText: 'やめる',
+      icon: '🗑️'
+    })
+    if (!confirmed) return
 
     playSound('click')
     try {
@@ -147,19 +161,27 @@ export const useStudyStore = defineStore('study', () => {
       })
       const json = await res.json()
       if (json.status === 'ok') {
-        alert('記録を取り消しました。')
+        toastStore.info('記録を取り消しました。')
         resetSession()
       } else {
-        alert('取消に失敗しました')
+        toastStore.error('取消に失敗しました')
       }
     } catch (e) {
-      alert('通信エラー')
+      toastStore.error(`通信エラー: ${e.message}`)
     }
   }
 
   const pauseStudy = async (closeApp = false) => {
     playSound('click')
-    if (!confirm('勉強を一時中断してメニューに戻りますか？\n(時間はここでストップします)')) return false
+    const confirmed = await showConfirm({
+      type: 'info',
+      title: '一時中断',
+      message: '勉強を一時中断してメニューに戻りますか？\n(時間はここでストップします)',
+      confirmText: '中断する',
+      cancelText: '続ける',
+      icon: '⏸️'
+    })
+    if (!confirmed) return false
 
     lastSessionTime.value = timerDisplay.value
 
@@ -180,10 +202,10 @@ export const useStudyStore = defineStore('study', () => {
         }
         return true
       } else {
-        alert('中断処理に失敗しました')
+        toastStore.error('中断処理に失敗しました')
       }
     } catch (e) {
-      alert('通信エラー')
+      toastStore.error(`通信エラー: ${e.message}`)
     }
     return false
   }
