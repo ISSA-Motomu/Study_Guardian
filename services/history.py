@@ -1221,7 +1221,9 @@ class HistoryService:
         if not sheet:
             # シートがなければ作成
             try:
-                doc = GSheetService.get_doc()
+                doc = GSheetService.get_spreadsheet()
+                if not doc:
+                    return {"success": False, "message": "スプレッドシートに接続できませんでした"}
                 sheet = doc.add_worksheet(title="study_comments", rows=100, cols=10)
                 sheet.update(
                     "A1:E1",

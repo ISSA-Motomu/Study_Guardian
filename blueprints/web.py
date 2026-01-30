@@ -1312,7 +1312,9 @@ def api_admin_broadcast():
             else:
                 # sender_user_idが無い場合はADMINユーザーを対象
                 user_ids = [
-                    u["user_id"] for u in all_users if u.get("role", "").upper() == "ADMIN"
+                    u["user_id"]
+                    for u in all_users
+                    if u.get("role", "").upper() == "ADMIN"
                 ]
         elif target == "individual" and target_user_id:
             # 個別ユーザー
@@ -1339,12 +1341,14 @@ def api_admin_broadcast():
                 print(f"Failed to send to {user_id}: {e}")
                 failed_count += 1
 
-        return jsonify({
-            "status": "ok", 
-            "sent_count": sent_count,
-            "failed_count": failed_count,
-            "target_count": len(user_ids)
-        })
+        return jsonify(
+            {
+                "status": "ok",
+                "sent_count": sent_count,
+                "failed_count": failed_count,
+                "target_count": len(user_ids),
+            }
+        )
 
     except Exception as e:
         print(f"Broadcast Error: {e}")
