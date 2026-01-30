@@ -115,6 +115,8 @@ class HistoryService:
 
                 duration = int(duration_str)
                 date_str = row[idx_date] if len(row) > idx_date else ""
+                # シングルクォートが先頭についている場合に除去（スプレッドシートの書式問題対策）
+                date_str = date_str.lstrip("'").strip()
                 subject = row[idx_subj] if len(row) > idx_subj else "その他"
 
                 # Weekly Data

@@ -33,7 +33,7 @@
         <TimerView v-if="view === 'timer'" @back="view = 'study'" />
         <GameView v-else-if="view === 'game'" />
         <AdminView v-else-if="view === 'admin'" @exit="view = 'other'" @viewAsUser="handleViewAsUser" />
-        <DataView v-else-if="view === 'data'" />
+        <DataView v-else-if="view === 'data'" @admin="view = 'admin'" />
         <OtherView v-else-if="view === 'other'" @admin="view = 'admin'" />
         <StudyView 
           v-else 

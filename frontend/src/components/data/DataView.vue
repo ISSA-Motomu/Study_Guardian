@@ -326,16 +326,30 @@
           <!-- Like & Comment Actions (study only) -->
           <div v-if="item.type === 'study'" class="mt-2 ml-10 flex items-center gap-4">
             <button 
-              @click="toggleLike(item)"
+              @click="toggleLikeWithAnimation($event, item)"
               :class="[
-                'flex items-center gap-1 text-sm transition-all',
+                'like-button flex items-center gap-1 text-sm transition-all relative',
                 item.liked_by?.includes(userStore.currentUserId) 
                   ? 'text-pink-500' 
                   : 'text-gray-400 hover:text-pink-400'
               ]"
             >
-              <span>{{ item.liked_by?.includes(userStore.currentUserId) ? '❤️' : '🤍' }}</span>
+              <span 
+                class="heart-icon text-lg transition-transform"
+                :class="{ 'animate-heart-pop': item._animating }"
+              >
+                {{ item.liked_by?.includes(userStore.currentUserId) ? '❤️' : '🤍' }}
+              </span>
               <span>{{ item.likes || 0 }}</span>
+              <!-- パーティクル -->
+              <span v-if="item._animating" class="particles">
+                <span class="particle particle-1">❤️</span>
+                <span class="particle particle-2">💗</span>
+                <span class="particle particle-3">💕</span>
+                <span class="particle particle-4">✨</span>
+                <span class="particle particle-5">💖</span>
+                <span class="particle particle-6">💓</span>
+              </span>
             </button>
             <button 
               @click="openComments(item)"
@@ -1096,6 +1110,20 @@ const getElapsedTime = (startTime) => {
 
 // ========== いいね・コメント機能 ==========
 
+const toggleLikeWithAnimation = async (event, item) => {
+  const wasLiked = item.liked_by?.includes(userStore.currentUserId)
+  
+  // いいねする場合のみアニメーション
+  if (!wasLiked) {
+    item._animating = true
+    setTimeout(() => {
+      item._animating = false
+    }, 700)
+  }
+  
+  await toggleLike(item)
+}
+
 const toggleLike = async (item) => {
   if (!item.row_index) return
   
@@ -1193,3 +1221,63 @@ onMounted(() => {
   setInterval(fetchActiveSessions, 60000)
 })
 </script>
+
+<style scoped>
+/* ハートアニメーション - X/Twitter風 */
+.like-button {
+  position: relative;
+}
+
+.heart-icon {
+  display: inline-block;
+}
+
+.animate-heart-pop {
+  animation: heartPop 0.35s cubic-bezier(0.17, 0.89, 0.32, 1.49);
+}
+
+@keyframes heartPop {
+  0% { transform: scale(1); }
+  25% { transform: scale(0.8); }
+  50% { transform: scale(1.2); }
+  75% { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+
+/* パーティクル */
+.particles {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  pointer-events: none;
+}
+
+.particle {
+  position: absolute;
+  font-size: 10px;
+  opacity: 0;
+  animation: particleBurst 0.7s ease-out forwards;
+}
+
+.particle-1 { animation-delay: 0s; --tx: -15px; --ty: -20px; }
+.particle-2 { animation-delay: 0.05s; --tx: 15px; --ty: -18px; }
+.particle-3 { animation-delay: 0.1s; --tx: -20px; --ty: 5px; }
+.particle-4 { animation-delay: 0.05s; --tx: 20px; --ty: 0px; }
+.particle-5 { animation-delay: 0.1s; --tx: -8px; --ty: -25px; }
+.particle-6 { animation-delay: 0s; --tx: 10px; --ty: -22px; }
+
+@keyframes particleBurst {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--tx) * 0.5), calc(-50% + var(--ty) * 0.5)) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(0.5);
+  }
+}
+</style>
