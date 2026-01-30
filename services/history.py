@@ -823,6 +823,7 @@ class HistoryService:
                     idx_subj = col_map.get("subject")
                     idx_stat = col_map.get("status")
                     idx_time = col_map.get("start_time")
+                    idx_comment = col_map.get("comment")
 
                     for row in records[1:]:
                         # APPROVED または DONE のもののみ
@@ -850,6 +851,9 @@ class HistoryService:
                         start_time = (
                             row[idx_time] if idx_time and len(row) > idx_time else ""
                         )
+                        comment = (
+                            row[idx_comment] if idx_comment and len(row) > idx_comment else ""
+                        )
 
                         # タイムスタンプ用にdate + start_timeを結合
                         timestamp = f"{date} {start_time}" if start_time else date
@@ -859,6 +863,7 @@ class HistoryService:
                                 "type": "study",
                                 "user_name": name,
                                 "description": f"{subject} {duration_str}分",
+                                "comment": comment,
                                 "timestamp": timestamp,
                                 "icon": "📚",
                             }

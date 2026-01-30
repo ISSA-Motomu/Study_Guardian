@@ -269,31 +269,48 @@
       <div v-else-if="globalActivity.length === 0" class="text-center text-gray-500 py-4">
         活動履歴がありません
       </div>
-      <div v-else class="space-y-2 max-h-72 overflow-y-auto">
+      <div v-else class="space-y-2" :class="showAllActivity ? 'max-h-none' : 'max-h-72'" style="overflow-y: auto;">
         <div 
-          v-for="(item, idx) in globalActivity" 
+          v-for="(item, idx) in displayedActivity" 
           :key="idx"
-          class="flex items-center gap-3 py-2 px-3 border-b last:border-0 border-gray-100 bg-gradient-to-r from-white to-gray-50 rounded-lg"
+          class="py-2 px-3 border-b last:border-0 border-gray-100 bg-gradient-to-r from-white to-gray-50 rounded-lg"
         >
-          <!-- Icon -->
-          <div class="text-2xl flex-shrink-0">
-            {{ item.icon }}
-          </div>
-          <!-- Content -->
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2">
-              <span class="font-bold text-indigo-600 truncate">{{ item.user_name }}</span>
-              <span 
-                class="text-xs px-2 py-0.5 rounded-full"
-                :class="item.type === 'study' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'"
-              >
-                {{ item.type === 'study' ? '勉強' : 'お手伝い' }}
-              </span>
+          <div class="flex items-center gap-3">
+            <!-- Icon -->
+            <div class="text-2xl flex-shrink-0">
+              {{ item.icon }}
             </div>
-            <p class="text-sm text-gray-600 truncate">{{ item.description }}</p>
-            <p class="text-xs text-gray-400">{{ formatTimestamp(item.timestamp) }}</p>
+            <!-- Content -->
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-indigo-600 truncate">{{ item.user_name }}</span>
+                <span 
+                  class="text-xs px-2 py-0.5 rounded-full"
+                  :class="item.type === 'study' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'"
+                >
+                  {{ item.type === 'study' ? '勉強' : 'お手伝い' }}
+                </span>
+              </div>
+              <p class="text-sm text-gray-600 truncate">{{ item.description }}</p>
+              <p class="text-xs text-gray-400">{{ formatTimestamp(item.timestamp) }}</p>
+            </div>
+          </div>
+          <!-- Comment (expandable) -->
+          <div v-if="item.comment" class="mt-2 ml-10">
+            <p class="text-xs text-gray-500 bg-gray-100 rounded-lg px-3 py-2 italic">
+              💬 {{ item.comment }}
+            </p>
           </div>
         </div>
+      </div>
+      <!-- Show More / Less Button -->
+      <div v-if="globalActivity.length > 5" class="mt-3 text-center">
+        <button 
+          @click="showAllActivity = !showAllActivity"
+          class="text-sm text-indigo-500 hover:text-indigo-700 font-medium"
+        >
+          {{ showAllActivity ? '▲ 閉じる' : '▼ もっと見る (' + globalActivity.length + '件)' }}
+        </button>
       </div>
     </GlassPanel>
 
@@ -420,10 +437,12 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useUserStore } from '@/stores/user'
+import { useCache, CACHE_KEYS } from '@/composables/useCache'
 import GlassPanel from '@/components/common/GlassPanel.vue'
 import SubjectChart from './SubjectChart.vue'
 
 const userStore = useUserStore()
+const { getCache, setCache } = useCache()
 const emit = defineEmits(['admin'])
 
 // Tabs
@@ -441,6 +460,7 @@ const globalActivity = ref([])
 const studyRecords = ref([]) // 全勉強ログ（日付・科目付き）
 const weeklyRanking = ref([]) // 週間ランキング
 const allGoals = ref([]) // みんなの目標
+const showAllActivity = ref(false) // 「もっと見る」の展開状態
 
 // Loading states
 const loadingStats = ref(true)
@@ -470,6 +490,14 @@ const subjectLegend = computed(() => {
 const getSubjectColor = (subject) => {
   return subjectColors[subject] || subjectColors['その他']
 }
+
+// Display activity (with show more/less)
+const displayedActivity = computed(() => {
+  if (showAllActivity.value) {
+    return globalActivity.value
+  }
+  return globalActivity.value.slice(0, 5)
+})
 
 // Weekly subject breakdown
 const weeklySubjectData = computed(() => {
@@ -766,12 +794,22 @@ const fetchData = async () => {
 
 // Fetch global activity
 const fetchGlobalActivity = async () => {
+  // Check cache first (3 minute TTL)
+  const cached = getCache(CACHE_KEYS.ACTIVITY)
+  if (cached) {
+    globalActivity.value = cached
+    loadingActivity.value = false
+    return
+  }
+
   loadingActivity.value = true
   try {
     const res = await fetch('/api/activity/recent')
     const data = await res.json()
     if (data.status === 'ok') {
       globalActivity.value = data.data || []
+      // Cache for 3 minutes
+      setCache(CACHE_KEYS.ACTIVITY, globalActivity.value, 3 * 60 * 1000)
     }
   } catch (e) {
     console.error('Failed to fetch global activity:', e)
@@ -782,12 +820,22 @@ const fetchGlobalActivity = async () => {
 
 // Fetch weekly ranking
 const fetchWeeklyRanking = async () => {
+  // Check cache first (5 minute TTL)
+  const cached = getCache(CACHE_KEYS.RANKINGS)
+  if (cached) {
+    weeklyRanking.value = cached
+    loadingRanking.value = false
+    return
+  }
+
   loadingRanking.value = true
   try {
     const res = await fetch('/api/ranking/weekly')
     const data = await res.json()
     if (data.status === 'ok') {
       weeklyRanking.value = data.data || []
+      // Cache for 5 minutes
+      setCache(CACHE_KEYS.RANKINGS, weeklyRanking.value, 5 * 60 * 1000)
     }
   } catch (e) {
     console.error('Failed to fetch weekly ranking:', e)

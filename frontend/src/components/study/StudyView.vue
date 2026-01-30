@@ -126,22 +126,30 @@
     </GlassPanel>
 
     <!-- Menu Grid -->
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-3 gap-3">
       <button 
         @click="openShop"
-        class="bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-lg flex flex-col items-center justify-center gap-2 transition-transform active:scale-95 border-b-4 border-amber-200"
+        class="bg-white/90 backdrop-blur-sm rounded-2xl p-3 shadow-lg flex flex-col items-center justify-center gap-1 transition-transform active:scale-95 border-b-4 border-amber-200"
       >
-        <span class="text-4xl">🏪</span>
-        <span class="font-bold text-gray-700">ショップ</span>
+        <span class="text-3xl">🏪</span>
+        <span class="font-bold text-gray-700 text-sm">ショップ</span>
       </button>
 
       <button 
         @click="openGacha"
-        class="bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-lg flex flex-col items-center justify-center gap-2 transition-transform active:scale-95 border-b-4 border-purple-200"
+        class="bg-white/90 backdrop-blur-sm rounded-2xl p-3 shadow-lg flex flex-col items-center justify-center gap-1 transition-transform active:scale-95 border-b-4 border-purple-200"
       >
-        <span class="text-4xl">🔮</span>
-        <span class="font-bold text-gray-700">ガチャ</span>
-        <span class="text-xs text-red-500 font-bold bg-red-100 px-2 py-0.5 rounded-full">準備中</span>
+        <span class="text-3xl">🔮</span>
+        <span class="font-bold text-gray-700 text-sm">ガチャ</span>
+        <span class="text-[10px] text-red-500 font-bold bg-red-100 px-1.5 py-0.5 rounded-full">準備中</span>
+      </button>
+
+      <button 
+        @click="emit('openMaterials')"
+        class="bg-white/90 backdrop-blur-sm rounded-2xl p-3 shadow-lg flex flex-col items-center justify-center gap-1 transition-transform active:scale-95 border-b-4 border-green-200"
+      >
+        <span class="text-3xl">📖</span>
+        <span class="font-bold text-gray-700 text-sm">教材</span>
       </button>
     </div>
   </div>
@@ -160,7 +168,7 @@ const studyStore = useStudyStore()
 const shopStore = useShopStore()
 const { playSound } = useSound()
 
-const emit = defineEmits(['timer', 'openGoalModal'])
+const emit = defineEmits(['timer', 'openGoalModal', 'openMaterials'])
 
 const defaultAvatar = 'https://cdn-icons-png.flaticon.com/512/4333/4333609.png'
 

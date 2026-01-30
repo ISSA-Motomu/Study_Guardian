@@ -36,6 +36,7 @@
           ref="studyViewRef"
           @timer="view = 'timer'" 
           @openGoalModal="showGoalModal = true"
+          @openMaterials="showMaterialsModal = true"
         />
       </template>
     </div>
@@ -70,6 +71,11 @@
       v-if="showGoalModal"
       @close="showGoalModal = false"
       @created="onGoalCreated"
+    />
+
+    <MaterialsView
+      v-if="showMaterialsModal"
+      @close="showMaterialsModal = false"
     />
 
     <!-- Bottom Navigation -->
@@ -109,6 +115,7 @@ import AdminView from '@/components/admin/AdminView.vue'
 import BuyModal from '@/components/shop/BuyModal.vue'
 import ShopListModal from '@/components/shop/ShopListModal.vue'
 import GoalModal from '@/components/study/GoalModal.vue'
+import MaterialsView from '@/components/materials/MaterialsView.vue'
 
 // Stores
 const userStore = useUserStore()
@@ -124,6 +131,7 @@ const { playSound } = useSound()
 // State
 const view = ref('study')
 const showGoalModal = ref(false)
+const showMaterialsModal = ref(false)
 const studyViewRef = ref(null)
 
 // Lifecycle

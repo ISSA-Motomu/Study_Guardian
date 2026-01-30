@@ -1097,4 +1097,68 @@ def api_delete_goal(goal_id):
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+# --- Materials API ---
+from services.materials import MaterialsService
+
+
+@web_bp.route("/api/materials/user/<user_id>")
+def api_user_materials(user_id):
+    """ユーザーの教材一覧を取得"""
+    try:
+        materials = MaterialsService.get_user_materials(user_id)
+        return jsonify({"status": "ok", "materials": materials})
+    except Exception as e:
+        print(f"Get Materials Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@web_bp.route("/api/materials", methods=["POST"])
+def api_add_material():
+    """教材を登録"""
+    data = request.json
+    user_id = data.get("user_id")
+    name = data.get("name")
+    subject = data.get("subject", "")
+    description = data.get("description", "")
+    image_url = data.get("image_url", "")
+
+    if not user_id or not name:
+        return jsonify({"status": "error", "message": "user_id and name required"}), 400
+
+    try:
+        success, result = MaterialsService.add_material(
+            user_id=user_id,
+            name=name,
+            subject=subject,
+            description=description,
+            image_url=image_url,
+        )
+        if success:
+            return jsonify({"status": "ok", "material_id": result})
+        else:
+            return jsonify({"status": "error", "message": result}), 500
+    except Exception as e:
+        print(f"Add Material Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@web_bp.route("/api/materials/<material_id>", methods=["DELETE"])
+def api_delete_material(material_id):
+    """教材を削除"""
+    user_id = request.args.get("user_id")
+
+    if not user_id:
+        return jsonify({"status": "error", "message": "Missing user_id"}), 400
+
+    try:
+        success, error = MaterialsService.delete_material(material_id, user_id)
+        if success:
+            return jsonify({"status": "ok"})
+        else:
+            return jsonify({"status": "error", "message": error}), 500
+    except Exception as e:
+        print(f"Delete Material Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 # --- Static and Legacy ---
