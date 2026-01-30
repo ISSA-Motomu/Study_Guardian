@@ -361,6 +361,72 @@ def api_debug_study_log():
         return jsonify({"error": str(e)})
 
 
+@web_bp.route("/api/debug/user_stats/<user_id>")
+def api_debug_user_stats(user_id):
+    """デバッグ用：特定ユーザーのデータ処理結果を詳細確認"""
+    import datetime
+
+    try:
+        sheet = GSheetService.get_worksheet("study_log")
+        if not sheet:
+            return jsonify({"error": "sheet not found"})
+
+        records = sheet.get_all_values()
+        headers = records[0] if records else []
+        col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+        idx_uid = col_map.get("user_id")
+        idx_date = col_map.get("date")
+        idx_dur = col_map.get("duration_min")
+        idx_subj = col_map.get("subject")
+        idx_stat = col_map.get("status")
+
+        # 7日間の日付リスト
+        today = datetime.datetime.now(
+            datetime.timezone(datetime.timedelta(hours=9))
+        ).date()
+        last_7_days = [today - datetime.timedelta(days=i) for i in range(6, -1, -1)]
+        expected_dates = [d.strftime("%Y-%m-%d") for d in last_7_days]
+
+        user_rows = []
+        for row in records[1:]:
+            if len(row) <= idx_uid or str(row[idx_uid]) != str(user_id):
+                continue
+
+            raw_date = row[idx_date] if len(row) > idx_date else ""
+            cleaned_date = raw_date.lstrip("'").strip()
+            duration_str = row[idx_dur] if len(row) > idx_dur else "0"
+            subject = row[idx_subj] if len(row) > idx_subj else ""
+            status = row[idx_stat] if idx_stat is not None and len(row) > idx_stat else ""
+            
+            is_in_week = cleaned_date in expected_dates
+            is_valid_duration = duration_str.isdigit() and int(duration_str) > 0
+
+            user_rows.append({
+                "raw_date": raw_date,
+                "cleaned_date": cleaned_date,
+                "raw_date_repr": repr(raw_date),  # 隠れ文字を確認
+                "duration_str": duration_str,
+                "is_valid_duration": is_valid_duration,
+                "subject": subject,
+                "status": status,
+                "in_weekly_range": is_in_week,
+                "would_be_counted": is_in_week and is_valid_duration
+            })
+
+        return jsonify({
+            "user_id": user_id,
+            "expected_dates_for_week": expected_dates,
+            "today": str(today),
+            "col_map": col_map,
+            "user_rows": user_rows,
+            "total_user_rows": len(user_rows)
+        })
+    except Exception as e:
+        import traceback
+        return jsonify({"error": str(e), "traceback": traceback.format_exc()})
+
+
 @web_bp.route("/api/ranking/weekly")
 def api_weekly_ranking():
     """週間XPランキングを取得"""
