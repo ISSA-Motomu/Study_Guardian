@@ -1,65 +1,48 @@
-const CACHE_NAME = 'study-guardian-v3';
-const urlsToCache = [
-  '/app/dashboard',
-  '/static/dist/index.html',
-  '/static/manifest.json'
-];
+const CACHE_NAME = 'study-guardian-v4';
 
-// 古いキャッシュバージョンのリスト（これらを削除する）
-const OLD_CACHES = ['study-guardian-v1', 'study-guardian-v2'];
-
-// インストール時にキャッシュ
+// インストール時：即座にアクティブ化
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
-      })
-      .catch((err) => {
-        console.log('Cache failed:', err);
-      })
-  );
-  // 即座にアクティブ化
+  console.log('[SW] Installing v4...');
   self.skipWaiting();
 });
 
-// アクティベート時に古いキャッシュを削除
+// アクティベート時：すべての古いキャッシュを削除
 self.addEventListener('activate', (event) => {
+  console.log('[SW] Activating v4...');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName);
-          }
+          console.log('[SW] Deleting old cache:', cacheName);
+          return caches.delete(cacheName);
         })
       );
     })
   );
-  // 即座にコントロール
+  // 即座に全クライアントをコントロール
   self.clients.claim();
 });
 
-// フェッチ時にネットワークファースト、フォールバックでキャッシュ
+// フェッチ：常にネットワーク優先（オフライン時のみキャッシュ使用）
 self.addEventListener('fetch', (event) => {
-  // APIリクエストはキャッシュしない
-  if (event.request.url.includes('/api/')) {
-    event.respondWith(fetch(event.request));
+  // APIとアセットは常にネットワークから
+  if (event.request.url.includes('/api/') || 
+      event.request.url.includes('/static/dist/')) {
+    event.respondWith(
+      fetch(event.request).catch(() => {
+        // オフライン時はエラーを返す（キャッシュしない）
+        return new Response('Offline', { status: 503 });
+      })
+    );
     return;
   }
 
-  // JSとCSSファイルは常にネットワークから取得（ハッシュ付きファイル）
-  if (event.request.url.includes('/static/dist/assets/')) {
-    event.respondWith(fetch(event.request));
-    return;
-  }
-
+  // その他のリクエスト：ネットワーク優先、失敗時はキャッシュ
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // 成功したらキャッシュに保存
-        if (response.status === 200) {
+        // 成功したらキャッシュに保存（HTMLのみ）
+        if (response.status === 200 && event.request.mode === 'navigate') {
           const responseClone = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseClone);
@@ -68,7 +51,6 @@ self.addEventListener('fetch', (event) => {
         return response;
       })
       .catch(() => {
-        // オフライン時はキャッシュから
         return caches.match(event.request);
       })
   );
