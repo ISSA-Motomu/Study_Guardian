@@ -1494,16 +1494,17 @@ def api_delete_book(book_id):
 
 # ========== いいね・コメントAPI ==========
 
+
 @web_bp.route("/api/activity/like", methods=["POST"])
 def api_toggle_like():
     """勉強記録にいいねをトグル"""
     data = request.json
     study_row_index = data.get("study_row_index")
     user_id = data.get("user_id")
-    
+
     if not study_row_index or not user_id:
         return jsonify({"status": "error", "message": "Missing parameters"}), 400
-    
+
     try:
         result = HistoryService.toggle_like(int(study_row_index), user_id)
         if result.get("success"):
@@ -1534,12 +1535,14 @@ def api_add_comment():
     user_id = data.get("user_id")
     user_name = data.get("user_name", "")
     comment = data.get("comment", "")
-    
+
     if not study_row_index or not user_id or not comment:
         return jsonify({"status": "error", "message": "Missing parameters"}), 400
-    
+
     try:
-        result = HistoryService.add_comment(int(study_row_index), user_id, user_name, comment)
+        result = HistoryService.add_comment(
+            int(study_row_index), user_id, user_name, comment
+        )
         if result.get("success"):
             return jsonify({"status": "ok", **result})
         else:

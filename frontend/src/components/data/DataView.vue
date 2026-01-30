@@ -695,6 +695,11 @@ const currentWeekData = computed(() => {
   const dayOfWeek = today.getDay() || 7 // Sunday = 7
   targetMonday.setDate(today.getDate() - dayOfWeek + 1 - (weekOffset.value * 7))
   
+  console.log('[DEBUG] currentWeekData computing, allData count:', allData.value.length)
+  if (allData.value.length > 0) {
+    console.log('[DEBUG] Sample allData item:', allData.value[0])
+  }
+  
   for (let i = 0; i < 7; i++) {
     const date = new Date(targetMonday)
     date.setDate(targetMonday.getDate() + i)
@@ -703,7 +708,11 @@ const currentWeekData = computed(() => {
     // Group by subject for this day
     const subjectTotals = {}
     allData.value
-      .filter(d => d.date === dateStr)
+      .filter(d => {
+        // 日付形式を正規化して比較
+        const itemDate = d.date ? d.date.split(' ')[0].trim() : ''
+        return itemDate === dateStr
+      })
       .forEach(d => {
         const subj = d.subject || 'その他'
         subjectTotals[subj] = (subjectTotals[subj] || 0) + (d.minutes || 0)
@@ -727,6 +736,7 @@ const currentWeekData = computed(() => {
     })
   }
   
+  console.log('[DEBUG] currentWeekData result:', result)
   return result
 })
 

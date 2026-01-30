@@ -142,17 +142,33 @@
           </button>
         </div>
 
-        <!-- Game Info Section (Admin only) -->
+        <!-- Game Info Section -->
+        <div class="py-3">
+          <h4 class="text-xs text-gray-400 uppercase tracking-wide mb-2">ゲームについて</h4>
+          <button 
+            class="w-full flex items-center gap-3 py-3 px-2 hover:bg-gray-50 rounded-lg transition-colors text-left"
+            @click="showGameOverview = true"
+          >
+            <span class="text-xl">🎮</span>
+            <div class="flex-1">
+              <p class="font-medium text-gray-800">ゲームの遊び方</p>
+              <p class="text-xs text-gray-500">バトル・進化システムの説明</p>
+            </div>
+            <span class="text-gray-400">›</span>
+          </button>
+        </div>
+
+        <!-- Game Spec Section (Admin only) -->
         <div v-if="userStore.isAdmin" class="py-3">
-          <h4 class="text-xs text-gray-400 uppercase tracking-wide mb-2">ゲーム仕様・進行度</h4>
+          <h4 class="text-xs text-gray-400 uppercase tracking-wide mb-2">🔒 ゲーム仕様・進行度（管理者）</h4>
           <button 
             class="w-full flex items-center gap-3 py-3 px-2 hover:bg-gray-50 rounded-lg transition-colors text-left"
             @click="showGameSpec = true"
           >
             <span class="text-xl">⚔️</span>
             <div class="flex-1">
-              <p class="font-medium text-gray-800">バトルシステム</p>
-              <p class="text-xs text-gray-500">オートバトルの仕様</p>
+              <p class="font-medium text-gray-800">バトルシステム詳細</p>
+              <p class="text-xs text-gray-500">計算式・パラメータ</p>
             </div>
             <span class="text-gray-400">›</span>
           </button>
@@ -162,8 +178,8 @@
           >
             <span class="text-xl">🥚</span>
             <div class="flex-1">
-              <p class="font-medium text-gray-800">進化システム</p>
-              <p class="text-xs text-gray-500">ペット育成の仕様</p>
+              <p class="font-medium text-gray-800">進化システム詳細</p>
+              <p class="text-xs text-gray-500">計算式・進化条件</p>
             </div>
             <span class="text-gray-400">›</span>
           </button>
@@ -416,6 +432,57 @@
       </div>
     </Modal>
 
+    <!-- Game Overview Modal (全員表示) -->
+    <Modal v-if="showGameOverview" @close="showGameOverview = false">
+      <div class="p-6">
+        <h3 class="text-xl font-bold mb-4">🎮 ゲームの遊び方</h3>
+        <div class="space-y-4 text-sm">
+          <!-- バトルゲーム -->
+          <div class="bg-gradient-to-r from-red-50 to-orange-50 rounded-xl p-4">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-2xl">⚔️</span>
+              <h4 class="font-bold text-gray-800">オートバトル</h4>
+            </div>
+            <p class="text-gray-600 mb-2">
+              勉強で溜めたエネルギーを使って、モンスターとバトル！
+            </p>
+            <ul class="text-xs text-gray-500 space-y-1">
+              <li>• 勉強すると「バトルエネルギー」が貯まる</li>
+              <li>• エネルギーでモンスターに自動で攻撃</li>
+              <li>• 倒すとEXPがもらえる！</li>
+              <li>• どんどん強い敵が出てくるよ</li>
+            </ul>
+          </div>
+          
+          <!-- 進化ゲーム -->
+          <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-2xl">🥚</span>
+              <h4 class="font-bold text-gray-800">進化ゲーム</h4>
+            </div>
+            <p class="text-gray-600 mb-2">
+              勉強でペットを育てて進化させよう！
+            </p>
+            <ul class="text-xs text-gray-500 space-y-1">
+              <li>• 勉強すると「進化エネルギー」が貯まる</li>
+              <li>• エネルギーでペットが成長</li>
+              <li>• 卵→ベビー→キッズ→アダルト→マスターに進化！</li>
+              <li>• 進化するとボーナスがもらえる</li>
+            </ul>
+          </div>
+          
+          <!-- ヒント -->
+          <div class="bg-blue-50 rounded-xl p-3 flex items-start gap-2">
+            <span class="text-lg">💡</span>
+            <div class="text-xs text-blue-700">
+              <p class="font-bold">ヒント</p>
+              <p>毎日コツコツ勉強すると、エネルギーが効率よく貯まります。連続ボーナスも狙おう！</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Modal>
+
     <!-- Dev Progress Modal -->
     <Modal v-if="showDevProgress" @close="showDevProgress = false">
       <div class="p-6">
@@ -485,6 +552,7 @@ const showHelpEditor = ref(false)
 const showGameSpec = ref(false)
 const showEvolutionSpec = ref(false)
 const showDevProgress = ref(false)
+const showGameOverview = ref(false)
 const achievements = ref([])
 const currentTheme = ref(localStorage.getItem('sg_theme') || 'default')
 const helpText = ref('')

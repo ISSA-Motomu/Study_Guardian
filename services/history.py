@@ -850,6 +850,7 @@ class HistoryService:
                     idx_comments = col_map.get("comments")
 
                     import json
+
                     for row_index, row in enumerate(records[1:], start=2):
                         # APPROVED または DONE のもののみ
                         status = (
@@ -881,15 +882,31 @@ class HistoryService:
                             if idx_comment and len(row) > idx_comment
                             else ""
                         )
-                        
+
                         # いいね・コメント情報
-                        likes = int(row[idx_likes]) if idx_likes and len(row) > idx_likes and row[idx_likes].isdigit() else 0
-                        liked_by_str = row[idx_liked_by] if idx_liked_by and len(row) > idx_liked_by else "[]"
+                        likes = (
+                            int(row[idx_likes])
+                            if idx_likes
+                            and len(row) > idx_likes
+                            and row[idx_likes].isdigit()
+                            else 0
+                        )
+                        liked_by_str = (
+                            row[idx_liked_by]
+                            if idx_liked_by and len(row) > idx_liked_by
+                            else "[]"
+                        )
                         try:
                             liked_by = json.loads(liked_by_str) if liked_by_str else []
                         except:
                             liked_by = []
-                        comments_count = int(row[idx_comments]) if idx_comments and len(row) > idx_comments and row[idx_comments].isdigit() else 0
+                        comments_count = (
+                            int(row[idx_comments])
+                            if idx_comments
+                            and len(row) > idx_comments
+                            and row[idx_comments].isdigit()
+                            else 0
+                        )
 
                         # タイムスタンプ用にdate + start_timeを結合
                         timestamp = f"{date} {start_time}" if start_time else date
@@ -976,21 +993,21 @@ class HistoryService:
         return recent_items[:limit]
 
     # ========== いいね・コメント機能 ==========
-    
+
     @staticmethod
     def toggle_like(study_row_index, user_id):
         """勉強記録にいいねをトグル"""
         sheet = GSheetService.get_worksheet("study_log")
         if not sheet:
             return {"success": False, "message": "シートが見つかりません"}
-        
+
         try:
             headers = sheet.row_values(1)
             col_map = {str(h).strip(): i for i, h in enumerate(headers)}
-            
+
             idx_likes = col_map.get("likes")
             idx_liked_by = col_map.get("liked_by")
-            
+
             # カラムがなければ追加（初回のみ）
             if idx_likes is None:
                 idx_likes = len(headers)
@@ -998,18 +1015,23 @@ class HistoryService:
             if idx_liked_by is None:
                 idx_liked_by = len(headers) + (1 if idx_likes == len(headers) else 0)
                 sheet.update_cell(1, idx_liked_by + 1, "liked_by")
-            
+
             # 現在の値を取得
             row = sheet.row_values(study_row_index)
-            current_likes = int(row[idx_likes]) if len(row) > idx_likes and row[idx_likes].isdigit() else 0
+            current_likes = (
+                int(row[idx_likes])
+                if len(row) > idx_likes and row[idx_likes].isdigit()
+                else 0
+            )
             liked_by_str = row[idx_liked_by] if len(row) > idx_liked_by else "[]"
-            
+
             import json
+
             try:
                 liked_by = json.loads(liked_by_str) if liked_by_str else []
             except:
                 liked_by = []
-            
+
             # トグル処理
             if user_id in liked_by:
                 liked_by.remove(user_id)
@@ -1019,52 +1041,63 @@ class HistoryService:
                 liked_by.append(user_id)
                 current_likes += 1
                 action = "liked"
-            
+
             # 更新
             sheet.update_cell(study_row_index, idx_likes + 1, current_likes)
             sheet.update_cell(study_row_index, idx_liked_by + 1, json.dumps(liked_by))
-            
-            return {"success": True, "action": action, "likes": current_likes, "liked_by": liked_by}
+
+            return {
+                "success": True,
+                "action": action,
+                "likes": current_likes,
+                "liked_by": liked_by,
+            }
         except Exception as e:
             print(f"Toggle Like Error: {e}")
             return {"success": False, "message": str(e)}
-    
+
     @staticmethod
     def get_comments(study_row_index):
         """勉強記録のコメント一覧を取得"""
         sheet = GSheetService.get_worksheet("study_comments")
         if not sheet:
             return []
-        
+
         try:
             records = sheet.get_all_values()
             if len(records) <= 1:
                 return []
-            
+
             headers = records[0]
             col_map = {str(h).strip(): i for i, h in enumerate(headers)}
-            
+
             idx_row = col_map.get("study_row_index")
             idx_uid = col_map.get("user_id")
             idx_name = col_map.get("user_name")
             idx_comment = col_map.get("comment")
             idx_created = col_map.get("created_at")
-            
+
             comments = []
             for row in records[1:]:
                 if len(row) > idx_row and str(row[idx_row]) == str(study_row_index):
-                    comments.append({
-                        "user_id": row[idx_uid] if len(row) > idx_uid else "",
-                        "user_name": row[idx_name] if len(row) > idx_name else "",
-                        "comment": row[idx_comment] if len(row) > idx_comment else "",
-                        "created_at": row[idx_created] if len(row) > idx_created else "",
-                    })
-            
+                    comments.append(
+                        {
+                            "user_id": row[idx_uid] if len(row) > idx_uid else "",
+                            "user_name": row[idx_name] if len(row) > idx_name else "",
+                            "comment": row[idx_comment]
+                            if len(row) > idx_comment
+                            else "",
+                            "created_at": row[idx_created]
+                            if len(row) > idx_created
+                            else "",
+                        }
+                    )
+
             return comments
         except Exception as e:
             print(f"Get Comments Error: {e}")
             return []
-    
+
     @staticmethod
     def add_comment(study_row_index, user_id, user_name, comment):
         """勉強記録にコメントを追加"""
@@ -1074,32 +1107,51 @@ class HistoryService:
             try:
                 doc = GSheetService.get_doc()
                 sheet = doc.add_worksheet(title="study_comments", rows=100, cols=10)
-                sheet.update("A1:E1", [["study_row_index", "user_id", "user_name", "comment", "created_at"]])
+                sheet.update(
+                    "A1:E1",
+                    [
+                        [
+                            "study_row_index",
+                            "user_id",
+                            "user_name",
+                            "comment",
+                            "created_at",
+                        ]
+                    ],
+                )
             except Exception as e:
                 print(f"Create Sheet Error: {e}")
                 return {"success": False, "message": "シートを作成できませんでした"}
-        
+
         try:
             now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
             created_at = now.strftime("%Y-%m-%d %H:%M:%S")
-            
-            sheet.append_row([str(study_row_index), user_id, user_name, comment, created_at])
-            
+
+            sheet.append_row(
+                [str(study_row_index), user_id, user_name, comment, created_at]
+            )
+
             # study_logのコメント数も更新
             study_sheet = GSheetService.get_worksheet("study_log")
             if study_sheet:
                 headers = study_sheet.row_values(1)
                 col_map = {str(h).strip(): i for i, h in enumerate(headers)}
                 idx_comments = col_map.get("comments")
-                
+
                 if idx_comments is None:
                     idx_comments = len(headers)
                     study_sheet.update_cell(1, idx_comments + 1, "comments")
-                
+
                 row = study_sheet.row_values(study_row_index)
-                current_count = int(row[idx_comments]) if len(row) > idx_comments and row[idx_comments].isdigit() else 0
-                study_sheet.update_cell(study_row_index, idx_comments + 1, current_count + 1)
-            
+                current_count = (
+                    int(row[idx_comments])
+                    if len(row) > idx_comments and row[idx_comments].isdigit()
+                    else 0
+                )
+                study_sheet.update_cell(
+                    study_row_index, idx_comments + 1, current_count + 1
+                )
+
             return {"success": True, "created_at": created_at}
         except Exception as e:
             print(f"Add Comment Error: {e}")
