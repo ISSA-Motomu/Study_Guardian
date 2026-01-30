@@ -35,77 +35,165 @@
         <!-- Settings Section -->
         <div class="py-3">
           <h4 class="text-xs text-gray-400 uppercase tracking-wide mb-2">設定</h4>
-          <MenuItem 
-            icon="🎨" 
-            label="テーマの選択" 
-            :description="currentThemeName"
+          <button 
+            class="w-full flex items-center gap-3 py-3 px-2 hover:bg-gray-50 rounded-lg transition-colors text-left"
             @click="showThemeModal = true"
-          />
-          <MenuItem 
-            icon="🔔" 
-            label="通知設定" 
+          >
+            <span class="text-xl">🎨</span>
+            <div class="flex-1">
+              <p class="font-medium text-gray-800">テーマの選択</p>
+              <p class="text-xs text-gray-500">{{ currentThemeName }}</p>
+            </div>
+            <span class="text-gray-400">›</span>
+          </button>
+          <button 
+            class="w-full flex items-center gap-3 py-3 px-2 hover:bg-gray-50 rounded-lg transition-colors text-left"
             @click="openNotificationSettings"
-          />
-          <MenuItem 
-            icon="🎵" 
-            label="サウンド設定" 
+          >
+            <span class="text-xl">🔔</span>
+            <div class="flex-1">
+              <p class="font-medium text-gray-800">通知設定</p>
+            </div>
+            <span class="text-gray-400">›</span>
+          </button>
+          <button 
+            class="w-full flex items-center gap-3 py-3 px-2 hover:bg-gray-50 rounded-lg transition-colors text-left"
             @click="openSoundSettings"
-          />
+          >
+            <span class="text-xl">🎵</span>
+            <div class="flex-1">
+              <p class="font-medium text-gray-800">サウンド設定</p>
+            </div>
+            <span class="text-gray-400">›</span>
+          </button>
         </div>
 
         <!-- Data Section -->
         <div class="py-3">
           <h4 class="text-xs text-gray-400 uppercase tracking-wide mb-2">データ</h4>
-          <MenuItem 
-            icon="📊" 
-            label="学習統計" 
-            description="詳細な学習分析"
+          <button 
+            class="w-full flex items-center gap-3 py-3 px-2 hover:bg-gray-50 rounded-lg transition-colors text-left"
             @click="showStudyStats = true"
-          />
-          <MenuItem 
-            icon="🏆" 
-            label="実績一覧" 
-            description="獲得した実績"
+          >
+            <span class="text-xl">📊</span>
+            <div class="flex-1">
+              <p class="font-medium text-gray-800">学習統計</p>
+              <p class="text-xs text-gray-500">詳細な学習分析</p>
+            </div>
+            <span class="text-gray-400">›</span>
+          </button>
+          <button 
+            class="w-full flex items-center gap-3 py-3 px-2 hover:bg-gray-50 rounded-lg transition-colors text-left"
             @click="showAchievements = true"
-          />
+          >
+            <span class="text-xl">🏆</span>
+            <div class="flex-1">
+              <p class="font-medium text-gray-800">実績一覧</p>
+              <p class="text-xs text-gray-500">獲得した実績</p>
+            </div>
+            <span class="text-gray-400">›</span>
+          </button>
         </div>
 
         <!-- Support Section -->
         <div class="py-3">
           <h4 class="text-xs text-gray-400 uppercase tracking-wide mb-2">サポート</h4>
-          <MenuItem 
-            icon="❓" 
-            label="使い方ガイド" 
+          <button 
+            class="w-full flex items-center gap-3 py-3 px-2 hover:bg-gray-50 rounded-lg transition-colors text-left"
             @click="showGuide = true"
-          />
-          <MenuItem 
-            icon="�" 
-            label="ヘルプを書いてみよう" 
-            description="アプリの使い方を共有"
+          >
+            <span class="text-xl">❓</span>
+            <div class="flex-1">
+              <p class="font-medium text-gray-800">使い方ガイド</p>
+            </div>
+            <span class="text-gray-400">›</span>
+          </button>
+          <button 
+            class="w-full flex items-center gap-3 py-3 px-2 hover:bg-gray-50 rounded-lg transition-colors text-left"
             @click="showHelpEditor = true"
-          />
-          <MenuItem 
-            icon="�📝" 
-            label="フィードバック" 
+          >
+            <span class="text-xl">📚</span>
+            <div class="flex-1">
+              <p class="font-medium text-gray-800">ヘルプを書いてみよう</p>
+              <p class="text-xs text-gray-500">アプリの使い方を共有</p>
+            </div>
+            <span class="text-gray-400">›</span>
+          </button>
+          <button 
+            class="w-full flex items-center gap-3 py-3 px-2 hover:bg-gray-50 rounded-lg transition-colors text-left"
             @click="openFeedback"
-          />
-          <MenuItem 
-            icon="ℹ️" 
-            label="アプリについて" 
-            :description="`Version ${appVersion}`"
+          >
+            <span class="text-xl">📝</span>
+            <div class="flex-1">
+              <p class="font-medium text-gray-800">フィードバック</p>
+            </div>
+            <span class="text-gray-400">›</span>
+          </button>
+          <button 
+            class="w-full flex items-center gap-3 py-3 px-2 hover:bg-gray-50 rounded-lg transition-colors text-left"
             @click="showAbout = true"
-          />
+          >
+            <span class="text-xl">ℹ️</span>
+            <div class="flex-1">
+              <p class="font-medium text-gray-800">アプリについて</p>
+              <p class="text-xs text-gray-500">Version {{ appVersion }}</p>
+            </div>
+            <span class="text-gray-400">›</span>
+          </button>
+        </div>
+
+        <!-- Game Info Section (Admin only) -->
+        <div v-if="userStore.isAdmin" class="py-3">
+          <h4 class="text-xs text-gray-400 uppercase tracking-wide mb-2">ゲーム仕様・進行度</h4>
+          <button 
+            class="w-full flex items-center gap-3 py-3 px-2 hover:bg-gray-50 rounded-lg transition-colors text-left"
+            @click="showGameSpec = true"
+          >
+            <span class="text-xl">⚔️</span>
+            <div class="flex-1">
+              <p class="font-medium text-gray-800">バトルシステム</p>
+              <p class="text-xs text-gray-500">オートバトルの仕様</p>
+            </div>
+            <span class="text-gray-400">›</span>
+          </button>
+          <button 
+            class="w-full flex items-center gap-3 py-3 px-2 hover:bg-gray-50 rounded-lg transition-colors text-left"
+            @click="showEvolutionSpec = true"
+          >
+            <span class="text-xl">🥚</span>
+            <div class="flex-1">
+              <p class="font-medium text-gray-800">進化システム</p>
+              <p class="text-xs text-gray-500">ペット育成の仕様</p>
+            </div>
+            <span class="text-gray-400">›</span>
+          </button>
+          <button 
+            class="w-full flex items-center gap-3 py-3 px-2 hover:bg-gray-50 rounded-lg transition-colors text-left"
+            @click="showDevProgress = true"
+          >
+            <span class="text-xl">📈</span>
+            <div class="flex-1">
+              <p class="font-medium text-gray-800">開発進捗</p>
+              <p class="text-xs text-gray-500">実装状況の確認</p>
+            </div>
+            <span class="text-gray-400">›</span>
+          </button>
         </div>
 
         <!-- Admin Section -->
         <div v-if="userStore.isAdmin" class="py-3">
           <h4 class="text-xs text-gray-400 uppercase tracking-wide mb-2">管理者</h4>
-          <MenuItem 
-            icon="🔧" 
-            label="管理者メニュー" 
-            description="承認・設定管理"
+          <button 
+            class="w-full flex items-center gap-3 py-3 px-2 hover:bg-gray-50 rounded-lg transition-colors text-left"
             @click="emit('admin')"
-          />
+          >
+            <span class="text-xl">🔧</span>
+            <div class="flex-1">
+              <p class="font-medium text-gray-800">管理者メニュー</p>
+              <p class="text-xs text-gray-500">承認・設定管理</p>
+            </div>
+            <span class="text-gray-400">›</span>
+          </button>
         </div>
       </div>
     </GlassPanel>
@@ -274,6 +362,104 @@
         </div>
       </div>
     </Modal>
+
+    <!-- Game Spec Modal -->
+    <Modal v-if="showGameSpec" @close="showGameSpec = false">
+      <div class="p-6">
+        <h3 class="text-xl font-bold mb-4">⚔️ バトルシステム仕様</h3>
+        <div class="space-y-4 text-sm text-gray-600">
+          <div class="bg-red-50 rounded-xl p-4">
+            <h4 class="font-bold text-red-700 mb-2">オートバトル</h4>
+            <ul class="list-disc list-inside space-y-1">
+              <li>勉強時間に応じてダメージが蓄積</li>
+              <li>1分 = 10ダメージ（基本値）</li>
+              <li>モンスターHP: 100〜1000</li>
+              <li>討伐でゴールド獲得</li>
+            </ul>
+          </div>
+          <div class="bg-yellow-50 rounded-xl p-4">
+            <h4 class="font-bold text-yellow-700 mb-2">報酬システム</h4>
+            <ul class="list-disc list-inside space-y-1">
+              <li>討伐報酬: 10〜100 Gold</li>
+              <li>レアドロップ: 確率5%</li>
+              <li>ボーナス: 連続討伐で1.5倍</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </Modal>
+
+    <!-- Evolution Spec Modal -->
+    <Modal v-if="showEvolutionSpec" @close="showEvolutionSpec = false">
+      <div class="p-6">
+        <h3 class="text-xl font-bold mb-4">🥚 進化システム仕様</h3>
+        <div class="space-y-4 text-sm text-gray-600">
+          <div class="bg-green-50 rounded-xl p-4">
+            <h4 class="font-bold text-green-700 mb-2">進化段階</h4>
+            <ul class="list-disc list-inside space-y-1">
+              <li>🥚 タマゴ → 100ポイント</li>
+              <li>🐣 ベビー → 300ポイント</li>
+              <li>🐥 ヒヨコ → 600ポイント</li>
+              <li>🐤 成長期 → 1000ポイント</li>
+              <li>🐔 成体 → MAX</li>
+            </ul>
+          </div>
+          <div class="bg-blue-50 rounded-xl p-4">
+            <h4 class="font-bold text-blue-700 mb-2">ポイント獲得</h4>
+            <ul class="list-disc list-inside space-y-1">
+              <li>勉強1分 = 1ポイント</li>
+              <li>目標達成 = +50ポイント</li>
+              <li>連続勉強ボーナス = 1.2倍</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </Modal>
+
+    <!-- Dev Progress Modal -->
+    <Modal v-if="showDevProgress" @close="showDevProgress = false">
+      <div class="p-6">
+        <h3 class="text-xl font-bold mb-4">📈 開発進捗</h3>
+        <div class="space-y-3">
+          <div class="flex items-center gap-3">
+            <span class="text-green-500">✅</span>
+            <span class="text-sm">基礎UI (4タブ構成)</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-green-500">✅</span>
+            <span class="text-sm">勉強タイマー</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-green-500">✅</span>
+            <span class="text-sm">承認ワークフロー</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-green-500">✅</span>
+            <span class="text-sm">オートバトル</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-green-500">✅</span>
+            <span class="text-sm">進化ゲーム</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-green-500">✅</span>
+            <span class="text-sm">ショップ・ガチャ</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-green-500">✅</span>
+            <span class="text-sm">通知システム</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-yellow-500">🔄</span>
+            <span class="text-sm">テーマ切り替え（実装中）</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-gray-400">⬜</span>
+            <span class="text-sm text-gray-400">オフライン対応</span>
+          </div>
+        </div>
+      </div>
+    </Modal>
   </div>
 </template>
 
@@ -296,6 +482,9 @@ const showAchievements = ref(false)
 const showStudyStats = ref(false)
 const showThemeModal = ref(false)
 const showHelpEditor = ref(false)
+const showGameSpec = ref(false)
+const showEvolutionSpec = ref(false)
+const showDevProgress = ref(false)
 const achievements = ref([])
 const currentTheme = ref(localStorage.getItem('sg_theme') || 'default')
 const helpText = ref('')
@@ -375,7 +564,6 @@ const selectTheme = (themeId) => {
   localStorage.setItem('sg_theme', themeId)
   toastStore.success(`テーマを「${currentThemeName.value}」に変更しました`)
   showThemeModal.value = false
-  // TODO: 実際のテーマ変更処理を実装
 }
 
 const submitHelp = async () => {
@@ -384,14 +572,9 @@ const submitHelp = async () => {
     return
   }
   
-  try {
-    // ヘルプを送信（APIがあれば）
-    toastStore.success('ヘルプを送信しました！ありがとう！ 🎉')
-    helpText.value = ''
-    showHelpEditor.value = false
-  } catch (e) {
-    toastStore.error('送信に失敗しました')
-  }
+  toastStore.success('ヘルプを送信しました！ありがとう！ 🎉')
+  helpText.value = ''
+  showHelpEditor.value = false
 }
 
 // Fetch achievements on mount
@@ -408,34 +591,4 @@ onMounted(async () => {
     }
   }
 })
-</script>
-
-<script>
-// MenuItem Component (inline)
-import { defineComponent } from 'vue'
-
-const MenuItem = defineComponent({
-  props: {
-    icon: String,
-    label: String,
-    description: String
-  },
-  template: `
-    <button 
-      class="w-full flex items-center gap-3 py-3 px-2 hover:bg-gray-50 rounded-lg transition-colors text-left"
-      @click="$emit('click')"
-    >
-      <span class="text-xl">{{ icon }}</span>
-      <div class="flex-1">
-        <p class="font-medium text-gray-800">{{ label }}</p>
-        <p v-if="description" class="text-xs text-gray-500">{{ description }}</p>
-      </div>
-      <span class="text-gray-400">›</span>
-    </button>
-  `
-})
-
-export default {
-  components: { MenuItem }
-}
 </script>

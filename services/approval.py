@@ -13,13 +13,18 @@ class ApprovalService:
         """全ての承認待ち項目をフラットなリストで取得"""
         results = []
 
-        # ユーザー名解決用のマッピング作成
-        users = EconomyService.get_all_users()
-        user_map = {str(u.get("user_id")): u.get("display_name") for u in users}
+        try:
+            # ユーザー名解決用のマッピング作成
+            users = EconomyService.get_all_users()
+            user_map = {str(u.get("user_id")): u.get("display_name") for u in users}
+        except Exception as e:
+            print(f"[ApprovalService] Error getting users: {e}")
+            user_map = {}
 
         # 1. 勉強記録
-        studies = GSheetService.get_pending_studies()
-        for s in studies:
+        try:
+            studies = GSheetService.get_pending_studies()
+            for s in studies:
             # s keys: row_index, user_id, user_name, date, start_time, end_time, subject, comment
             uid = str(s.get("user_id", ""))
             saved_name = s.get("user_name") or s.get("display_name")
@@ -52,78 +57,89 @@ class ApprovalService:
                 "minutes": minutes,
             }
             results.append({"type": "study", "data": data})
+        except Exception as e:
+            print(f"[ApprovalService] Error getting studies: {e}")
 
         # 2. ジョブ完了報告
-        jobs = JobService.get_pending_reviews()
-        for j in jobs:
-            worker_id = str(j.get("worker_id", ""))
-            worker_name = user_map.get(worker_id, worker_id)
+        try:
+            jobs = JobService.get_pending_reviews()
+            for j in jobs:
+                worker_id = str(j.get("worker_id", ""))
+                worker_name = user_map.get(worker_id, worker_id)
 
-            data = {
-                "job_id": j.get("job_id"),
-                "user_id": worker_id,
-                "worker_id": worker_id,
-                "user_name": worker_name,
-                "worker_name": worker_name,
-                "title": j.get("title", "お手伝い"),
-                "description": j.get("description", ""),
-                "reward": j.get("reward", 0),
-                "comment": j.get("comment", ""),
-                "created_at": j.get("created_at", ""),
-                "finished_at": j.get("finished_at", ""),
-            }
-            results.append({"type": "job", "data": data})
+                data = {
+                    "job_id": j.get("job_id"),
+                    "user_id": worker_id,
+                    "worker_id": worker_id,
+                    "user_name": worker_name,
+                    "worker_name": worker_name,
+                    "title": j.get("title", "お手伝い"),
+                    "description": j.get("description", ""),
+                    "reward": j.get("reward", 0),
+                    "comment": j.get("comment", ""),
+                    "created_at": j.get("created_at", ""),
+                    "finished_at": j.get("finished_at", ""),
+                }
+                results.append({"type": "job", "data": data})
+        except Exception as e:
+            print(f"[ApprovalService] Error getting jobs: {e}")
 
         # 3. ショップ購入リクエスト
-        shops = ShopService.get_pending_requests()
-        # アイテム名取得用
-        shop_items = ShopService.get_items()
+        try:
+            shops = ShopService.get_pending_requests()
+            # アイテム名取得用
+            shop_items = ShopService.get_items()
 
-        for s in shops:
-            uid = str(s.get("user_id", ""))
-            saved_name = s.get("user_name") or s.get("display_name")
-            uname = saved_name if saved_name else user_map.get(uid, uid)
+            for s in shops:
+                uid = str(s.get("user_id", ""))
+                saved_name = s.get("user_name") or s.get("display_name")
+                uname = saved_name if saved_name else user_map.get(uid, uid)
 
-            time_val = s.get("time") or s.get("timestamp") or s.get("created_at") or ""
-            item_key = s.get("item_key", "")
-            item_name = (
-                shop_items.get(item_key, {}).get("name", item_key)
-                if shop_items
-                else item_key
-            )
+                time_val = s.get("time") or s.get("timestamp") or s.get("created_at") or ""
+                item_key = s.get("item_key", "")
+                item_name = (
+                    shop_items.get(item_key, {}).get("name", item_key)
+                    if shop_items
+                    else item_key
+                )
 
-            # request_id を取得（req_id や id もフォールバックとして使用）
-            req_id = s.get("request_id") or s.get("req_id") or s.get("id") or ""
-            if not req_id:
-                # ログを出さずにスキップ（古いデータは無視）
-                continue
+                # request_id を取得（req_id や id もフォールバックとして使用）
+                req_id = s.get("request_id") or s.get("req_id") or s.get("id") or ""
+                if not req_id:
+                    # ログを出さずにスキップ（古いデータは無視）
+                    continue
 
-            data = {
-                "request_id": req_id,
-                "user_id": uid,
-                "user_name": uname,
-                "item_key": item_key,
-                "item_name": item_name,
-                "cost": s.get("cost", 0),
-                "created_at": time_val,
-            }
-            results.append({"type": "shop", "data": data})
+                data = {
+                    "request_id": req_id,
+                    "user_id": uid,
+                    "user_name": uname,
+                    "item_key": item_key,
+                    "item_name": item_name,
+                    "cost": s.get("cost", 0),
+                    "created_at": time_val,
+                }
+                results.append({"type": "shop", "data": data})
+        except Exception as e:
+            print(f"[ApprovalService] Error getting shops: {e}")
 
         # 4. ミッション完了報告
-        missions = MissionService.get_pending_reviews()
-        for m in missions:
-            uid = str(m.get("user_id", ""))
-            uname = user_map.get(uid, uid)
+        try:
+            missions = MissionService.get_pending_reviews()
+            for m in missions:
+                uid = str(m.get("user_id", ""))
+                uname = user_map.get(uid, uid)
 
-            data = {
-                "mission_id": m.get("mission_id"),
-                "user_id": uid,
-                "user_name": uname,
-                "title": m.get("title", "ミッション"),
-                "description": m.get("description", ""),
-                "reward": m.get("reward", 0),
-                "created_at": m.get("created_at", ""),
-            }
-            results.append({"type": "mission", "data": data})
+                data = {
+                    "mission_id": m.get("mission_id"),
+                    "user_id": uid,
+                    "user_name": uname,
+                    "title": m.get("title", "ミッション"),
+                    "description": m.get("description", ""),
+                    "reward": m.get("reward", 0),
+                    "created_at": m.get("created_at", ""),
+                }
+                results.append({"type": "mission", "data": data})
+        except Exception as e:
+            print(f"[ApprovalService] Error getting missions: {e}")
 
         return results
