@@ -48,7 +48,7 @@ export const useUserStore = defineStore('user', () => {
       console.error(e)
       // Keep default guest state on error - actual data from spreadsheet will be used
       user.value = {
-        name: 'ゲスト',
+        name: '勇者ヒロ',
         level: 1,
         exp: 0,
         next_exp: 100,

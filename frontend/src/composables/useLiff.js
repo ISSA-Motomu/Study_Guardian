@@ -52,6 +52,21 @@ export function useLiff() {
       const profile = await liff.getProfile()
       const userId = profile.userId
 
+      // Send profile to server to update avatar_url
+      try {
+        await fetch('/api/user/update_profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: userId,
+            display_name: profile.displayName,
+            avatar_url: profile.pictureUrl || ''
+          })
+        })
+      } catch (profileErr) {
+        console.warn('Profile update failed:', profileErr)
+      }
+
       userStore.setUserId(userId)
 
       updateProgress(85, 'ユーザーデータ取得中...')

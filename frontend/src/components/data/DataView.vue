@@ -57,28 +57,32 @@
           </button>
         </div>
 
-        <!-- Weekly Bar Chart -->
+        <!-- Weekly Stacked Bar Chart by Subject -->
         <div class="h-48 flex items-end gap-2 pt-6">
           <div
             v-for="(item, idx) in currentWeekData"
             :key="idx"
             class="flex-1 flex flex-col items-center min-w-0"
           >
-            <!-- Bar -->
-            <div class="w-full relative">
+            <!-- Stacked Bar -->
+            <div class="w-full relative flex flex-col-reverse">
               <div 
-                class="w-full rounded-t-lg transition-all duration-500 ease-out"
-                :class="getBarGradient(item.minutes)"
-                :style="{ height: getBarHeight(item.minutes) + 'px', minHeight: item.minutes > 0 ? '8px' : '4px' }"
+                v-for="(seg, sidx) in item.segments"
+                :key="sidx"
+                class="w-full first:rounded-t-lg transition-all duration-500"
+                :style="{ 
+                  height: getWeeklyStackedHeight(seg.minutes, item.total) + 'px',
+                  backgroundColor: seg.color,
+                  minHeight: seg.minutes > 0 ? '4px' : '0'
+                }"
+              />
+              <!-- Minutes label on top -->
+              <span 
+                v-if="item.total > 0"
+                class="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-bold text-indigo-600 whitespace-nowrap"
               >
-                <!-- Minutes label on top -->
-                <span 
-                  v-if="item.minutes > 0"
-                  class="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-bold text-indigo-600 whitespace-nowrap"
-                >
-                  {{ item.minutes }}分
-                </span>
-              </div>
+                {{ item.total }}分
+              </span>
             </div>
             <!-- Day Label -->
             <p 
@@ -87,6 +91,21 @@
             >
               {{ item.day }}
             </p>
+          </div>
+        </div>
+
+        <!-- Weekly Legend -->
+        <div class="mt-3 flex flex-wrap gap-2 justify-center">
+          <div 
+            v-for="(sub, idx) in subjectLegend"
+            :key="idx"
+            class="flex items-center gap-1"
+          >
+            <div 
+              class="w-2.5 h-2.5 rounded-full"
+              :style="{ backgroundColor: sub.color }"
+            />
+            <span class="text-[10px] text-gray-600">{{ sub.name }}</span>
           </div>
         </div>
 
@@ -562,17 +581,29 @@ const currentWeekData = computed(() => {
     date.setDate(targetMonday.getDate() + i)
     const dateStr = date.toISOString().split('T')[0]
     
-    // Find matching data - sum all entries for same date
-    const dayMinutes = allData.value
+    // Group by subject for this day
+    const subjectTotals = {}
+    allData.value
       .filter(d => d.date === dateStr)
-      .reduce((sum, d) => sum + (d.minutes || 0), 0)
+      .forEach(d => {
+        const subj = d.subject || 'その他'
+        subjectTotals[subj] = (subjectTotals[subj] || 0) + (d.minutes || 0)
+      })
     
+    const segments = Object.entries(subjectTotals).map(([subject, minutes]) => ({
+      subject,
+      minutes,
+      color: getSubjectColor(subject)
+    }))
+    
+    const total = segments.reduce((sum, s) => sum + s.minutes, 0)
     const isToday = date.toDateString() === today.toDateString()
     
     result.push({
       day: days[i],
       date: dateStr,
-      minutes: dayMinutes,
+      segments: segments.length > 0 ? segments : [{ subject: 'なし', minutes: 0, color: '#E5E7EB' }],
+      total,
       isToday
     })
   }
@@ -581,7 +612,7 @@ const currentWeekData = computed(() => {
 })
 
 const weeklyTotal = computed(() => {
-  return currentWeekData.value.reduce((sum, d) => sum + d.minutes, 0)
+  return currentWeekData.value.reduce((sum, d) => sum + d.total, 0)
 })
 
 const weeklyAverage = computed(() => {
@@ -668,19 +699,14 @@ const monthlyTotal = computed(() => {
 
 // Chart helpers
 const maxWeeklyMinutes = computed(() => {
-  return Math.max(...currentWeekData.value.map(d => d.minutes), 60)
+  return Math.max(...currentWeekData.value.map(d => d.total), 60)
 })
 
-const getBarHeight = (minutes) => {
+const getWeeklyStackedHeight = (minutes, total) => {
   const maxHeight = 120
-  return Math.max(4, (minutes / maxWeeklyMinutes.value) * maxHeight)
-}
-
-const getBarGradient = (minutes) => {
-  if (minutes === 0) return 'bg-gray-200'
-  if (minutes >= 60) return 'bg-gradient-to-t from-indigo-600 to-purple-500'
-  if (minutes >= 30) return 'bg-gradient-to-t from-indigo-500 to-indigo-400'
-  return 'bg-gradient-to-t from-indigo-400 to-indigo-300'
+  if (total === 0) return 4
+  const totalHeight = (total / maxWeeklyMinutes.value) * maxHeight
+  return Math.max(0, (minutes / total) * totalHeight)
 }
 
 const maxMonthlyTotal = computed(() => {
