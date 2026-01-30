@@ -240,11 +240,17 @@
 
     <!-- Global Activity Board -->
     <GlassPanel>
-      <h3 class="font-bold text-gray-700 mb-4">🌍 みんなの活動</h3>
-      <div v-if="globalActivity.length === 0" class="text-center text-gray-500 py-4">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-gray-700">🌍 みんなの活動</h3>
+        <button @click="fetchGlobalActivity" class="text-xs text-blue-500 hover:text-blue-700">🔄 更新</button>
+      </div>
+      <div v-if="loadingActivity" class="text-center py-4">
+        <span class="text-gray-400 animate-pulse">読み込み中...</span>
+      </div>
+      <div v-else-if="globalActivity.length === 0" class="text-center text-gray-500 py-4">
         活動履歴がありません
       </div>
-      <div class="space-y-2 max-h-72 overflow-y-auto">
+      <div v-else class="space-y-2 max-h-72 overflow-y-auto">
         <div 
           v-for="(item, idx) in globalActivity" 
           :key="idx"
@@ -274,11 +280,17 @@
 
     <!-- Weekly Ranking -->
     <GlassPanel>
-      <h3 class="font-bold text-gray-700 mb-4">🏆 週間XPランキング</h3>
-      <div v-if="weeklyRanking.length === 0" class="text-center text-gray-500 py-4">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-gray-700">🏆 週間XPランキング</h3>
+        <button @click="fetchWeeklyRanking" class="text-xs text-blue-500 hover:text-blue-700">🔄 更新</button>
+      </div>
+      <div v-if="loadingRanking" class="text-center py-4">
+        <span class="text-gray-400 animate-pulse">読み込み中...</span>
+      </div>
+      <div v-else-if="weeklyRanking.length === 0" class="text-center text-gray-500 py-4">
         ランキングデータがありません
       </div>
-      <div class="space-y-2">
+      <div v-else class="space-y-2">
         <div 
           v-for="(user, idx) in weeklyRanking" 
           :key="idx"
@@ -323,8 +335,14 @@
 
     <!-- Everyone's Goals (Horizontal Scroll) -->
     <GlassPanel>
-      <h3 class="font-bold text-gray-700 mb-4">🎯 みんなの目標</h3>
-      <div v-if="allGoals.length === 0" class="text-center text-gray-500 py-4">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-gray-700">🎯 みんなの目標</h3>
+        <button @click="fetchAllGoals" class="text-xs text-blue-500 hover:text-blue-700">🔄 更新</button>
+      </div>
+      <div v-if="loadingGoals" class="text-center py-4">
+        <span class="text-gray-400 animate-pulse">読み込み中...</span>
+      </div>
+      <div v-else-if="allGoals.length === 0" class="text-center text-gray-500 py-4">
         目標がまだありません
       </div>
       <div v-else class="overflow-x-auto pb-2 -mx-4 px-4">
@@ -404,6 +422,12 @@ const globalActivity = ref([])
 const studyRecords = ref([]) // 全勉強ログ（日付・科目付き）
 const weeklyRanking = ref([]) // 週間ランキング
 const allGoals = ref([]) // みんなの目標
+
+// Loading states
+const loadingStats = ref(true)
+const loadingActivity = ref(true)
+const loadingRanking = ref(true)
+const loadingGoals = ref(true)
 
 // Navigation offsets
 const weekOffset = ref(0)
@@ -709,11 +733,14 @@ const fetchData = async () => {
     
   } catch (e) {
     console.error('Failed to fetch stats:', e)
+  } finally {
+    loadingStats.value = false
   }
 }
 
 // Fetch global activity
 const fetchGlobalActivity = async () => {
+  loadingActivity.value = true
   try {
     const res = await fetch('/api/activity/recent')
     const data = await res.json()
@@ -722,11 +749,14 @@ const fetchGlobalActivity = async () => {
     }
   } catch (e) {
     console.error('Failed to fetch global activity:', e)
+  } finally {
+    loadingActivity.value = false
   }
 }
 
 // Fetch weekly ranking
 const fetchWeeklyRanking = async () => {
+  loadingRanking.value = true
   try {
     const res = await fetch('/api/ranking/weekly')
     const data = await res.json()
@@ -735,11 +765,14 @@ const fetchWeeklyRanking = async () => {
     }
   } catch (e) {
     console.error('Failed to fetch weekly ranking:', e)
+  } finally {
+    loadingRanking.value = false
   }
 }
 
 // Fetch all goals
 const fetchAllGoals = async () => {
+  loadingGoals.value = true
   try {
     const res = await fetch('/api/goals')
     const data = await res.json()
@@ -748,6 +781,8 @@ const fetchAllGoals = async () => {
     }
   } catch (e) {
     console.error('Failed to fetch goals:', e)
+  } finally {
+    loadingGoals.value = false
   }
 }
 

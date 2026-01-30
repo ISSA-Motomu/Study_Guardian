@@ -3,19 +3,33 @@
     <!-- Header Background -->
     <div class="absolute top-0 left-0 w-full h-48 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-b-[40px] z-0" />
 
+    <!-- 他ユーザー視点表示中のバナー -->
+    <div 
+      v-if="userStore.isViewingAsOther"
+      class="fixed top-0 left-0 right-0 bg-orange-500 text-white py-2 px-4 z-50 flex items-center justify-between shadow-lg"
+    >
+      <span class="text-sm font-bold">👁️ {{ userStore.user.name }} の視点で表示中</span>
+      <button 
+        @click="exitViewMode"
+        class="bg-white text-orange-500 px-3 py-1 rounded-full text-xs font-bold hover:bg-orange-100"
+      >
+        ✕ 戻る
+      </button>
+    </div>
+
     <!-- Notification Bell (Top Right) -->
-    <div class="absolute top-4 right-4 z-30">
+    <div class="absolute top-4 right-4 z-30" :class="{ 'mt-10': userStore.isViewingAsOther }">
       <NotificationBell @navigate="handleNotificationNavigate" />
     </div>
 
     <!-- Main Content -->
-    <div class="relative z-10 px-6 pt-8">
+    <div class="relative z-10 px-6 pt-8" :class="{ 'mt-10': userStore.isViewingAsOther }">
       <LoadingSpinner v-if="userStore.loading" />
       
       <template v-else>
         <TimerView v-if="view === 'timer'" @back="view = 'study'" />
         <GameView v-else-if="view === 'game'" />
-        <AdminView v-else-if="view === 'admin'" @exit="view = 'study'" />
+        <AdminView v-else-if="view === 'admin'" @exit="view = 'study'" @viewAsUser="handleViewAsUser" />
         <DataView v-else-if="view === 'data'" @admin="view = 'admin'" />
         <StudyView 
           v-else 
@@ -156,6 +170,17 @@ const handleNotificationNavigate = (target) => {
   if (target === 'admin') {
     view.value = 'admin'
   }
+}
+
+// 他ユーザー視点で見る
+const handleViewAsUser = () => {
+  view.value = 'study'  // 勉強画面に移動
+}
+
+// 元の管理者に戻る
+const exitViewMode = async () => {
+  await userStore.exitViewAsUser()
+  view.value = 'study'
 }
 
 const onGoalCreated = () => {

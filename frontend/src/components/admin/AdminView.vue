@@ -10,6 +10,40 @@
       </button>
     </div>
 
+    <!-- ユーザー視点切り替え -->
+    <GlassPanel>
+      <h3 class="font-bold text-gray-700 mb-3">👁️ ユーザー視点で確認</h3>
+      <p class="text-xs text-gray-500 mb-3">他のユーザーの画面を一時的に確認できます</p>
+      
+      <div v-if="loadingUsers" class="text-center py-4">
+        <span class="text-gray-500">ユーザー読み込み中...</span>
+      </div>
+      
+      <div v-else class="space-y-2">
+        <select 
+          v-model="selectedUserId"
+          class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:outline-none"
+        >
+          <option value="">ユーザーを選択...</option>
+          <option 
+            v-for="u in allUsers" 
+            :key="u.user_id" 
+            :value="u.user_id"
+          >
+            {{ u.user_name }} {{ u.user_id === userStore.originalUserId ? '(あなた)' : '' }}
+          </option>
+        </select>
+        
+        <button
+          @click="viewAsSelectedUser"
+          :disabled="!selectedUserId || selectedUserId === userStore.currentUserId"
+          class="w-full py-2 rounded-xl font-bold text-white bg-indigo-500 hover:bg-indigo-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+        >
+          👁️ この視点で見る
+        </button>
+      </div>
+    </GlassPanel>
+
     <!-- ローディング表示 -->
     <div v-if="loading" class="text-center py-8">
       <div class="animate-spin text-4xl">⏳</div>
@@ -144,9 +178,11 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useUserStore } from '@/stores/user'
 import GlassPanel from '@/components/common/GlassPanel.vue'
 
-const emit = defineEmits(['exit'])
+const emit = defineEmits(['exit', 'viewAsUser'])
+const userStore = useUserStore()
 
 const loading = ref(true)
 const processing = ref(false)
@@ -156,6 +192,11 @@ const message = ref('')
 const messageType = ref('success')
 const showRejectConfirm = ref(false)
 const rejectTarget = ref(null)
+
+// ユーザー視点切り替え用
+const loadingUsers = ref(true)
+const allUsers = ref([])
+const selectedUserId = ref('')
 
 const tabs = [
   { key: 'all', label: 'すべて', icon: '📋' },
@@ -438,5 +479,34 @@ const reject = async (item) => {
 
 onMounted(() => {
   fetchPending()
+  fetchAllUsers()
 })
+
+// ユーザー一覧を取得
+const fetchAllUsers = async () => {
+  loadingUsers.value = true
+  try {
+    const res = await fetch('/api/admin/users')
+    const json = await res.json()
+    if (json.status === 'success' && json.users) {
+      allUsers.value = json.users
+    }
+  } catch (err) {
+    console.error('Fetch users error:', err)
+  } finally {
+    loadingUsers.value = false
+  }
+}
+
+// 選択したユーザー視点で見る
+const viewAsSelectedUser = async () => {
+  if (!selectedUserId.value) return
+  
+  const targetUser = allUsers.value.find(u => u.user_id === selectedUserId.value)
+  const success = await userStore.viewAsUser(selectedUserId.value, targetUser?.user_name || '')
+  
+  if (success) {
+    emit('viewAsUser')  // 親に通知して画面を切り替え
+  }
+}
 </script>

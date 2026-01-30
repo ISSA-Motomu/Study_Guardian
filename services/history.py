@@ -897,10 +897,14 @@ class HistoryService:
                         # ユーザー名を取得
                         try:
                             user_info = EconomyService.get_user_info(worker_id)
-                            name = user_info.get("display_name", "Unknown") if user_info else "Unknown"
+                            name = (
+                                user_info.get("display_name", "Unknown")
+                                if user_info
+                                else "Unknown"
+                            )
                         except:
                             name = "Unknown"
-                        
+
                         title = (
                             row[idx_title]
                             if idx_title and len(row) > idx_title

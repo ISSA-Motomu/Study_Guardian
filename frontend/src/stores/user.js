@@ -5,6 +5,8 @@ export const useUserStore = defineStore('user', () => {
   // State
   const loading = ref(true)
   const currentUserId = ref(null)
+  const originalUserId = ref(null) // 管理者の元のID（なりすまし時に保持）
+  const isViewingAsOther = ref(false) // 他ユーザーとして表示中
   const user = ref({
     name: 'Guest',
     level: 1,
@@ -28,6 +30,9 @@ export const useUserStore = defineStore('user', () => {
   // Actions
   const setUserId = (id) => {
     currentUserId.value = id
+    if (!originalUserId.value) {
+      originalUserId.value = id
+    }
   }
 
   const fetchUserData = async (userId) => {
@@ -60,10 +65,31 @@ export const useUserStore = defineStore('user', () => {
     loading.value = value
   }
 
+  // 他ユーザーとして表示（管理者専用）
+  const viewAsUser = async (targetUserId, targetUserName) => {
+    if (!isAdmin.value) return false
+    
+    isViewingAsOther.value = true
+    currentUserId.value = targetUserId
+    await fetchUserData(targetUserId)
+    return true
+  }
+
+  // 元の管理者に戻る
+  const exitViewAsUser = async () => {
+    if (!originalUserId.value) return
+    
+    isViewingAsOther.value = false
+    currentUserId.value = originalUserId.value
+    await fetchUserData(originalUserId.value)
+  }
+
   return {
     // State
     loading,
     currentUserId,
+    originalUserId,
+    isViewingAsOther,
     user,
     // Computed
     expPercentage,
@@ -71,6 +97,8 @@ export const useUserStore = defineStore('user', () => {
     // Actions
     setUserId,
     fetchUserData,
-    setLoading
+    setLoading,
+    viewAsUser,
+    exitViewAsUser
   }
 })
