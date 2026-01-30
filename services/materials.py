@@ -74,7 +74,7 @@ class MaterialsService:
         image_url: str = "",
     ) -> tuple:
         """教材を追加
-        
+
         Returns:
             (True, material_id) or (False, error_message)
         """
@@ -103,7 +103,7 @@ class MaterialsService:
     @classmethod
     def delete_material(cls, material_id: str, user_id: str) -> tuple:
         """教材を論理削除（is_activeをFALSEに）
-        
+
         Returns:
             (True, None) or (False, error_message)
         """

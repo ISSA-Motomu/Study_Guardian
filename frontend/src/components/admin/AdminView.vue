@@ -10,6 +10,96 @@
       </button>
     </div>
 
+    <!-- ローディング表示 -->
+    <div v-if="loading" class="text-center py-8">
+      <div class="animate-spin text-4xl">⏳</div>
+      <p class="text-white/70 mt-2">読み込み中...</p>
+    </div>
+
+    <!-- 承認待ち一覧（一番上に移動） -->
+    <GlassPanel v-else>
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-gray-700">📋 承認待ち一覧</h3>
+        <button
+          @click="fetchPending"
+          class="text-blue-500 text-sm hover:text-blue-700"
+        >
+          🔄 更新
+        </button>
+      </div>
+
+      <div v-if="pendingItems.length === 0" class="text-gray-500 text-center py-4">
+        承認待ちの項目はありません
+      </div>
+      
+      <!-- タブ切り替え -->
+      <div v-else>
+        <div class="flex gap-2 mb-4 overflow-x-auto pb-2">
+          <button
+            v-for="tab in tabs"
+            :key="tab.key"
+            @click="activeTab = tab.key"
+            :class="[
+              'px-3 py-1 rounded-full text-sm whitespace-nowrap transition-all',
+              activeTab === tab.key 
+                ? 'bg-blue-500 text-white' 
+                : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+            ]"
+          >
+            {{ tab.icon }} {{ tab.label }} ({{ countByType(tab.key) }})
+          </button>
+        </div>
+
+        <!-- フィルタされた一覧 -->
+        <div class="space-y-2 max-h-96 overflow-y-auto">
+          <div 
+            v-for="item in filteredItems" 
+            :key="item.id"
+            class="p-3 bg-gray-50 rounded-lg border border-gray-200"
+          >
+            <!-- ヘッダー -->
+            <div class="flex justify-between items-start mb-2">
+              <div class="flex items-center gap-2">
+                <span class="text-lg">{{ getTypeIcon(item.type) }}</span>
+                <span class="text-xs px-2 py-0.5 rounded-full" :class="getTypeBadgeClass(item.type)">
+                  {{ getTypeLabel(item.type) }}
+                </span>
+              </div>
+              <span class="text-xs text-gray-400">{{ formatDate(item.date) }}</span>
+            </div>
+            
+            <!-- コンテンツ -->
+            <div class="mb-3">
+              <p class="font-medium text-gray-800">{{ item.title }}</p>
+              <p class="text-sm text-gray-500">👤 {{ item.userName || item.userId }}</p>
+              <p v-if="item.detail" class="text-xs text-gray-400 mt-1">{{ item.detail }}</p>
+              <p v-if="item.reward" class="text-sm text-yellow-600 mt-1">
+                💰 報酬: {{ item.reward }} XP
+              </p>
+            </div>
+
+            <!-- アクションボタン -->
+            <div class="flex gap-2 justify-end">
+              <button
+                @click="approve(item)"
+                :disabled="processing"
+                class="bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white px-4 py-1.5 rounded text-sm font-medium transition-colors"
+              >
+                ✅ 承認
+              </button>
+              <button
+                @click="promptReject(item)"
+                :disabled="processing"
+                class="bg-red-500 hover:bg-red-600 disabled:bg-gray-300 text-white px-4 py-1.5 rounded text-sm font-medium transition-colors"
+              >
+                ❌ 却下
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </GlassPanel>
+
     <!-- 管理者アクション -->
     <GlassPanel>
       <h3 class="font-bold text-gray-700 mb-3">⚡ 管理者アクション</h3>
@@ -162,93 +252,26 @@
       </div>
     </GlassPanel>
 
-    <!-- ローディング表示 -->
-    <div v-if="loading" class="text-center py-8">
-      <div class="animate-spin text-4xl">⏳</div>
-      <p class="text-white/70 mt-2">読み込み中...</p>
-    </div>
-
-    <!-- 承認待ち一覧 -->
-    <GlassPanel v-else>
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="font-bold text-gray-700">📋 承認待ち一覧</h3>
-        <button
-          @click="fetchPending"
-          class="text-blue-500 text-sm hover:text-blue-700"
-        >
-          🔄 更新
-        </button>
-      </div>
-
-      <div v-if="pendingItems.length === 0" class="text-gray-500 text-center py-4">
-        承認待ちの項目はありません
-      </div>
+    <!-- お知らせ送信 -->
+    <GlassPanel>
+      <h3 class="font-bold text-gray-700 mb-3">📢 お知らせを送信</h3>
+      <p class="text-xs text-gray-500 mb-3">全ユーザーにLINE通知を送信します</p>
       
-      <!-- タブ切り替え -->
-      <div v-else>
-        <div class="flex gap-2 mb-4 overflow-x-auto pb-2">
-          <button
-            v-for="tab in tabs"
-            :key="tab.key"
-            @click="activeTab = tab.key"
-            :class="[
-              'px-3 py-1 rounded-full text-sm whitespace-nowrap transition-all',
-              activeTab === tab.key 
-                ? 'bg-blue-500 text-white' 
-                : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-            ]"
-          >
-            {{ tab.icon }} {{ tab.label }} ({{ countByType(tab.key) }})
-          </button>
-        </div>
-
-        <!-- フィルタされた一覧 -->
-        <div class="space-y-2 max-h-96 overflow-y-auto">
-          <div 
-            v-for="item in filteredItems" 
-            :key="item.id"
-            class="p-3 bg-gray-50 rounded-lg border border-gray-200"
-          >
-            <!-- ヘッダー -->
-            <div class="flex justify-between items-start mb-2">
-              <div class="flex items-center gap-2">
-                <span class="text-lg">{{ getTypeIcon(item.type) }}</span>
-                <span class="text-xs px-2 py-0.5 rounded-full" :class="getTypeBadgeClass(item.type)">
-                  {{ getTypeLabel(item.type) }}
-                </span>
-              </div>
-              <span class="text-xs text-gray-400">{{ formatDate(item.date) }}</span>
-            </div>
-            
-            <!-- コンテンツ -->
-            <div class="mb-3">
-              <p class="font-medium text-gray-800">{{ item.title }}</p>
-              <p class="text-sm text-gray-500">👤 {{ item.userName || item.userId }}</p>
-              <p v-if="item.detail" class="text-xs text-gray-400 mt-1">{{ item.detail }}</p>
-              <p v-if="item.reward" class="text-sm text-yellow-600 mt-1">
-                💰 報酬: {{ item.reward }} XP
-              </p>
-            </div>
-
-            <!-- アクションボタン -->
-            <div class="flex gap-2 justify-end">
-              <button
-                @click="approve(item)"
-                :disabled="processing"
-                class="bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white px-4 py-1.5 rounded text-sm font-medium transition-colors"
-              >
-                ✅ 承認
-              </button>
-              <button
-                @click="promptReject(item)"
-                :disabled="processing"
-                class="bg-red-500 hover:bg-red-600 disabled:bg-gray-300 text-white px-4 py-1.5 rounded text-sm font-medium transition-colors"
-              >
-                ❌ 却下
-              </button>
-            </div>
-          </div>
-        </div>
+      <div class="space-y-3">
+        <textarea
+          v-model="announcement.message"
+          rows="3"
+          placeholder="お知らせ内容を入力..."
+          class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-purple-400 focus:outline-none resize-none"
+        />
+        
+        <button
+          @click="sendAnnouncement"
+          :disabled="!announcement.message.trim() || processing"
+          class="w-full py-3 rounded-xl font-bold text-white bg-purple-500 hover:bg-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+        >
+          📢 全員に送信
+        </button>
       </div>
     </GlassPanel>
 
@@ -321,6 +344,7 @@ const activeAction = ref(null)
 const newJob = ref({ title: '', reward: 0 })
 const pointGrant = ref({ userId: '', amount: 0 })
 const manualStudy = ref({ userId: '', subject: '', minutes: 0, comment: '' })
+const announcement = ref({ message: '' })
 
 const tabs = [
   { key: 'all', label: 'すべて', icon: '📋' },
@@ -723,6 +747,38 @@ const addManualStudy = async () => {
   } catch (err) {
     console.error('Manual study error:', err)
     showMessage('勉強記録追加でエラーが発生しました', 'error')
+  } finally {
+    processing.value = false
+  }
+}
+
+// お知らせを全員に送信
+const sendAnnouncement = async () => {
+  if (processing.value || !announcement.value.message.trim()) return
+  
+  if (!confirm('全ユーザーにお知らせを送信しますか？')) return
+  
+  processing.value = true
+  
+  try {
+    const res = await fetch('/api/admin/broadcast', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: announcement.value.message.trim()
+      })
+    })
+    const json = await res.json()
+    
+    if (json.status === 'ok' || json.status === 'success') {
+      showMessage(`お知らせを${json.sent_count || ''}人に送信しました`, 'success')
+      announcement.value = { message: '' }
+    } else {
+      showMessage(json.message || 'お知らせ送信に失敗しました', 'error')
+    }
+  } catch (err) {
+    console.error('Broadcast error:', err)
+    showMessage('お知らせ送信でエラーが発生しました', 'error')
   } finally {
     processing.value = false
   }

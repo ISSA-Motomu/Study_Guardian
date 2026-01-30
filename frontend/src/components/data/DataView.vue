@@ -756,8 +756,20 @@ const fetchData = async () => {
     const res = await fetch(`/api/user/${userStore.currentUserId}/stats`)
     const data = await res.json()
     
-    // Store all data with dates for calculations
-    if (data.weekly) {
+    // Use all_records for weekly/monthly charts (has subject info)
+    if (data.all_records && data.all_records.length > 0) {
+      allData.value = data.all_records.map(r => ({
+        date: r.date,
+        minutes: r.minutes,
+        subject: r.subject || 'その他'
+      }))
+      studyRecords.value = data.all_records.map(r => ({
+        date: r.date,
+        subject: r.subject,
+        minutes: r.minutes
+      }))
+    } else if (data.weekly) {
+      // Fallback to weekly data if all_records not available
       allData.value = data.weekly.map(d => ({
         date: d.date,
         minutes: d.minutes,
@@ -768,22 +780,6 @@ const fetchData = async () => {
     
     subjectData.value = data.subject || []
     recentActivity.value = data.recent || []
-    
-    // Store all study records with date and subject for weekly/monthly calc
-    if (data.all_records && data.all_records.length > 0) {
-      studyRecords.value = data.all_records.map(r => ({
-        date: r.date,
-        subject: r.subject,
-        minutes: r.minutes
-      }))
-    } else if (data.recent) {
-      // Fallback to recent if all_records not available
-      studyRecords.value = data.recent.map(r => ({
-        date: r.date,
-        subject: r.subject,
-        minutes: r.minutes
-      }))
-    }
     
   } catch (e) {
     console.error('Failed to fetch stats:', e)

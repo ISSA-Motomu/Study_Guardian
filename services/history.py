@@ -852,7 +852,9 @@ class HistoryService:
                             row[idx_time] if idx_time and len(row) > idx_time else ""
                         )
                         comment = (
-                            row[idx_comment] if idx_comment and len(row) > idx_comment else ""
+                            row[idx_comment]
+                            if idx_comment and len(row) > idx_comment
+                            else ""
                         )
 
                         # タイムスタンプ用にdate + start_timeを結合

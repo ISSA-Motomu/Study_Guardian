@@ -1010,6 +1010,38 @@ def api_admin_manual_study():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+@web_bp.route("/api/admin/broadcast", methods=["POST"])
+def api_admin_broadcast():
+    """管理者から全ユーザーへのお知らせ送信"""
+    data = request.json
+    message_text = data.get("message", "").strip()
+
+    if not message_text:
+        return jsonify({"status": "error", "message": "Message is required"}), 400
+
+    try:
+        # 全USERを取得
+        all_users = EconomyService.get_all_users()
+        user_ids = [u["user_id"] for u in all_users if u.get("role", "").upper() == "USER"]
+
+        sent_count = 0
+        for user_id in user_ids:
+            try:
+                line_bot_api.push_message(
+                    user_id,
+                    TextSendMessage(text=f"📢 お知らせ\n\n{message_text}"),
+                )
+                sent_count += 1
+            except Exception as e:
+                print(f"Failed to send to {user_id}: {e}")
+
+        return jsonify({"status": "ok", "sent_count": sent_count})
+
+    except Exception as e:
+        print(f"Broadcast Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 @web_bp.route("/api/goals")
 def api_get_all_goals():
     """全ユーザーの目標を取得"""
