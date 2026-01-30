@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, send_from_directory
+from flask import Flask, render_template, send_from_directory, make_response
 from dotenv import load_dotenv
 
 from services.history import HistoryService
@@ -20,6 +20,17 @@ app = Flask(__name__, template_folder="templates/html")
 # Register Blueprints
 app.register_blueprint(bot_bp)
 app.register_blueprint(web_bp)
+
+
+# キャッシュ制御（全リクエストに適用）
+@app.after_request
+def add_cache_headers(response):
+    """静的ファイル以外はキャッシュを無効化"""
+    if 'text/html' in response.content_type:
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    return response
 
 
 @app.route("/favicon.ico")
