@@ -336,6 +336,31 @@ def api_user_stats(user_id):
         return jsonify({"weekly": [], "subject": [], "recent": [], "total": 0})
 
 
+@web_bp.route("/api/debug/study_log")
+def api_debug_study_log():
+    """デバッグ用：study_logの生データを確認"""
+    from services.gsheet import GSheetService
+
+    try:
+        sheet = GSheetService.get_worksheet("study_log")
+        if not sheet:
+            return jsonify({"error": "sheet not found"})
+
+        records = sheet.get_all_values()
+        headers = records[0] if records else []
+        sample_rows = records[1:6] if len(records) > 1 else []  # 最初の5行
+
+        return jsonify(
+            {
+                "headers": headers,
+                "sample_rows": sample_rows,
+                "total_rows": len(records) - 1,
+            }
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+
 @web_bp.route("/api/ranking/weekly")
 def api_weekly_ranking():
     """週間XPランキングを取得"""
