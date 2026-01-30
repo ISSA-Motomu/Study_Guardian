@@ -95,7 +95,9 @@ class ApprovalService:
                 saved_name = s.get("user_name") or s.get("display_name")
                 uname = saved_name if saved_name else user_map.get(uid, uid)
 
-                time_val = s.get("time") or s.get("timestamp") or s.get("created_at") or ""
+                time_val = (
+                    s.get("time") or s.get("timestamp") or s.get("created_at") or ""
+                )
                 item_key = s.get("item_key", "")
                 item_name = (
                     shop_items.get(item_key, {}).get("name", item_key)

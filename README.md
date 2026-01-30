@@ -125,6 +125,6 @@ python app.py
 
 ## 📝 License
 
-© 2025-2026 ISSA Family (画像配信等に使用)
+© 2025-2026 I (画像配信等に使用)
 
 
