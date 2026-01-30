@@ -138,21 +138,45 @@
                 </button>
               </div>
             </div>
-            <p class="text-xs text-gray-400 mb-2">または画像URLを入力：</p>
+            
+            <!-- 写真フォルダから選択 -->
+            <div class="mt-3">
+              <label class="block w-full">
+                <div class="flex items-center justify-center gap-2 py-3 bg-blue-50 border-2 border-blue-200 rounded-xl text-blue-600 font-medium cursor-pointer hover:bg-blue-100 transition-colors">
+                  <span>📷</span>
+                  <span>写真フォルダから選択</span>
+                </div>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  class="hidden"
+                  @change="handleFileSelect"
+                >
+              </label>
+              <p v-if="uploadingImage" class="text-xs text-blue-500 mt-1 text-center">画像を処理中...</p>
+            </div>
+            
+            <p class="text-xs text-gray-400 my-2 text-center">または画像URLを入力：</p>
             <input 
               v-model="newMaterial.image_url"
               type="url"
               placeholder="https://..."
               class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-green-400 focus:outline-none"
-              @input="selectedEmoji = ''"
+              @input="selectedEmoji = ''; selectedImagePreview = ''"
             >
           </div>
           
           <!-- Preview -->
           <div class="text-center">
-            <div class="w-16 h-20 mx-auto rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden border">
+            <div class="w-20 h-24 mx-auto rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden border-2 border-gray-200">
               <img 
-                v-if="newMaterial.image_url && !selectedEmoji"
+                v-if="selectedImagePreview"
+                :src="selectedImagePreview" 
+                alt="Preview"
+                class="w-full h-full object-cover"
+              >
+              <img 
+                v-else-if="newMaterial.image_url && !newMaterial.image_url.startsWith('emoji:') && !selectedEmoji"
                 :src="newMaterial.image_url" 
                 alt="Preview"
                 class="w-full h-full object-cover"
@@ -190,6 +214,8 @@ const activeTab = ref('list')
 const loading = ref(true)
 const submitting = ref(false)
 const materials = ref([])
+const uploadingImage = ref(false)
+const selectedImagePreview = ref('')
 
 const newMaterial = ref({
   name: '',
@@ -209,7 +235,71 @@ const emojiOptions = [
 
 const selectEmoji = (emoji) => {
   selectedEmoji.value = emoji
+  selectedImagePreview.value = ''
   newMaterial.value.image_url = `emoji:${emoji}`
+}
+
+// 画像ファイル選択処理
+const handleFileSelect = async (event) => {
+  const file = event.target.files?.[0]
+  if (!file) return
+  
+  // ファイルサイズチェック (5MB以下)
+  if (file.size > 5 * 1024 * 1024) {
+    alert('画像サイズは5MB以下にしてください')
+    return
+  }
+  
+  uploadingImage.value = true
+  selectedEmoji.value = ''
+  
+  try {
+    // 画像をリサイズしてBase64に変換
+    const resizedBase64 = await resizeImage(file, 200, 250)
+    selectedImagePreview.value = resizedBase64
+    newMaterial.value.image_url = resizedBase64
+  } catch (e) {
+    console.error('Image processing error:', e)
+    alert('画像の処理に失敗しました')
+  } finally {
+    uploadingImage.value = false
+    // inputをリセット（同じファイルを再選択できるように）
+    event.target.value = ''
+  }
+}
+
+// 画像リサイズ関数
+const resizeImage = (file, maxWidth, maxHeight) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let { width, height } = img
+        
+        // アスペクト比を維持してリサイズ
+        if (width > maxWidth || height > maxHeight) {
+          const ratio = Math.min(maxWidth / width, maxHeight / height)
+          width = Math.round(width * ratio)
+          height = Math.round(height * ratio)
+        }
+        
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, width, height)
+        
+        // JPEG形式で圧縮（品質0.7）
+        const base64 = canvas.toDataURL('image/jpeg', 0.7)
+        resolve(base64)
+      }
+      img.onerror = reject
+      img.src = e.target.result
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
 }
 
 const formatDate = (dateStr) => {
@@ -269,6 +359,7 @@ const addMaterial = async () => {
       alert('教材を登録しました！')
       newMaterial.value = { name: '', subject: '', description: '', image_url: '' }
       selectedEmoji.value = ''
+      selectedImagePreview.value = ''
       activeTab.value = 'list'
       // Clear cache and refetch
       clearCache(CACHE_KEYS.MATERIALS(userStore.currentUserId))
