@@ -23,15 +23,14 @@ web_bp = Blueprint("web", __name__)
 def handle_gspread_api_error(e):
     """Google Sheets API エラーをハンドリング"""
     if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-        return jsonify({
-            "status": "error",
-            "error_code": 429,
-            "message": "APIが限界やわ！ちょっと待ってな〜"
-        }), 429
-    return jsonify({
-        "status": "error", 
-        "message": str(e)
-    }), 500
+        return jsonify(
+            {
+                "status": "error",
+                "error_code": 429,
+                "message": "APIが限界やわ！ちょっと待ってな〜",
+            }
+        ), 429
+    return jsonify({"status": "error", "message": str(e)}), 500
 
 
 @web_bp.route("/api/admin/users")

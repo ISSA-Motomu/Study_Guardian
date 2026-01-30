@@ -7,6 +7,7 @@ export const useUserStore = defineStore('user', () => {
   const currentUserId = ref(null)
   const originalUserId = ref(null) // 管理者の元のID（なりすまし時に保持）
   const isViewingAsOther = ref(false) // 他ユーザーとして表示中
+  const isGuestMode = ref(false) // ゲストモード（ユーザー読み込み失敗時）
   const user = ref({
     name: 'Guest',
     level: 1,
@@ -43,6 +44,7 @@ export const useUserStore = defineStore('user', () => {
       const data = await response.json()
       if (data.status === 'ok') {
         user.value = data.data
+        isGuestMode.value = false
       }
     } catch (e) {
       console.error(e)
@@ -58,6 +60,7 @@ export const useUserStore = defineStore('user', () => {
         avatar_url: '',
         role: 'USER'
       }
+      isGuestMode.value = true
     }
   }
 
@@ -90,6 +93,7 @@ export const useUserStore = defineStore('user', () => {
     currentUserId,
     originalUserId,
     isViewingAsOther,
+    isGuestMode,
     user,
     // Computed
     expPercentage,

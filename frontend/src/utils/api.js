@@ -15,12 +15,12 @@ const RATE_LIMIT_COOLDOWN = 10000 // 10秒間は同じエラーを表示しな�
  */
 export async function apiCall(url, options = {}) {
   const response = await fetch(url, options)
-  
+
   if (response.status === 429) {
     handleRateLimitError()
     throw new Error('Rate limit exceeded')
   }
-  
+
   return response
 }
 
@@ -57,14 +57,14 @@ function handleRateLimitError() {
  */
 export function setupGlobalFetchInterceptor() {
   const originalFetch = window.fetch
-  
-  window.fetch = async function(...args) {
+
+  window.fetch = async function (...args) {
     const response = await originalFetch.apply(this, args)
-    
+
     if (response.status === 429) {
       handleRateLimitError()
     }
-    
+
     return response
   }
 }

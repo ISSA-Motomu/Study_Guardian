@@ -38,7 +38,8 @@ const { playSound } = useSound()
 const navItems = [
   { id: 'data', icon: '📊', label: 'データ' },
   { id: 'study', icon: '📖', label: '勉強' },
-  { id: 'game', icon: '⚔️', label: 'ゲーム' }
+  { id: 'game', icon: '⚔️', label: 'ゲーム' },
+  { id: 'other', icon: '⚙️', label: 'その他' }
 ]
 
 const handleNavClick = (id) => {

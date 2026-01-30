@@ -32,8 +32,9 @@
       <template v-else>
         <TimerView v-if="view === 'timer'" @back="view = 'study'" />
         <GameView v-else-if="view === 'game'" />
-        <AdminView v-else-if="view === 'admin'" @exit="view = 'study'" @viewAsUser="handleViewAsUser" />
-        <DataView v-else-if="view === 'data'" @admin="view = 'admin'" />
+        <AdminView v-else-if="view === 'admin'" @exit="view = 'other'" @viewAsUser="handleViewAsUser" />
+        <DataView v-else-if="view === 'data'" />
+        <OtherView v-else-if="view === 'other'" @admin="view = 'admin'" />
         <StudyView 
           v-else 
           ref="studyViewRef"
@@ -103,12 +104,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { useStudyStore } from '@/stores/study'
 import { useGameStore } from '@/stores/game'
 import { useShopStore } from '@/stores/shop'
 import { useEvolutionStore } from '@/stores/evolution'
+import { useToastStore } from '@/stores/toast'
 import { useLiff } from '@/composables/useLiff'
 import { useSound } from '@/composables/useSound'
 
@@ -130,6 +132,7 @@ import ShopListModal from '@/components/shop/ShopListModal.vue'
 import GoalModal from '@/components/study/GoalModal.vue'
 import MaterialsView from '@/components/materials/MaterialsView.vue'
 import BookshelfView from '@/components/study/BookshelfView.vue'
+import OtherView from '@/components/other/OtherView.vue'
 
 // Stores
 const userStore = useUserStore()
@@ -137,6 +140,7 @@ const studyStore = useStudyStore()
 const gameStore = useGameStore()
 const shopStore = useShopStore()
 const evolutionStore = useEvolutionStore()
+const toastStore = useToastStore()
 
 // Composables
 const { initLiff } = useLiff()
@@ -149,6 +153,13 @@ const showMaterialsModal = ref(false)
 const showBookshelfModal = ref(false)
 const studyViewRef = ref(null)
 const editingGoal = ref(null)
+
+// ゲストモード検知時に通知表示
+watch(() => userStore.isGuestMode, (isGuest) => {
+  if (isGuest) {
+    toastStore.warning('ユーザーの読み込みに失敗しました\nゲストモードで起動しています', 5000)
+  }
+})
 
 // Lifecycle
 onMounted(async () => {
