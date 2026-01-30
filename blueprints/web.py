@@ -1492,4 +1492,61 @@ def api_delete_book(book_id):
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+# ========== いいね・コメントAPI ==========
+
+@web_bp.route("/api/activity/like", methods=["POST"])
+def api_toggle_like():
+    """勉強記録にいいねをトグル"""
+    data = request.json
+    study_row_index = data.get("study_row_index")
+    user_id = data.get("user_id")
+    
+    if not study_row_index or not user_id:
+        return jsonify({"status": "error", "message": "Missing parameters"}), 400
+    
+    try:
+        result = HistoryService.toggle_like(int(study_row_index), user_id)
+        if result.get("success"):
+            return jsonify({"status": "ok", **result})
+        else:
+            return jsonify({"status": "error", "message": result.get("message")}), 500
+    except Exception as e:
+        print(f"Toggle Like Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@web_bp.route("/api/activity/<int:study_row_index>/comments")
+def api_get_comments(study_row_index):
+    """勉強記録のコメント一覧を取得"""
+    try:
+        comments = HistoryService.get_comments(study_row_index)
+        return jsonify({"status": "ok", "comments": comments})
+    except Exception as e:
+        print(f"Get Comments Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@web_bp.route("/api/activity/comment", methods=["POST"])
+def api_add_comment():
+    """勉強記録にコメントを追加"""
+    data = request.json
+    study_row_index = data.get("study_row_index")
+    user_id = data.get("user_id")
+    user_name = data.get("user_name", "")
+    comment = data.get("comment", "")
+    
+    if not study_row_index or not user_id or not comment:
+        return jsonify({"status": "error", "message": "Missing parameters"}), 400
+    
+    try:
+        result = HistoryService.add_comment(int(study_row_index), user_id, user_name, comment)
+        if result.get("success"):
+            return jsonify({"status": "ok", **result})
+        else:
+            return jsonify({"status": "error", "message": result.get("message")}), 500
+    except Exception as e:
+        print(f"Add Comment Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 # --- Static and Legacy ---

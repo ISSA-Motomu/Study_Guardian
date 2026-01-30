@@ -291,7 +291,7 @@
       <div v-else-if="globalActivity.length === 0" class="text-center text-gray-500 py-4">
         活動履歴がありません
       </div>
-      <div v-else class="space-y-2" :class="showAllActivity ? 'max-h-none' : 'max-h-72'" style="overflow-y: auto;">
+      <div v-else class="space-y-2" :class="showAllActivity ? 'max-h-none' : 'max-h-96'" style="overflow-y: auto;">
         <div 
           v-for="(item, idx) in displayedActivity" 
           :key="idx"
@@ -323,6 +323,28 @@
               💬 {{ item.comment }}
             </p>
           </div>
+          <!-- Like & Comment Actions (study only) -->
+          <div v-if="item.type === 'study'" class="mt-2 ml-10 flex items-center gap-4">
+            <button 
+              @click="toggleLike(item)"
+              :class="[
+                'flex items-center gap-1 text-sm transition-all',
+                item.liked_by?.includes(userStore.currentUserId) 
+                  ? 'text-pink-500' 
+                  : 'text-gray-400 hover:text-pink-400'
+              ]"
+            >
+              <span>{{ item.liked_by?.includes(userStore.currentUserId) ? '❤️' : '🤍' }}</span>
+              <span>{{ item.likes || 0 }}</span>
+            </button>
+            <button 
+              @click="openComments(item)"
+              class="flex items-center gap-1 text-sm text-gray-400 hover:text-blue-400 transition-all"
+            >
+              <span>💬</span>
+              <span>{{ item.comments_count || 0 }}</span>
+            </button>
+          </div>
         </div>
       </div>
       <!-- Show More / Less Button -->
@@ -335,6 +357,44 @@
         </button>
       </div>
     </GlassPanel>
+
+    <!-- Comment Modal -->
+    <div v-if="showCommentModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" @click.self="showCommentModal = false">
+      <div class="bg-white rounded-2xl w-full max-w-md max-h-[80vh] overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-500 to-indigo-600 p-4 flex justify-between items-center">
+          <h3 class="text-white font-bold">💬 コメント</h3>
+          <button @click="showCommentModal = false" class="text-white/80 hover:text-white">✕</button>
+        </div>
+        <div class="p-4 max-h-60 overflow-y-auto space-y-3">
+          <div v-if="loadingComments" class="text-center py-4 text-gray-400">読み込み中...</div>
+          <div v-else-if="currentComments.length === 0" class="text-center py-4 text-gray-400">
+            コメントはまだありません
+          </div>
+          <div v-else v-for="(c, i) in currentComments" :key="i" class="bg-gray-50 rounded-lg p-3">
+            <div class="flex justify-between items-center">
+              <span class="font-bold text-sm text-indigo-600">{{ c.user_name }}</span>
+              <span class="text-xs text-gray-400">{{ formatTimestamp(c.created_at) }}</span>
+            </div>
+            <p class="text-sm text-gray-700 mt-1">{{ c.comment }}</p>
+          </div>
+        </div>
+        <div class="border-t p-3 flex gap-2">
+          <input 
+            v-model="newComment"
+            placeholder="コメントを入力..."
+            class="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-400"
+            @keyup.enter="submitComment"
+          >
+          <button 
+            @click="submitComment"
+            :disabled="!newComment.trim() || submittingComment"
+            class="px-4 py-2 bg-blue-500 text-white rounded-lg disabled:bg-gray-300 font-medium"
+          >
+            送信
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- Weekly Ranking -->
     <GlassPanel>
@@ -464,7 +524,7 @@ import GlassPanel from '@/components/common/GlassPanel.vue'
 import SubjectChart from './SubjectChart.vue'
 
 const userStore = useUserStore()
-const { getCache, setCache } = useCache()
+const { getCache, setCache, clearCache } = useCache()
 const emit = defineEmits(['admin'])
 
 // Tabs
@@ -484,6 +544,14 @@ const weeklyRanking = ref([]) // 週間ランキング
 const allGoals = ref([]) // みんなの目標
 const showAllActivity = ref(false) // 「もっと見る」の展開状態
 const activeSessions = ref([]) // 勉強中のセッション
+
+// Comment modal
+const showCommentModal = ref(false)
+const currentActivityItem = ref(null)
+const currentComments = ref([])
+const newComment = ref('')
+const loadingComments = ref(false)
+const submittingComment = ref(false)
 
 // Loading states
 const loadingStats = ref(true)
@@ -784,7 +852,7 @@ const fetchData = async () => {
     console.log('[DEBUG] weekly data:', data.weekly)
     
     // Use all_records for weekly/monthly charts (has subject info)
-    if (data.all_records && data.all_records.length > 0) {
+    if (data.all_records && Array.isArray(data.all_records) && data.all_records.length > 0) {
       allData.value = data.all_records.map(r => ({
         date: r.date,
         minutes: r.minutes,
@@ -795,7 +863,7 @@ const fetchData = async () => {
         subject: r.subject,
         minutes: r.minutes
       }))
-    } else if (data.weekly) {
+    } else if (data.weekly && Array.isArray(data.weekly) && data.weekly.length > 0) {
       // Fallback to weekly data if all_records not available
       allData.value = data.weekly.map(d => ({
         date: d.date,
@@ -807,8 +875,8 @@ const fetchData = async () => {
     
     console.log('[DEBUG] allData after processing:', allData.value)
     
-    subjectData.value = data.subject || []
-    recentActivity.value = data.recent || []
+    subjectData.value = Array.isArray(data.subject) ? data.subject : []
+    recentActivity.value = Array.isArray(data.recent) ? data.recent : []
     
   } catch (e) {
     console.error('Failed to fetch stats:', e)
@@ -993,6 +1061,95 @@ const getElapsedTime = (startTime) => {
     return `${hours}時間${mins}分経過`
   } catch {
     return ''
+  }
+}
+
+// ========== いいね・コメント機能 ==========
+
+const toggleLike = async (item) => {
+  if (!item.row_index) return
+  
+  try {
+    const res = await fetch('/api/activity/like', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        study_row_index: item.row_index,
+        user_id: userStore.currentUserId
+      })
+    })
+    const data = await res.json()
+    if (data.status === 'ok') {
+      // ローカルで即座に更新
+      item.likes = data.likes
+      item.liked_by = data.liked_by
+      // キャッシュをクリア
+      clearCache(CACHE_KEYS.ACTIVITY)
+    }
+  } catch (e) {
+    console.error('Toggle like error:', e)
+  }
+}
+
+const openComments = async (item) => {
+  currentActivityItem.value = item
+  currentComments.value = []
+  newComment.value = ''
+  showCommentModal.value = true
+  
+  if (!item.row_index) return
+  
+  loadingComments.value = true
+  try {
+    const res = await fetch(`/api/activity/${item.row_index}/comments`)
+    const data = await res.json()
+    if (data.status === 'ok') {
+      currentComments.value = data.comments || []
+    }
+  } catch (e) {
+    console.error('Fetch comments error:', e)
+  } finally {
+    loadingComments.value = false
+  }
+}
+
+const submitComment = async () => {
+  if (!newComment.value.trim() || !currentActivityItem.value?.row_index) return
+  
+  submittingComment.value = true
+  try {
+    const res = await fetch('/api/activity/comment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        study_row_index: currentActivityItem.value.row_index,
+        user_id: userStore.currentUserId,
+        user_name: userStore.displayName || '',
+        comment: newComment.value.trim()
+      })
+    })
+    const data = await res.json()
+    if (data.status === 'ok') {
+      // 新しいコメントをリストに追加
+      currentComments.value.push({
+        user_id: userStore.currentUserId,
+        user_name: userStore.displayName || '',
+        comment: newComment.value.trim(),
+        created_at: data.created_at
+      })
+      // アクティビティのコメント数を更新
+      currentActivityItem.value.comments_count = (currentActivityItem.value.comments_count || 0) + 1
+      newComment.value = ''
+      // キャッシュをクリア
+      clearCache(CACHE_KEYS.ACTIVITY)
+    } else {
+      alert(data.message || 'コメントの投稿に失敗しました')
+    }
+  } catch (e) {
+    console.error('Submit comment error:', e)
+    alert('コメントの投稿に失敗しました')
+  } finally {
+    submittingComment.value = false
   }
 }
 
