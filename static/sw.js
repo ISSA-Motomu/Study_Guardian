@@ -1,9 +1,12 @@
-const CACHE_NAME = 'study-guardian-v1';
+const CACHE_NAME = 'study-guardian-v3';
 const urlsToCache = [
   '/app/dashboard',
   '/static/dist/index.html',
   '/static/manifest.json'
 ];
+
+// 古いキャッシュバージョンのリスト（これらを削除する）
+const OLD_CACHES = ['study-guardian-v1', 'study-guardian-v2'];
 
 // インストール時にキャッシュ
 self.addEventListener('install', (event) => {
@@ -42,6 +45,12 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   // APIリクエストはキャッシュしない
   if (event.request.url.includes('/api/')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // JSとCSSファイルは常にネットワークから取得（ハッシュ付きファイル）
+  if (event.request.url.includes('/static/dist/assets/')) {
     event.respondWith(fetch(event.request));
     return;
   }

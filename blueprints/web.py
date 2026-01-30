@@ -397,33 +397,40 @@ def api_debug_user_stats(user_id):
             cleaned_date = raw_date.lstrip("'").strip()
             duration_str = row[idx_dur] if len(row) > idx_dur else "0"
             subject = row[idx_subj] if len(row) > idx_subj else ""
-            status = row[idx_stat] if idx_stat is not None and len(row) > idx_stat else ""
-            
+            status = (
+                row[idx_stat] if idx_stat is not None and len(row) > idx_stat else ""
+            )
+
             is_in_week = cleaned_date in expected_dates
             is_valid_duration = duration_str.isdigit() and int(duration_str) > 0
 
-            user_rows.append({
-                "raw_date": raw_date,
-                "cleaned_date": cleaned_date,
-                "raw_date_repr": repr(raw_date),  # 隠れ文字を確認
-                "duration_str": duration_str,
-                "is_valid_duration": is_valid_duration,
-                "subject": subject,
-                "status": status,
-                "in_weekly_range": is_in_week,
-                "would_be_counted": is_in_week and is_valid_duration
-            })
+            user_rows.append(
+                {
+                    "raw_date": raw_date,
+                    "cleaned_date": cleaned_date,
+                    "raw_date_repr": repr(raw_date),  # 隠れ文字を確認
+                    "duration_str": duration_str,
+                    "is_valid_duration": is_valid_duration,
+                    "subject": subject,
+                    "status": status,
+                    "in_weekly_range": is_in_week,
+                    "would_be_counted": is_in_week and is_valid_duration,
+                }
+            )
 
-        return jsonify({
-            "user_id": user_id,
-            "expected_dates_for_week": expected_dates,
-            "today": str(today),
-            "col_map": col_map,
-            "user_rows": user_rows,
-            "total_user_rows": len(user_rows)
-        })
+        return jsonify(
+            {
+                "user_id": user_id,
+                "expected_dates_for_week": expected_dates,
+                "today": str(today),
+                "col_map": col_map,
+                "user_rows": user_rows,
+                "total_user_rows": len(user_rows),
+            }
+        )
     except Exception as e:
         import traceback
+
         return jsonify({"error": str(e), "traceback": traceback.format_exc()})
 
 
