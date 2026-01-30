@@ -92,10 +92,10 @@ class ApprovalService:
                 else item_key
             )
 
-            # request_id を取得（shop.py側で既に正規化されているはず）
-            req_id = s.get("request_id", "")
+            # request_id を取得（req_id や id もフォールバックとして使用）
+            req_id = s.get("request_id") or s.get("req_id") or s.get("id") or ""
             if not req_id:
-                print(f"[WARNING] Shop request missing request_id: {s}")
+                # ログを出さずにスキップ（古いデータは無視）
                 continue
 
             data = {

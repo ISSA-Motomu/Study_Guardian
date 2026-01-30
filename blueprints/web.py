@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request, send_from_directory, current_app
 import os
 import datetime
+import gspread
 from services.job import JobService
 from services.shop import ShopService
 from services.gsheet import GSheetService
@@ -15,6 +16,22 @@ from handlers import study
 from utils.achievements import AchievementManager, ACHIEVEMENT_MASTER
 
 web_bp = Blueprint("web", __name__)
+
+
+# グローバルエラーハンドラー（APIQuotaExceeded=429）
+@web_bp.errorhandler(gspread.exceptions.APIError)
+def handle_gspread_api_error(e):
+    """Google Sheets API エラーをハンドリング"""
+    if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+        return jsonify({
+            "status": "error",
+            "error_code": 429,
+            "message": "APIが限界やわ！ちょっと待ってな〜"
+        }), 429
+    return jsonify({
+        "status": "error", 
+        "message": str(e)
+    }), 500
 
 
 @web_bp.route("/api/admin/users")
@@ -792,7 +809,7 @@ def api_admin_approve_study():
                     "approval",
                     "勉強記録が承認されました",
                     f"+{earned_exp} XP 獲得！",
-                    "✅"
+                    "✅",
                 )
                 # LINE通知
                 try:
@@ -833,7 +850,7 @@ def api_admin_reject_study():
                     "rejection",
                     "勉強記録が却下されました",
                     "記録に問題があった可能性があります。",
-                    "❌"
+                    "❌",
                 )
                 # LINE通知
                 try:
@@ -879,7 +896,7 @@ def api_admin_approve_job():
                     "approval",
                     "お手伝いが承認されました",
                     f"「{title}」完了！+{reward} XP 獲得！",
-                    "🎉"
+                    "🎉",
                 )
                 # LINE通知
                 try:
@@ -914,7 +931,11 @@ def api_admin_reject_job():
     try:
         success, result = JobService.reject_job(job_id)
         if success:
-            title = result.get("title", "お手伝い") if isinstance(result, dict) else "お手伝い"
+            title = (
+                result.get("title", "お手伝い")
+                if isinstance(result, dict)
+                else "お手伝い"
+            )
             worker_id = result.get("worker_id") if isinstance(result, dict) else user_id
 
             if worker_id:
@@ -924,7 +945,7 @@ def api_admin_reject_job():
                     "rejection",
                     "お手伝いが却下されました",
                     f"「{title}」の完了報告に問題がありました。",
-                    "❌"
+                    "❌",
                 )
                 # LINE通知
                 try:
@@ -969,7 +990,7 @@ def api_admin_approve_shop():
                     "approval",
                     "交換リクエストが承認されました",
                     f"「{item_name}」をゲット！",
-                    "🎁"
+                    "🎁",
                 )
                 # LINE通知
                 try:
@@ -1021,7 +1042,7 @@ def api_admin_reject_shop():
                     "rejection",
                     "交換リクエストが却下されました",
                     f"「{item_name}」の交換がキャンセルされました。{cost} XPを返金しました。",
-                    "💰"
+                    "💰",
                 )
                 # LINE通知
                 try:

@@ -1167,11 +1167,17 @@ class GSheetService:
             notifications = []
             for row in all_records[1:]:
                 if len(row) > idx_uid and row[idx_uid] == str(user_id):
-                    is_read = row[idx_read].lower() == "true" if len(row) > idx_read else False
+                    is_read = (
+                        row[idx_read].lower() == "true"
+                        if len(row) > idx_read
+                        else False
+                    )
                     if unread_only and is_read:
                         continue
 
-                    notif = {h: (row[i] if i < len(row) else "") for h, i in col_map.items()}
+                    notif = {
+                        h: (row[i] if i < len(row) else "") for h, i in col_map.items()
+                    }
                     notifications.append(notif)
 
             # 最新順にソート

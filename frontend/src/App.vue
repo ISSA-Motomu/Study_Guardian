@@ -1,5 +1,8 @@
 <template>
   <div class="min-h-screen pb-20 max-w-md mx-auto relative overflow-hidden bg-slate-50">
+    <!-- Global Toast Container -->
+    <ToastContainer />
+    
     <!-- Header Background -->
     <div class="absolute top-0 left-0 w-full h-48 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-b-[40px] z-0" />
 
@@ -114,6 +117,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import BottomNav from '@/components/common/BottomNav.vue'
 import FloatingButton from '@/components/common/FloatingButton.vue'
 import NotificationBell from '@/components/common/NotificationBell.vue'
+import ToastContainer from '@/components/common/ToastContainer.vue'
 import StudyView from '@/components/study/StudyView.vue'
 import TimerView from '@/components/study/TimerView.vue'
 import SubjectModal from '@/components/study/SubjectModal.vue'
