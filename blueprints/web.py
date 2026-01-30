@@ -427,8 +427,10 @@ def api_finish_study():
         try:
             admins = EconomyService.get_admin_users()
             admin_ids = [str(u["user_id"]) for u in admins if u.get("user_id")]
-            
-            print(f"[DEBUG] Web Admin notification: Found {len(admins)} admins, IDs: {admin_ids}")
+
+            print(
+                f"[DEBUG] Web Admin notification: Found {len(admins)} admins, IDs: {admin_ids}"
+            )
 
             if admin_ids:
                 timestamp_str = now.strftime("%H:%M")
@@ -450,12 +452,15 @@ def api_finish_study():
                     admin_ids,
                     FlexSendMessage(alt_text="勉強完了報告", contents=approve_flex),
                 )
-                print(f"[DEBUG] Web Admin notification sent successfully to {len(admin_ids)} admins")
+                print(
+                    f"[DEBUG] Web Admin notification sent successfully to {len(admin_ids)} admins"
+                )
             else:
                 print(f"[WARNING] No admin users found for Web notification!")
         except Exception as admin_err:
             print(f"Admin Notify Error: {admin_err}")
             import traceback
+
             traceback.print_exc()
 
         return jsonify({"status": "ok", "minutes": minutes})
@@ -932,6 +937,96 @@ def api_admin_reject_mission():
             return jsonify({"status": "error", "message": msg}), 500
     except Exception as e:
         print(f"Reject Mission Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# ==================== 目標 (Goals) API ====================
+
+
+@web_bp.route("/api/goals")
+def api_get_all_goals():
+    """全ユーザーの目標を取得"""
+    try:
+        goals = GSheetService.get_all_goals()
+        return jsonify({"status": "ok", "goals": goals})
+    except Exception as e:
+        print(f"Get Goals Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@web_bp.route("/api/goals/user/<user_id>")
+def api_get_user_goals(user_id):
+    """特定ユーザーの目標を取得"""
+    try:
+        goals = GSheetService.get_user_goals(user_id)
+        return jsonify({"status": "ok", "goals": goals})
+    except Exception as e:
+        print(f"Get User Goals Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@web_bp.route("/api/goals", methods=["POST"])
+def api_add_goal():
+    """目標を追加"""
+    data = request.json
+    user_id = data.get("user_id")
+    user_name = data.get("user_name")
+    title = data.get("title")
+    description = data.get("description", "")
+    target_date = data.get("target_date")
+
+    if not user_id or not title or not target_date:
+        return jsonify({"status": "error", "message": "Missing required fields"}), 400
+
+    try:
+        success, result = GSheetService.add_goal(
+            user_id, user_name, title, description, target_date
+        )
+        if success:
+            return jsonify({"status": "ok", "goal_id": result})
+        else:
+            return jsonify({"status": "error", "message": result}), 500
+    except Exception as e:
+        print(f"Add Goal Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@web_bp.route("/api/goals/<goal_id>/complete", methods=["POST"])
+def api_complete_goal(goal_id):
+    """目標を完了にする"""
+    data = request.json
+    user_id = data.get("user_id")
+
+    if not user_id:
+        return jsonify({"status": "error", "message": "Missing user_id"}), 400
+
+    try:
+        if GSheetService.complete_goal(goal_id, user_id):
+            return jsonify({"status": "ok"})
+        else:
+            return jsonify(
+                {"status": "error", "message": "Failed to complete goal"}
+            ), 500
+    except Exception as e:
+        print(f"Complete Goal Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@web_bp.route("/api/goals/<goal_id>", methods=["DELETE"])
+def api_delete_goal(goal_id):
+    """目標を削除する"""
+    user_id = request.args.get("user_id")
+
+    if not user_id:
+        return jsonify({"status": "error", "message": "Missing user_id"}), 400
+
+    try:
+        if GSheetService.delete_goal(goal_id, user_id):
+            return jsonify({"status": "ok"})
+        else:
+            return jsonify({"status": "error", "message": "Failed to delete goal"}), 500
+    except Exception as e:
+        print(f"Delete Goal Error: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
 

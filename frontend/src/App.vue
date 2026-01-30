@@ -17,7 +17,12 @@
         <GameView v-else-if="view === 'game'" />
         <AdminView v-else-if="view === 'admin'" @exit="view = 'study'" />
         <DataView v-else-if="view === 'data'" @admin="view = 'admin'" />
-        <StudyView v-else @timer="view = 'timer'" />
+        <StudyView 
+          v-else 
+          ref="studyViewRef"
+          @timer="view = 'timer'" 
+          @openGoalModal="showGoalModal = true"
+        />
       </template>
     </div>
 
@@ -45,6 +50,12 @@
     <ShopListModal
       v-if="shopStore.showShopList"
       @close="shopStore.showShopList = false"
+    />
+
+    <GoalModal
+      v-if="showGoalModal"
+      @close="showGoalModal = false"
+      @created="onGoalCreated"
     />
 
     <!-- Bottom Navigation -->
@@ -83,6 +94,7 @@ import DataView from '@/components/data/DataView.vue'
 import AdminView from '@/components/admin/AdminView.vue'
 import BuyModal from '@/components/shop/BuyModal.vue'
 import ShopListModal from '@/components/shop/ShopListModal.vue'
+import GoalModal from '@/components/study/GoalModal.vue'
 
 // Stores
 const userStore = useUserStore()
@@ -97,6 +109,8 @@ const { playSound } = useSound()
 
 // State
 const view = ref('study')
+const showGoalModal = ref(false)
+const studyViewRef = ref(null)
 
 // Lifecycle
 onMounted(async () => {
@@ -141,6 +155,14 @@ const handleBuy = async (comment) => {
 const handleNotificationNavigate = (target) => {
   if (target === 'admin') {
     view.value = 'admin'
+  }
+}
+
+const onGoalCreated = () => {
+  showGoalModal.value = false
+  // StudyViewの目標リストを更新
+  if (studyViewRef.value?.fetchMyGoals) {
+    studyViewRef.value.fetchMyGoals()
   }
 }
 </script>

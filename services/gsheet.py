@@ -596,3 +596,180 @@ class GSheetService:
         except Exception as e:
             print(f"Check Timeout Error: {e}")
             return []
+
+    # ==================== 目標管理機能 ====================
+
+    @staticmethod
+    def get_or_create_goals_sheet():
+        """goalsシートを取得、なければ作成"""
+        try:
+            sheet = GSheetService.get_worksheet("goals")
+            if sheet:
+                return sheet
+
+            # シートが存在しない場合は作成
+            doc = GSheetService.get_spreadsheet()
+            if not doc:
+                return None
+
+            sheet = doc.add_worksheet(title="goals", rows=100, cols=10)
+            # ヘッダー行を追加
+            headers = [
+                "id",
+                "user_id",
+                "user_name",
+                "title",
+                "description",
+                "target_date",
+                "created_at",
+                "status",
+                "completed_at",
+            ]
+            sheet.append_row(headers)
+            print("【Info】goalsシートを作成しました")
+            return sheet
+        except Exception as e:
+            print(f"【Error】goalsシート取得/作成エラー: {e}")
+            return None
+
+    @staticmethod
+    def add_goal(user_id, user_name, title, description, target_date):
+        """目標を追加"""
+        sheet = GSheetService.get_or_create_goals_sheet()
+        if not sheet:
+            return False, "シートが見つかりません"
+
+        try:
+            # 新しいIDを生成（行数ベース）
+            all_records = sheet.get_all_values()
+            new_id = len(all_records)  # ヘッダー含むのでそのまま
+
+            now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
+            created_at = now.strftime("%Y-%m-%d %H:%M:%S")
+
+            row_data = [
+                new_id,
+                user_id,
+                user_name,
+                title,
+                description,
+                target_date,
+                created_at,
+                "ACTIVE",
+                "",
+            ]
+            sheet.append_row(row_data)
+            return True, new_id
+        except Exception as e:
+            print(f"【Error】目標追加エラー: {e}")
+            return False, str(e)
+
+    @staticmethod
+    def get_all_goals():
+        """全ユーザーの目標を取得（ACTIVEのみ）"""
+        sheet = GSheetService.get_or_create_goals_sheet()
+        if not sheet:
+            return []
+
+        try:
+            all_records = sheet.get_all_values()
+            if len(all_records) <= 1:
+                return []
+
+            headers = all_records[0]
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+            goals = []
+            for row in all_records[1:]:
+                if len(row) < len(headers):
+                    row.extend([""] * (len(headers) - len(row)))
+
+                status = row[col_map.get("status", 7)] if "status" in col_map else ""
+                if status != "ACTIVE":
+                    continue
+
+                goals.append(
+                    {
+                        "id": row[col_map.get("id", 0)],
+                        "user_id": row[col_map.get("user_id", 1)],
+                        "user_name": row[col_map.get("user_name", 2)],
+                        "title": row[col_map.get("title", 3)],
+                        "description": row[col_map.get("description", 4)],
+                        "target_date": row[col_map.get("target_date", 5)],
+                        "created_at": row[col_map.get("created_at", 6)],
+                        "status": status,
+                    }
+                )
+
+            # target_dateで昇順ソート（近い日付が先）
+            goals.sort(key=lambda x: x.get("target_date", "9999-99-99"))
+            return goals
+        except Exception as e:
+            print(f"【Error】目標取得エラー: {e}")
+            return []
+
+    @staticmethod
+    def get_user_goals(user_id):
+        """特定ユーザーの目標を取得"""
+        all_goals = GSheetService.get_all_goals()
+        return [g for g in all_goals if g.get("user_id") == user_id]
+
+    @staticmethod
+    def complete_goal(goal_id, user_id):
+        """目標を完了にする"""
+        sheet = GSheetService.get_or_create_goals_sheet()
+        if not sheet:
+            return False
+
+        try:
+            all_records = sheet.get_all_values()
+            headers = all_records[0]
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+            idx_id = col_map.get("id", 0)
+            idx_uid = col_map.get("user_id", 1)
+            idx_status = col_map.get("status", 7)
+            idx_completed = col_map.get("completed_at", 8)
+
+            for i, row in enumerate(all_records[1:], start=2):
+                if len(row) > idx_id and str(row[idx_id]) == str(goal_id):
+                    # ユーザーIDも確認
+                    if len(row) > idx_uid and row[idx_uid] == user_id:
+                        now = datetime.datetime.now(
+                            datetime.timezone(datetime.timedelta(hours=9))
+                        )
+                        sheet.update_cell(i, idx_status + 1, "COMPLETED")
+                        sheet.update_cell(
+                            i, idx_completed + 1, now.strftime("%Y-%m-%d %H:%M:%S")
+                        )
+                        return True
+            return False
+        except Exception as e:
+            print(f"【Error】目標完了エラー: {e}")
+            return False
+
+    @staticmethod
+    def delete_goal(goal_id, user_id):
+        """目標を削除する（ステータスをDELETEDに変更）"""
+        sheet = GSheetService.get_or_create_goals_sheet()
+        if not sheet:
+            return False
+
+        try:
+            all_records = sheet.get_all_values()
+            headers = all_records[0]
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+            idx_id = col_map.get("id", 0)
+            idx_uid = col_map.get("user_id", 1)
+            idx_status = col_map.get("status", 7)
+
+            for i, row in enumerate(all_records[1:], start=2):
+                if len(row) > idx_id and str(row[idx_id]) == str(goal_id):
+                    if len(row) > idx_uid and row[idx_uid] == user_id:
+                        sheet.update_cell(i, idx_status + 1, "DELETED")
+                        return True
+            return False
+        except Exception as e:
+            print(f"【Error】目標削除エラー: {e}")
+            return False

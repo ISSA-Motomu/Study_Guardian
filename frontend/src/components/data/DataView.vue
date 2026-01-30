@@ -320,6 +320,63 @@
         </div>
       </div>
     </GlassPanel>
+
+    <!-- Everyone's Goals (Horizontal Scroll) -->
+    <GlassPanel>
+      <h3 class="font-bold text-gray-700 mb-4">🎯 みんなの目標</h3>
+      <div v-if="allGoals.length === 0" class="text-center text-gray-500 py-4">
+        目標がまだありません
+      </div>
+      <div v-else class="overflow-x-auto pb-2 -mx-4 px-4">
+        <div class="flex gap-3" :style="{ width: 'max-content' }">
+          <div 
+            v-for="goal in allGoals" 
+            :key="goal.id"
+            class="w-64 flex-shrink-0 bg-gradient-to-br from-white to-gray-50 rounded-xl p-4 border border-gray-200 shadow-sm"
+            :class="{ 'ring-2 ring-indigo-400': goal.user_id === userStore.currentUserId }"
+          >
+            <!-- User & Date -->
+            <div class="flex justify-between items-start mb-2">
+              <span class="text-sm font-bold text-indigo-600 truncate flex-1">
+                {{ goal.user_name }}
+              </span>
+              <span 
+                class="text-xs px-2 py-0.5 rounded-full flex-shrink-0 ml-2"
+                :class="getDaysUntilClass(goal.target_date)"
+              >
+                {{ formatDaysUntil(goal.target_date) }}
+              </span>
+            </div>
+            <!-- Title -->
+            <h4 class="font-bold text-gray-800 text-sm mb-1 line-clamp-2">{{ goal.title }}</h4>
+            <!-- Description -->
+            <p v-if="goal.description" class="text-xs text-gray-500 line-clamp-2 mb-2">
+              {{ goal.description }}
+            </p>
+            <!-- Target Date -->
+            <div class="flex items-center gap-1 text-xs text-gray-400">
+              <span>🗓️</span>
+              <span>{{ formatDate(goal.target_date) }}</span>
+            </div>
+            <!-- Actions for own goals -->
+            <div v-if="goal.user_id === userStore.currentUserId" class="mt-3 flex gap-2">
+              <button 
+                @click="completeGoal(goal.id)"
+                class="flex-1 text-xs py-1.5 rounded-lg bg-green-100 text-green-600 font-medium hover:bg-green-200 transition-colors"
+              >
+                ✅ 達成
+              </button>
+              <button 
+                @click="deleteGoal(goal.id)"
+                class="flex-1 text-xs py-1.5 rounded-lg bg-red-50 text-red-500 font-medium hover:bg-red-100 transition-colors"
+              >
+                🗑️ 削除
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </GlassPanel>
   </div>
 </template>
 
@@ -346,6 +403,7 @@ const recentActivity = ref([])
 const globalActivity = ref([])
 const studyRecords = ref([]) // 全勉強ログ（日付・科目付き）
 const weeklyRanking = ref([]) // 週間ランキング
+const allGoals = ref([]) // みんなの目標
 
 // Navigation offsets
 const weekOffset = ref(0)
@@ -680,9 +738,95 @@ const fetchWeeklyRanking = async () => {
   }
 }
 
+// Fetch all goals
+const fetchAllGoals = async () => {
+  try {
+    const res = await fetch('/api/goals')
+    const data = await res.json()
+    if (data.status === 'ok') {
+      allGoals.value = data.goals || []
+    }
+  } catch (e) {
+    console.error('Failed to fetch goals:', e)
+  }
+}
+
+// Goal helper functions
+const formatDate = (dateStr) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  return `${date.getMonth() + 1}/${date.getDate()}`
+}
+
+const getDaysUntil = (targetDate) => {
+  if (!targetDate) return -999
+  const target = new Date(targetDate)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  target.setHours(0, 0, 0, 0)
+  return Math.ceil((target - today) / (1000 * 60 * 60 * 24))
+}
+
+const formatDaysUntil = (targetDate) => {
+  const days = getDaysUntil(targetDate)
+  if (days < 0) return '期限切れ'
+  if (days === 0) return '今日!'
+  if (days === 1) return '明日'
+  return `あと${days}日`
+}
+
+const getDaysUntilClass = (targetDate) => {
+  const days = getDaysUntil(targetDate)
+  if (days < 0) return 'bg-red-100 text-red-600'
+  if (days <= 3) return 'bg-orange-100 text-orange-600'
+  if (days <= 7) return 'bg-yellow-100 text-yellow-600'
+  return 'bg-green-100 text-green-600'
+}
+
+const completeGoal = async (goalId) => {
+  if (!confirm('この目標を達成済みにしますか？')) return
+  
+  try {
+    const res = await fetch(`/api/goals/${goalId}/complete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userStore.currentUserId })
+    })
+    const data = await res.json()
+    if (data.status === 'ok') {
+      await fetchAllGoals()
+    } else {
+      alert('完了処理に失敗しました')
+    }
+  } catch (e) {
+    console.error('Complete goal error:', e)
+    alert('完了処理に失敗しました')
+  }
+}
+
+const deleteGoal = async (goalId) => {
+  if (!confirm('この目標を削除しますか？')) return
+  
+  try {
+    const res = await fetch(`/api/goals/${goalId}?user_id=${userStore.currentUserId}`, {
+      method: 'DELETE'
+    })
+    const data = await res.json()
+    if (data.status === 'ok') {
+      await fetchAllGoals()
+    } else {
+      alert('削除に失敗しました')
+    }
+  } catch (e) {
+    console.error('Delete goal error:', e)
+    alert('削除に失敗しました')
+  }
+}
+
 onMounted(() => {
   fetchData()
   fetchGlobalActivity()
   fetchWeeklyRanking()
+  fetchAllGoals()
 })
 </script>
