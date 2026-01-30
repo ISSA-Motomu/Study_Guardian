@@ -10,6 +10,124 @@
       </button>
     </div>
 
+    <!-- 管理者アクション -->
+    <GlassPanel>
+      <h3 class="font-bold text-gray-700 mb-3">⚡ 管理者アクション</h3>
+      <div class="grid grid-cols-3 gap-2">
+        <button
+          @click="activeAction = 'job'"
+          :class="['py-3 rounded-xl font-bold text-sm transition-colors', activeAction === 'job' ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300']"
+        >
+          🔧 ジョブ
+        </button>
+        <button
+          @click="activeAction = 'point'"
+          :class="['py-3 rounded-xl font-bold text-sm transition-colors', activeAction === 'point' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300']"
+        >
+          💰 ポイント
+        </button>
+        <button
+          @click="activeAction = 'study'"
+          :class="['py-3 rounded-xl font-bold text-sm transition-colors', activeAction === 'study' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300']"
+        >
+          📚 勉強記録
+        </button>
+      </div>
+      
+      <!-- ジョブ追加フォーム -->
+      <div v-if="activeAction === 'job'" class="mt-4 space-y-3">
+        <input
+          v-model="newJob.title"
+          type="text"
+          placeholder="タスク名（例：風呂掃除）"
+          class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-orange-400 focus:outline-none"
+        />
+        <input
+          v-model.number="newJob.reward"
+          type="number"
+          placeholder="報酬 XP（例：100）"
+          class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-orange-400 focus:outline-none"
+        />
+        <button
+          @click="createJob"
+          :disabled="!newJob.title || !newJob.reward || processing"
+          class="w-full py-3 rounded-xl font-bold text-white bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+        >
+          🔧 ジョブを追加
+        </button>
+      </div>
+      
+      <!-- ポイント付与フォーム -->
+      <div v-if="activeAction === 'point'" class="mt-4 space-y-3">
+        <select 
+          v-model="pointGrant.userId"
+          class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-green-400 focus:outline-none"
+        >
+          <option value="">ユーザーを選択...</option>
+          <option v-for="u in allUsers" :key="u.user_id" :value="u.user_id">
+            {{ u.user_name }}
+          </option>
+        </select>
+        <input
+          v-model.number="pointGrant.amount"
+          type="number"
+          placeholder="付与ポイント（例：100）"
+          class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-green-400 focus:outline-none"
+        />
+        <button
+          @click="grantPoints"
+          :disabled="!pointGrant.userId || !pointGrant.amount || processing"
+          class="w-full py-3 rounded-xl font-bold text-white bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+        >
+          💰 ポイントを付与
+        </button>
+      </div>
+      
+      <!-- 勉強記録追加フォーム -->
+      <div v-if="activeAction === 'study'" class="mt-4 space-y-3">
+        <select 
+          v-model="manualStudy.userId"
+          class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-blue-400 focus:outline-none"
+        >
+          <option value="">ユーザーを選択...</option>
+          <option v-for="u in allUsers" :key="u.user_id" :value="u.user_id">
+            {{ u.user_name }}
+          </option>
+        </select>
+        <select 
+          v-model="manualStudy.subject"
+          class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-blue-400 focus:outline-none"
+        >
+          <option value="">科目を選択...</option>
+          <option value="国語">国語</option>
+          <option value="数学">数学</option>
+          <option value="英語">英語</option>
+          <option value="理科">理科</option>
+          <option value="社会">社会</option>
+          <option value="その他">その他</option>
+        </select>
+        <input
+          v-model.number="manualStudy.minutes"
+          type="number"
+          placeholder="勉強時間（分）"
+          class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-blue-400 focus:outline-none"
+        />
+        <input
+          v-model="manualStudy.comment"
+          type="text"
+          placeholder="コメント（任意）"
+          class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-blue-400 focus:outline-none"
+        />
+        <button
+          @click="addManualStudy"
+          :disabled="!manualStudy.userId || !manualStudy.subject || !manualStudy.minutes || processing"
+          class="w-full py-3 rounded-xl font-bold text-white bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+        >
+          📚 勉強記録を追加
+        </button>
+      </div>
+    </GlassPanel>
+
     <!-- ユーザー視点切り替え -->
     <GlassPanel>
       <h3 class="font-bold text-gray-700 mb-3">👁️ ユーザー視点で確認</h3>
@@ -197,6 +315,12 @@ const rejectTarget = ref(null)
 const loadingUsers = ref(true)
 const allUsers = ref([])
 const selectedUserId = ref('')
+
+// 管理者アクション用
+const activeAction = ref(null)
+const newJob = ref({ title: '', reward: 0 })
+const pointGrant = ref({ userId: '', amount: 0 })
+const manualStudy = ref({ userId: '', subject: '', minutes: 0, comment: '' })
 
 const tabs = [
   { key: 'all', label: 'すべて', icon: '📋' },
@@ -507,6 +631,100 @@ const viewAsSelectedUser = async () => {
   
   if (success) {
     emit('viewAsUser')  // 親に通知して画面を切り替え
+  }
+}
+
+// ジョブを追加
+const createJob = async () => {
+  if (processing.value || !newJob.value.title || !newJob.value.reward) return
+  processing.value = true
+  
+  try {
+    const res = await fetch('/api/admin/add_task', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: newJob.value.title,
+        reward: newJob.value.reward
+      })
+    })
+    const json = await res.json()
+    
+    if (json.status === 'success') {
+      showMessage(`ジョブ「${newJob.value.title}」を追加しました`, 'success')
+      newJob.value = { title: '', reward: 0 }
+    } else {
+      showMessage(json.message || 'ジョブの追加に失敗しました', 'error')
+    }
+  } catch (err) {
+    console.error('Create job error:', err)
+    showMessage('ジョブ追加でエラーが発生しました', 'error')
+  } finally {
+    processing.value = false
+  }
+}
+
+// ポイントを付与
+const grantPoints = async () => {
+  if (processing.value || !pointGrant.value.userId || !pointGrant.value.amount) return
+  processing.value = true
+  
+  try {
+    const res = await fetch('/api/admin/grant_points', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: pointGrant.value.userId,
+        amount: pointGrant.value.amount
+      })
+    })
+    const json = await res.json()
+    
+    if (json.status === 'success') {
+      const userName = allUsers.value.find(u => u.user_id === pointGrant.value.userId)?.user_name || 'ユーザー'
+      showMessage(`${userName} に ${pointGrant.value.amount} XP を付与しました`, 'success')
+      pointGrant.value = { userId: '', amount: 0 }
+    } else {
+      showMessage(json.message || 'ポイント付与に失敗しました', 'error')
+    }
+  } catch (err) {
+    console.error('Grant points error:', err)
+    showMessage('ポイント付与でエラーが発生しました', 'error')
+  } finally {
+    processing.value = false
+  }
+}
+
+// 勉強記録を手動追加
+const addManualStudy = async () => {
+  if (processing.value || !manualStudy.value.userId || !manualStudy.value.subject || !manualStudy.value.minutes) return
+  processing.value = true
+  
+  try {
+    const res = await fetch('/api/admin/manual_study', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: manualStudy.value.userId,
+        subject: manualStudy.value.subject,
+        minutes: manualStudy.value.minutes,
+        comment: manualStudy.value.comment || '管理者による手動記録'
+      })
+    })
+    const json = await res.json()
+    
+    if (json.status === 'ok') {
+      const userName = allUsers.value.find(u => u.user_id === manualStudy.value.userId)?.user_name || 'ユーザー'
+      showMessage(`${userName} の勉強記録を追加しました（${manualStudy.value.minutes}分）`, 'success')
+      manualStudy.value = { userId: '', subject: '', minutes: 0, comment: '' }
+    } else {
+      showMessage(json.message || '勉強記録の追加に失敗しました', 'error')
+    }
+  } catch (err) {
+    console.error('Manual study error:', err)
+    showMessage('勉強記録追加でエラーが発生しました', 'error')
+  } finally {
+    processing.value = false
   }
 }
 </script>

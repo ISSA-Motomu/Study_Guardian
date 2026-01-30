@@ -46,16 +46,16 @@ export const useUserStore = defineStore('user', () => {
       }
     } catch (e) {
       console.error(e)
-      // Mock data for development
+      // Keep default guest state on error - actual data from spreadsheet will be used
       user.value = {
-        name: '勇者アルス',
-        level: 12,
-        exp: 1450,
-        next_exp: 2000,
-        xp: 500,
-        total_hours: 42.5,
-        rank_name: 'Rank C: 熟練者',
-        avatar_url: 'https://cdn-icons-png.flaticon.com/512/4333/4333609.png',
+        name: 'ゲスト',
+        level: 1,
+        exp: 0,
+        next_exp: 100,
+        xp: 0,
+        total_hours: 0,
+        rank_name: 'Beginner',
+        avatar_url: '',
         role: 'USER'
       }
     }
@@ -68,7 +68,7 @@ export const useUserStore = defineStore('user', () => {
   // 他ユーザーとして表示（管理者専用）
   const viewAsUser = async (targetUserId, targetUserName) => {
     if (!isAdmin.value) return false
-    
+
     isViewingAsOther.value = true
     currentUserId.value = targetUserId
     await fetchUserData(targetUserId)
@@ -78,7 +78,7 @@ export const useUserStore = defineStore('user', () => {
   // 元の管理者に戻る
   const exitViewAsUser = async () => {
     if (!originalUserId.value) return
-    
+
     isViewingAsOther.value = false
     currentUserId.value = originalUserId.value
     await fetchUserData(originalUserId.value)

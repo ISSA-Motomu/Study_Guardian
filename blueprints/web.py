@@ -943,6 +943,73 @@ def api_admin_reject_mission():
 # ==================== 目標 (Goals) API ====================
 
 
+@web_bp.route("/api/admin/manual_study", methods=["POST"])
+def api_admin_manual_study():
+    """管理者による勉強記録の手動追加"""
+    data = request.json
+    user_id = data.get("user_id")
+    minutes = int(data.get("minutes", 0))
+    subject = data.get("subject", "その他")
+    comment = data.get("comment", "管理者による手動記録")
+
+    if not user_id or minutes <= 0:
+        return jsonify({"status": "error", "message": "Invalid parameters"}), 400
+
+    try:
+        # ユーザー情報取得
+        user_info = EconomyService.get_user_info(user_id)
+        if not user_info:
+            return jsonify({"status": "error", "message": "User not found"}), 404
+
+        display_name = user_info.get("display_name", "Unknown")
+
+        # study_log に直接承認済みで追加
+        sheet = GSheetService.get_worksheet("study_log")
+        if not sheet:
+            return jsonify({"status": "error", "message": "Sheet not found"}), 500
+
+        now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
+        date_str = now.strftime("%Y-%m-%d")
+        time_str = now.strftime("%H:%M:%S")
+
+        # ステータスは直接APPROVEDにする
+        new_row = [
+            user_id,
+            display_name,
+            date_str,
+            time_str,  # start_time
+            time_str,  # end_time (同じ)
+            "APPROVED",
+            minutes,
+            "",  # rank_score
+            subject,
+            comment,
+            3,  # concentration (default)
+        ]
+        sheet.append_row(new_row)
+
+        # EXP付与
+        EconomyService.add_exp(user_id, minutes, "MANUAL_STUDY")
+        EconomyService.add_study_time(user_id, minutes)
+
+        # ユーザーに通知
+        try:
+            line_bot_api.push_message(
+                user_id,
+                TextSendMessage(
+                    text=f"📝 勉強記録が追加されました！\n科目: {subject}\n時間: {minutes}分\n+{minutes} XP 獲得！"
+                ),
+            )
+        except:
+            pass
+
+        return jsonify({"status": "ok", "minutes": minutes})
+
+    except Exception as e:
+        print(f"Manual Study Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 @web_bp.route("/api/goals")
 def api_get_all_goals():
     """全ユーザーの目標を取得"""
