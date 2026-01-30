@@ -338,7 +338,7 @@ def handle_postback(event, action, data):
         )
 
         # ランクアップ判定のための事前情報取得
-        old_stats = HistoryService.get_user_study_stats(target_id)
+        old_stats = HistoryService.get_user_study_stats_summary(target_id)
         old_total = old_stats["total"]
         old_rank_info = StatusService.get_rank_info(old_total)
 

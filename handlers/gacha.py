@@ -19,7 +19,7 @@ def handle_message(event, text):
         return True
 
         # 0. ランク確認 (Rank Eは不可)
-        study_stats = HistoryService.get_user_study_stats(user_id)
+        study_stats = HistoryService.get_user_study_stats_summary(user_id)
         total_minutes = study_stats["total"]
         rank_info = StatusService.get_rank_info(total_minutes)
 

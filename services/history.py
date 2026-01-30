@@ -334,8 +334,8 @@ class HistoryService:
             return 0
 
     @staticmethod
-    def get_user_study_stats(user_id):
-        """ユーザーの学習履歴統計（週間・月間）※カレンダー基準"""
+    def get_user_study_stats_summary(user_id):
+        """ユーザーの学習履歴統計（週間・月間の合計分数のみ）※カレンダー基準 - LINE Bot用"""
         sheet = GSheetService.get_worksheet("study_log")
         if not sheet:
             return {"weekly": 0, "monthly": 0, "total": 0}

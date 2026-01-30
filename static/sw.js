@@ -26,8 +26,8 @@ self.addEventListener('activate', (event) => {
 // フェッチ：常にネットワーク優先（オフライン時のみキャッシュ使用）
 self.addEventListener('fetch', (event) => {
   // APIとアセットは常にネットワークから
-  if (event.request.url.includes('/api/') || 
-      event.request.url.includes('/static/dist/')) {
+  if (event.request.url.includes('/api/') ||
+    event.request.url.includes('/static/dist/')) {
     event.respondWith(
       fetch(event.request).catch(() => {
         // オフライン時はエラーを返す（キャッシュしない）

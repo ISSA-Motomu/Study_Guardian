@@ -26,7 +26,7 @@ def send_user_status_view(reply_token, user_id, is_detailed=False):
         )
         return
 
-    study_stats = HistoryService.get_user_study_stats(user_id)
+    study_stats = HistoryService.get_user_study_stats_summary(user_id)
     job_count = HistoryService.get_user_job_count(user_id)
     inventory = EconomyService.get_user_inventory(user_id)
     weekly_ranking = HistoryService.get_weekly_exp_ranking()
