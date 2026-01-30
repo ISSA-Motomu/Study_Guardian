@@ -825,11 +825,11 @@ class HistoryService:
                     idx_time = col_map.get("start_time")
 
                     for row in records[1:]:
-                        # DONEのもののみ
+                        # APPROVED または DONE のもののみ
                         status = (
                             row[idx_stat] if idx_stat and len(row) > idx_stat else ""
                         )
-                        if status.upper() != "DONE":
+                        if status.upper() not in ["APPROVED", "DONE"]:
                             continue
 
                         duration_str = (
@@ -866,32 +866,41 @@ class HistoryService:
         except Exception as e:
             print(f"Study Activity Error: {e}")
 
-        # 2) お手伝い(ジョブ)履歴を取得
+        # 2) お手伝い(ジョブ)履歴を取得（jobsシートを参照）
         try:
-            job_sheet = GSheetService.get_worksheet("job_log")
+            job_sheet = GSheetService.get_worksheet("jobs")
             if job_sheet:
                 records = job_sheet.get_all_values()
                 if len(records) > 1:
                     headers = records[0]
                     col_map = {str(h).strip(): i for i, h in enumerate(headers)}
 
-                    idx_name = col_map.get("user_name")
+                    idx_worker = col_map.get("worker_id")
                     idx_title = col_map.get("title")
                     idx_stat = col_map.get("status")
-                    idx_time = col_map.get("completed_at") or col_map.get("applied_at")
+                    idx_time = col_map.get("finished_at")
 
                     for row in records[1:]:
                         status = (
                             row[idx_stat] if idx_stat and len(row) > idx_stat else ""
                         )
-                        if status.upper() not in ["COMPLETED", "DONE", "APPROVED"]:
+                        # CLOSEDのジョブのみ表示（完了済み）
+                        if status.upper() != "CLOSED":
                             continue
 
-                        name = (
-                            row[idx_name]
-                            if idx_name and len(row) > idx_name
-                            else "Unknown"
+                        # worker_idからユーザー名を取得
+                        worker_id = (
+                            row[idx_worker]
+                            if idx_worker and len(row) > idx_worker
+                            else ""
                         )
+                        # ユーザー名を取得
+                        try:
+                            user_info = EconomyService.get_user_info(worker_id)
+                            name = user_info.get("display_name", "Unknown") if user_info else "Unknown"
+                        except:
+                            name = "Unknown"
+                        
                         title = (
                             row[idx_title]
                             if idx_title and len(row) > idx_title

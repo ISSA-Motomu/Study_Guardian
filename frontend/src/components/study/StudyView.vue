@@ -167,9 +167,9 @@ const defaultAvatar = 'https://cdn-icons-png.flaticon.com/512/4333/4333609.png'
 // Goal data
 const myGoals = ref([])
 
-// TODO: Fetch from API
-const todayMinutes = computed(() => Math.min(60, Math.floor(Math.random() * 60)))
-const dailyProgress = computed(() => (todayMinutes.value / 60) * 100)
+// Today's study minutes (fetched from API)
+const todayMinutes = ref(0)
+const dailyProgress = computed(() => Math.min(100, (todayMinutes.value / 60) * 100))
 
 const openShop = () => {
   playSound('select1')
@@ -179,6 +179,22 @@ const openShop = () => {
 const openGacha = () => {
   playSound('select2') // Using a different sound just to acknowledge tap
   alert('ガチャは現在準備中です！\nアップデートをお楽しみに！')
+}
+
+// Fetch today's study minutes
+const fetchTodayStats = async () => {
+  if (!userStore.currentUserId) return
+  try {
+    const res = await fetch(`/api/user/${userStore.currentUserId}/stats`)
+    const data = await res.json()
+    if (data.weekly && data.weekly.length > 0) {
+      // Get today's data (last item in weekly array)
+      const today = data.weekly[data.weekly.length - 1]
+      todayMinutes.value = today?.minutes || 0
+    }
+  } catch (e) {
+    console.error('Failed to fetch today stats:', e)
+  }
 }
 
 // Goal functions
@@ -254,6 +270,7 @@ const onGoalCreated = () => {
 }
 
 onMounted(() => {
+  fetchTodayStats()
   fetchMyGoals()
 })
 

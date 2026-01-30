@@ -144,12 +144,12 @@
 
     // Service Worker 登録 (PWA用)
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function() {
+      window.addEventListener('load', function () {
         navigator.serviceWorker.register('/static/sw.js')
-          .then(function(reg) {
+          .then(function (reg) {
             console.log('Service Worker registered:', reg.scope);
           })
-          .catch(function(err) {
+          .catch(function (err) {
             console.log('Service Worker registration failed:', err);
           });
       });
