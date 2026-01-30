@@ -37,6 +37,7 @@
           @timer="view = 'timer'" 
           @openGoalModal="openGoalModalNew"
           @openMaterials="showMaterialsModal = true"
+          @openBookshelf="showBookshelfModal = true"
           @editGoal="openGoalModalEdit"
         />
       </template>
@@ -81,6 +82,11 @@
       @close="showMaterialsModal = false"
     />
 
+    <BookshelfView
+      v-if="showBookshelfModal"
+      @close="showBookshelfModal = false"
+    />
+
     <!-- Bottom Navigation -->
     <BottomNav v-model="view" :in-session="studyStore.inSession" />
     
@@ -119,6 +125,7 @@ import BuyModal from '@/components/shop/BuyModal.vue'
 import ShopListModal from '@/components/shop/ShopListModal.vue'
 import GoalModal from '@/components/study/GoalModal.vue'
 import MaterialsView from '@/components/materials/MaterialsView.vue'
+import BookshelfView from '@/components/study/BookshelfView.vue'
 
 // Stores
 const userStore = useUserStore()
@@ -135,6 +142,7 @@ const { playSound } = useSound()
 const view = ref('study')
 const showGoalModal = ref(false)
 const showMaterialsModal = ref(false)
+const showBookshelfModal = ref(false)
 const studyViewRef = ref(null)
 const editingGoal = ref(null)
 

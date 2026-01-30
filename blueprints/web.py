@@ -222,7 +222,7 @@ def api_shop_buy():
 
 @web_bp.route("/api/study/start", methods=["POST"])
 def api_start_study():
-    """学習セッションを開始する"""
+    """学習セッションを開始する（原子性保証）"""
     data = request.json
     user_id = data.get("user_id")
     subject = data.get("subject")
@@ -230,39 +230,57 @@ def api_start_study():
     if not user_id or not subject:
         return jsonify({"status": "error", "message": "Missing parameters"}), 400
 
+    row_index = None  # ロールバック用
     try:
-        user_info = EconomyService.get_user_info(user_id)
-        user_name = user_info["display_name"] if user_info else "User"
+        # ユーザー名取得（エラー時も処理継続）
+        user_name = "User"
+        try:
+            user_info = EconomyService.get_user_info(user_id)
+            if user_info and user_info.get("display_name"):
+                user_name = user_info["display_name"]
+        except Exception as user_err:
+            print(f"Get user info warning: {user_err}")
 
         now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
         today = now.strftime("%Y-%m-%d")
         current_time = now.strftime("%H:%M:%S")
 
-        if GSheetService.log_activity(user_id, user_name, today, current_time, subject):
-            color = study.SUBJECT_COLORS.get(subject, "#27ACB2")
-            try:
-                bubble = load_template(
-                    "study_session.json",
-                    subject=subject,
-                    start_time=current_time,
-                    color=color,
-                )
-                line_bot_api.push_message(
-                    user_id,
-                    FlexSendMessage(alt_text="勉強中...", contents=bubble),
-                )
-            except Exception as push_error:
-                print(f"Push Message Error: {push_error}")
-                # LINE通知失敗でも処理は継続する
-
-            return jsonify({"status": "ok", "start_time": current_time})
-        else:
+        # 学習ログを記録し、行番号を取得（ロールバック用）
+        row_index = GSheetService.log_activity_with_row(
+            user_id, user_name, today, current_time, subject
+        )
+        if not row_index:
             return jsonify(
                 {"status": "error", "message": "Failed to log activity"}
             ), 500
 
+        color = study.SUBJECT_COLORS.get(subject, "#27ACB2")
+        # LINE通知は失敗しても処理は継続（原子性に含めない）
+        try:
+            bubble = load_template(
+                "study_session.json",
+                subject=subject,
+                start_time=current_time,
+                color=color,
+            )
+            line_bot_api.push_message(
+                user_id,
+                FlexSendMessage(alt_text="勉強中...", contents=bubble),
+            )
+        except Exception as push_error:
+            print(f"Push Message Error (non-critical): {push_error}")
+
+        return jsonify({"status": "ok", "start_time": current_time})
+
     except Exception as e:
         print(f"Study Start Error: {e}")
+        # ロールバック: ログを記録していた場合は削除
+        if row_index:
+            try:
+                GSheetService.delete_study_log_row(row_index)
+                print(f"Rollback: Deleted row {row_index}")
+            except Exception as rollback_err:
+                print(f"Rollback failed: {rollback_err}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
@@ -1236,6 +1254,96 @@ def api_delete_material(material_id):
             return jsonify({"status": "error", "message": error}), 500
     except Exception as e:
         print(f"Delete Material Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# --- Bookshelf APIs ---
+
+
+@web_bp.route("/api/bookshelf/<user_id>")
+def api_get_bookshelf(user_id):
+    """ユーザーの本棚（書籍一覧）を取得"""
+    try:
+        books = GSheetService.get_bookshelf(user_id)
+        return jsonify({"status": "ok", "books": books})
+    except Exception as e:
+        print(f"Get Bookshelf Error: {e}")
+        return jsonify({"status": "error", "books": []})
+
+
+@web_bp.route("/api/bookshelf/add", methods=["POST"])
+def api_add_book():
+    """本棚に本を追加"""
+    data = request.json
+    user_id = data.get("user_id")
+    title = data.get("title")
+    author = data.get("author", "")
+    subject = data.get("subject", "その他")
+    cover_url = data.get("cover_url", "")
+    total_pages = data.get("total_pages")
+
+    if not user_id or not title:
+        return jsonify({"status": "error", "message": "user_id and title required"}), 400
+
+    try:
+        success, result = GSheetService.add_book(
+            user_id=user_id,
+            title=title,
+            author=author,
+            subject=subject,
+            cover_url=cover_url,
+            total_pages=total_pages,
+        )
+        if success:
+            return jsonify({"status": "ok", "book_id": result})
+        else:
+            return jsonify({"status": "error", "message": result}), 500
+    except Exception as e:
+        print(f"Add Book Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@web_bp.route("/api/bookshelf/<book_id>/progress", methods=["PUT"])
+def api_update_book_progress(book_id):
+    """本の進捗を更新"""
+    data = request.json
+    user_id = data.get("user_id")
+    current_page = data.get("current_page")
+
+    if not user_id or current_page is None:
+        return (
+            jsonify({"status": "error", "message": "user_id and current_page required"}),
+            400,
+        )
+
+    try:
+        success = GSheetService.update_book_progress(book_id, user_id, current_page)
+        if success:
+            return jsonify({"status": "ok"})
+        else:
+            return jsonify({"status": "error", "message": "Update failed"}), 500
+    except Exception as e:
+        print(f"Update Book Progress Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@web_bp.route("/api/bookshelf/<book_id>", methods=["DELETE"])
+def api_delete_book(book_id):
+    """本を本棚から削除"""
+    data = request.json
+    user_id = data.get("user_id")
+
+    if not user_id:
+        return jsonify({"status": "error", "message": "Missing user_id"}), 400
+
+    try:
+        success = GSheetService.delete_book(book_id, user_id)
+        if success:
+            return jsonify({"status": "ok"})
+        else:
+            return jsonify({"status": "error", "message": "Delete failed"}), 500
+    except Exception as e:
+        print(f"Delete Book Error: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
 

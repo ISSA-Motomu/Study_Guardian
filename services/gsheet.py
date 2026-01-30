@@ -56,17 +56,25 @@ class GSheetService:
     @staticmethod
     def log_activity(user_id, user_name, today, time, subject=""):
         """学習記録ログを study_log シートに保存（動的カラムマッピング）"""
+        row_index = GSheetService.log_activity_with_row(
+            user_id, user_name, today, time, subject
+        )
+        return row_index is not None
+
+    @staticmethod
+    def log_activity_with_row(user_id, user_name, today, time, subject=""):
+        """学習記録ログを保存し、追加した行番号を返す（原子性サポート）"""
         sheet = GSheetService.get_worksheet("study_log")
         if not sheet:
             print("【Error】study_log シートが見つかりません。作成してください。")
-            return False
+            return None
 
         try:
             # ヘッダー行を取得してカラム位置を特定
             headers = sheet.row_values(1)
             if not headers:
                 print("【Error】ヘッダー情報が取得できません")
-                return False
+                return None
 
             col_map = {str(h).strip(): i for i, h in enumerate(headers)}
 
@@ -85,9 +93,23 @@ class GSheetService:
             set_val("subject", subject)
 
             sheet.append_row(row_data)
-            return True
+            # 追加した行の番号を返す（最後の行）
+            return sheet.row_count
         except Exception as e:
             print(f"ログ記録エラー: {e}")
+            return None
+
+    @staticmethod
+    def delete_study_log_row(row_index):
+        """指定した行を削除（ロールバック用）"""
+        sheet = GSheetService.get_worksheet("study_log")
+        if not sheet:
+            return False
+        try:
+            sheet.delete_rows(row_index)
+            return True
+        except Exception as e:
+            print(f"行削除エラー: {e}")
             return False
 
     @staticmethod
@@ -866,4 +888,177 @@ class GSheetService:
             return False
         except Exception as e:
             print(f"【Error】目標更新エラー: {e}")
+            return False
+
+    # ============== 本棚機能 ==============
+
+    @staticmethod
+    def get_or_create_bookshelf_sheet():
+        """bookshelfシートを取得または作成"""
+        sheet = GSheetService.get_worksheet("bookshelf")
+        if sheet:
+            return sheet
+
+        # シートが存在しない場合は作成
+        try:
+            spreadsheet = GSheetService.get_spreadsheet()
+            if not spreadsheet:
+                return None
+
+            sheet = spreadsheet.add_worksheet(title="bookshelf", rows=1000, cols=15)
+            headers = [
+                "book_id",
+                "user_id",
+                "title",
+                "author",
+                "subject",
+                "cover_url",
+                "total_pages",
+                "current_page",
+                "progress",
+                "created_at",
+                "status",
+            ]
+            sheet.append_row(headers)
+            print("【Info】bookshelfシートを作成しました")
+            return sheet
+        except Exception as e:
+            print(f"【Error】bookshelfシート作成エラー: {e}")
+            return None
+
+    @staticmethod
+    def get_bookshelf(user_id):
+        """ユーザーの本棚を取得"""
+        sheet = GSheetService.get_or_create_bookshelf_sheet()
+        if not sheet:
+            return []
+
+        try:
+            all_records = sheet.get_all_values()
+            if len(all_records) <= 1:
+                return []
+
+            headers = all_records[0]
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+            idx_uid = col_map.get("user_id", 1)
+            idx_status = col_map.get("status", 10)
+
+            books = []
+            for row in all_records[1:]:
+                if len(row) > idx_uid and row[idx_uid] == str(user_id):
+                    # DELETEDは除外
+                    status = row[idx_status] if len(row) > idx_status else ""
+                    if status == "DELETED":
+                        continue
+
+                    book = {h: (row[i] if i < len(row) else "") for h, i in col_map.items()}
+                    # 進捗計算
+                    total = int(book.get("total_pages") or 0)
+                    current = int(book.get("current_page") or 0)
+                    book["progress"] = int((current / total) * 100) if total > 0 else 0
+                    books.append(book)
+            return books
+        except Exception as e:
+            print(f"【Error】本棚取得エラー: {e}")
+            return []
+
+    @staticmethod
+    def add_book(user_id, title, author="", subject="その他", cover_url="", total_pages=None):
+        """本を本棚に追加"""
+        sheet = GSheetService.get_or_create_bookshelf_sheet()
+        if not sheet:
+            return False, "シートが見つかりません"
+
+        try:
+            import uuid
+
+            book_id = str(uuid.uuid4())[:8]
+            now = datetime.datetime.now(
+                datetime.timezone(datetime.timedelta(hours=9))
+            ).strftime("%Y-%m-%d %H:%M:%S")
+
+            headers = sheet.row_values(1)
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+            row_data = [""] * len(headers)
+
+            def set_val(name, val):
+                if name in col_map:
+                    row_data[col_map[name]] = val
+
+            set_val("book_id", book_id)
+            set_val("user_id", user_id)
+            set_val("title", title)
+            set_val("author", author)
+            set_val("subject", subject)
+            set_val("cover_url", cover_url)
+            set_val("total_pages", total_pages if total_pages else "")
+            set_val("current_page", "0")
+            set_val("progress", "0")
+            set_val("created_at", now)
+            set_val("status", "ACTIVE")
+
+            sheet.append_row(row_data)
+            return True, book_id
+        except Exception as e:
+            print(f"【Error】本追加エラー: {e}")
+            return False, str(e)
+
+    @staticmethod
+    def update_book_progress(book_id, user_id, current_page):
+        """本の進捗を更新"""
+        sheet = GSheetService.get_or_create_bookshelf_sheet()
+        if not sheet:
+            return False
+
+        try:
+            all_records = sheet.get_all_values()
+            headers = all_records[0]
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+            idx_id = col_map.get("book_id", 0)
+            idx_uid = col_map.get("user_id", 1)
+            idx_total = col_map.get("total_pages", 6)
+            idx_current = col_map.get("current_page", 7)
+            idx_progress = col_map.get("progress", 8)
+
+            for i, row in enumerate(all_records[1:], start=2):
+                if len(row) > idx_id and row[idx_id] == str(book_id):
+                    if len(row) > idx_uid and row[idx_uid] == str(user_id):
+                        total = int(row[idx_total]) if len(row) > idx_total and row[idx_total] else 0
+                        progress = int((int(current_page) / total) * 100) if total > 0 else 0
+
+                        sheet.update_cell(i, idx_current + 1, str(current_page))
+                        sheet.update_cell(i, idx_progress + 1, str(progress))
+                        return True
+            return False
+        except Exception as e:
+            print(f"【Error】本の進捗更新エラー: {e}")
+            return False
+
+    @staticmethod
+    def delete_book(book_id, user_id):
+        """本を本棚から削除（ステータスをDELETEDに変更）"""
+        sheet = GSheetService.get_or_create_bookshelf_sheet()
+        if not sheet:
+            return False
+
+        try:
+            all_records = sheet.get_all_values()
+            headers = all_records[0]
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+            idx_id = col_map.get("book_id", 0)
+            idx_uid = col_map.get("user_id", 1)
+            idx_status = col_map.get("status", 10)
+
+            for i, row in enumerate(all_records[1:], start=2):
+                if len(row) > idx_id and row[idx_id] == str(book_id):
+                    if len(row) > idx_uid and row[idx_uid] == str(user_id):
+                        sheet.update_cell(i, idx_status + 1, "DELETED")
+                        return True
+            return False
+        except Exception as e:
+            print(f"【Error】本の削除エラー: {e}")
             return False

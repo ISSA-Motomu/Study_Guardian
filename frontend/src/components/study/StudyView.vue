@@ -133,31 +133,42 @@
       </div>
     </GlassPanel>
 
-    <!-- Menu Grid -->
-    <div class="grid grid-cols-3 gap-3">
+    <!-- Menu Grid: Shop & Gacha (2 columns) -->
+    <div class="grid grid-cols-2 gap-3">
       <button 
         @click="openShop"
-        class="bg-white/90 backdrop-blur-sm rounded-2xl p-3 shadow-lg flex flex-col items-center justify-center gap-1 transition-transform active:scale-95 border-b-4 border-amber-200"
+        class="bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-lg flex flex-col items-center justify-center gap-1 transition-transform active:scale-95 border-b-4 border-amber-200"
       >
-        <span class="text-3xl">🏪</span>
-        <span class="font-bold text-gray-700 text-sm">ショップ</span>
+        <span class="text-4xl">🏪</span>
+        <span class="font-bold text-gray-700">ショップ</span>
       </button>
 
       <button 
         @click="openGacha"
-        class="bg-white/90 backdrop-blur-sm rounded-2xl p-3 shadow-lg flex flex-col items-center justify-center gap-1 transition-transform active:scale-95 border-b-4 border-purple-200"
+        class="bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-lg flex flex-col items-center justify-center gap-1 transition-transform active:scale-95 border-b-4 border-purple-200"
       >
-        <span class="text-3xl">🔮</span>
-        <span class="font-bold text-gray-700 text-sm">ガチャ</span>
+        <span class="text-4xl">🔮</span>
+        <span class="font-bold text-gray-700">ガチャ</span>
         <span class="text-[10px] text-red-500 font-bold bg-red-100 px-1.5 py-0.5 rounded-full">準備中</span>
+      </button>
+    </div>
+
+    <!-- Menu Grid: Materials & Bookshelf (2 columns) -->
+    <div class="grid grid-cols-2 gap-3">
+      <button 
+        @click="emit('openMaterials')"
+        class="bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-lg flex flex-col items-center justify-center gap-1 transition-transform active:scale-95 border-b-4 border-green-200"
+      >
+        <span class="text-4xl">📖</span>
+        <span class="font-bold text-gray-700">教材</span>
       </button>
 
       <button 
-        @click="emit('openMaterials')"
-        class="bg-white/90 backdrop-blur-sm rounded-2xl p-3 shadow-lg flex flex-col items-center justify-center gap-1 transition-transform active:scale-95 border-b-4 border-green-200"
+        @click="emit('openBookshelf')"
+        class="bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-lg flex flex-col items-center justify-center gap-1 transition-transform active:scale-95 border-b-4 border-blue-200"
       >
-        <span class="text-3xl">📖</span>
-        <span class="font-bold text-gray-700 text-sm">教材</span>
+        <span class="text-4xl">📚</span>
+        <span class="font-bold text-gray-700">本棚</span>
       </button>
     </div>
   </div>
@@ -176,7 +187,7 @@ const studyStore = useStudyStore()
 const shopStore = useShopStore()
 const { playSound } = useSound()
 
-const emit = defineEmits(['timer', 'openGoalModal', 'openMaterials', 'editGoal'])
+const emit = defineEmits(['timer', 'openGoalModal', 'openMaterials', 'openBookshelf', 'editGoal'])
 
 const defaultAvatar = 'https://cdn-icons-png.flaticon.com/512/4333/4333609.png'
 

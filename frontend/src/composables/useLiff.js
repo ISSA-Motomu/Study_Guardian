@@ -6,6 +6,27 @@ const liffId = import.meta.env.VITE_LIFF_ID || '2008998497-Vfli3v7u'
 const isInitialized = ref(false)
 const liffError = ref(null)
 
+// ユーザーID永続化キー
+const USER_ID_KEY = 'sg_user_id'
+
+// ユーザーIDをLocalStorageに保存
+const saveUserId = (userId) => {
+  try {
+    localStorage.setItem(USER_ID_KEY, userId)
+  } catch (e) {
+    console.warn('Failed to save user ID:', e)
+  }
+}
+
+// LocalStorageからユーザーIDを復元
+const getSavedUserId = () => {
+  try {
+    return localStorage.getItem(USER_ID_KEY)
+  } catch (e) {
+    return null
+  }
+}
+
 // プログレス更新ヘルパー
 const updateProgress = (percent, status) => {
   if (typeof window !== 'undefined' && window.updateProgress) {
@@ -52,6 +73,9 @@ export function useLiff() {
       const profile = await liff.getProfile()
       const userId = profile.userId
 
+      // ユーザーIDを永続化
+      saveUserId(userId)
+
       // Send profile to server to update avatar_url
       try {
         await fetch('/api/user/update_profile', {
@@ -92,10 +116,12 @@ export function useLiff() {
         console.warn('Using development/browser mode')
         updateProgress(80, 'ブラウザモードで起動中...')
 
-        // Try to get user from URL or use mock
+        // Try to get user from URL, saved ID, or use mock
         const urlParams = new URLSearchParams(window.location.search)
-        const mockUserId = urlParams.get('user_id') || 'dev_user_123'
+        const mockUserId = urlParams.get('user_id') || getSavedUserId() || 'dev_user_123'
 
+        // ユーザーIDを永続化
+        saveUserId(mockUserId)
         userStore.setUserId(mockUserId)
 
         updateProgress(90, 'ユーザーデータ取得中...')
