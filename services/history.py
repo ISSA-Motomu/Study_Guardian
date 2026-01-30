@@ -1223,7 +1223,10 @@ class HistoryService:
             try:
                 doc = GSheetService.get_spreadsheet()
                 if not doc:
-                    return {"success": False, "message": "スプレッドシートに接続できませんでした"}
+                    return {
+                        "success": False,
+                        "message": "スプレッドシートに接続できませんでした",
+                    }
                 sheet = doc.add_worksheet(title="study_comments", rows=100, cols=10)
                 sheet.update(
                     "A1:E1",

@@ -15,11 +15,15 @@ class MaterialsService:
     @classmethod
     def _get_worksheet(cls):
         """ワークシートを取得"""
-        sh = GSheetService.open_sheet()
+        ws = GSheetService.get_worksheet(cls.SHEET_NAME)
+        if ws:
+            return ws
+        
+        # シートが無ければ作成
         try:
-            return sh.worksheet(cls.SHEET_NAME)
-        except Exception:
-            # シートが無ければ作成
+            sh = GSheetService.get_spreadsheet()
+            if not sh:
+                raise Exception("スプレッドシートに接続できません")
             ws = sh.add_worksheet(title=cls.SHEET_NAME, rows=1000, cols=10)
             # ヘッダ行を追加
             ws.update(
@@ -38,6 +42,9 @@ class MaterialsService:
                 ],
             )
             return ws
+        except Exception as e:
+            print(f"Materials Sheet Create Error: {e}")
+            raise
 
     @classmethod
     def get_user_materials(cls, user_id: str) -> list:
