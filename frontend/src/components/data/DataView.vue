@@ -54,6 +54,14 @@
     <!-- Weekly View -->
     <div v-if="activeTab === 'weekly'">
       <GlassPanel>
+        <!-- ローディング表示 -->
+        <div v-if="loadingStats" class="h-64 flex items-center justify-center">
+          <div class="text-center">
+            <div class="animate-spin text-4xl mb-2">📊</div>
+            <span class="text-gray-400">データ読み込み中...</span>
+          </div>
+        </div>
+        <template v-else>
         <!-- Week Navigation -->
         <div class="flex justify-between items-center mb-4">
           <button 
@@ -84,20 +92,35 @@
           <div
             v-for="(item, idx) in currentWeekData"
             :key="idx"
-            class="flex-1 flex flex-col items-center min-w-0"
+            class="flex-1 flex flex-col items-center min-w-0 group"
           >
             <!-- Stacked Bar -->
             <div class="w-full relative flex flex-col-reverse">
               <div 
                 v-for="(seg, sidx) in item.segments"
                 :key="sidx"
-                class="w-full first:rounded-t-lg transition-all duration-500"
+                class="w-full first:rounded-t-lg transition-all duration-500 cursor-pointer hover:opacity-80 relative"
                 :style="{ 
                   height: getWeeklyStackedHeight(seg.minutes, item.total) + 'px',
                   backgroundColor: seg.color,
                   minHeight: seg.minutes > 0 ? '4px' : '0'
                 }"
+                :title="seg.subject + ': ' + seg.minutes + '分'"
               />
+              <!-- Tooltip on hover -->
+              <div 
+                v-if="item.total > 0"
+                class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-20"
+              >
+                <div class="bg-gray-800 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap shadow-lg">
+                  <p class="font-bold mb-1">{{ item.date }}</p>
+                  <div v-for="(seg, i) in item.segments.filter(s => s.minutes > 0)" :key="i" class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full" :style="{ backgroundColor: seg.color }"></span>
+                    <span>{{ seg.subject }}: {{ seg.minutes }}分</span>
+                  </div>
+                </div>
+                <div class="absolute left-1/2 -translate-x-1/2 -bottom-1 w-2 h-2 bg-gray-800 rotate-45"></div>
+              </div>
               <!-- Minutes label on top -->
               <span 
                 v-if="item.total > 0"
@@ -142,12 +165,21 @@
             <p class="text-xs text-gray-500">平均/日</p>
           </div>
         </div>
+        </template>
       </GlassPanel>
     </div>
 
     <!-- Monthly View -->
     <div v-if="activeTab === 'monthly'">
       <GlassPanel>
+        <!-- ローディング表示 -->
+        <div v-if="loadingStats" class="h-64 flex items-center justify-center">
+          <div class="text-center">
+            <div class="animate-spin text-4xl mb-2">📊</div>
+            <span class="text-gray-400">データ読み込み中...</span>
+          </div>
+        </div>
+        <template v-else>
         <!-- Month Navigation -->
         <div class="flex justify-between items-center mb-4">
           <button 
@@ -178,20 +210,35 @@
           <div
             v-for="(week, idx) in currentMonthWeeks"
             :key="idx"
-            class="flex-1 flex flex-col items-center"
+            class="flex-1 flex flex-col items-center group"
           >
             <!-- Stacked Bar -->
             <div class="w-full relative flex flex-col-reverse">
               <div 
                 v-for="(seg, sidx) in week.segments"
                 :key="sidx"
-                class="w-full first:rounded-t-lg transition-all duration-500"
+                class="w-full first:rounded-t-lg transition-all duration-500 cursor-pointer hover:opacity-80"
                 :style="{ 
                   height: getStackedHeight(seg.minutes, week.total) + 'px',
                   backgroundColor: seg.color,
                   minHeight: seg.minutes > 0 ? '4px' : '0'
                 }"
+                :title="seg.subject + ': ' + seg.minutes + '分'"
               />
+              <!-- Tooltip on hover -->
+              <div 
+                v-if="week.total > 0"
+                class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-20"
+              >
+                <div class="bg-gray-800 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap shadow-lg">
+                  <p class="font-bold mb-1">{{ week.label }}</p>
+                  <div v-for="(seg, i) in week.segments.filter(s => s.minutes > 0)" :key="i" class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full" :style="{ backgroundColor: seg.color }"></span>
+                    <span>{{ seg.subject }}: {{ seg.minutes }}分</span>
+                  </div>
+                </div>
+                <div class="absolute left-1/2 -translate-x-1/2 -bottom-1 w-2 h-2 bg-gray-800 rotate-45"></div>
+              </div>
               <!-- Total on top -->
               <span 
                 v-if="week.total > 0"
@@ -225,31 +272,73 @@
             <p class="text-xs text-gray-500">月合計 ({{ Math.round(monthlyTotal / 60 * 10) / 10 }}時間)</p>
           </div>
         </div>
+        </template>
       </GlassPanel>
     </div>
 
-    <!-- Subject Breakdown - Weekly -->
+    <!-- Subject Breakdown Cards - Horizontal Scroll -->
     <GlassPanel>
-      <h3 class="font-bold text-gray-700 mb-4">📚 今週の科目別時間</h3>
-      <div v-if="weeklySubjectData.length === 0" class="text-center text-gray-500 py-4">
-        今週の記録はありません
+      <h3 class="font-bold text-gray-700 mb-4">📊 科目別時間</h3>
+      <div v-if="loadingStats" class="text-center py-4">
+        <span class="text-gray-400 animate-pulse">読み込み中...</span>
       </div>
-      <SubjectChart v-else :data="weeklySubjectData" />
-    </GlassPanel>
-
-    <!-- Subject Breakdown - Monthly -->
-    <GlassPanel>
-      <h3 class="font-bold text-gray-700 mb-4">📆 今月の科目別時間</h3>
-      <div v-if="monthlySubjectData.length === 0" class="text-center text-gray-500 py-4">
-        今月の記録はありません
+      <div v-else class="overflow-x-auto -mx-4 px-4 pb-2">
+        <div class="flex gap-4" style="width: max-content;">
+          <!-- 今週 -->
+          <div class="w-64 flex-shrink-0 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-4 border border-indigo-200">
+            <h4 class="text-sm font-bold text-indigo-600 mb-3">📚 今週</h4>
+            <div v-if="weeklySubjectData.length === 0" class="text-center text-gray-400 text-sm py-2">
+              記録なし
+            </div>
+            <div v-else class="space-y-2">
+              <div v-for="(item, idx) in weeklySubjectData.slice(0, 5)" :key="idx" class="flex items-center gap-2">
+                <div class="w-3 h-3 rounded-full flex-shrink-0" :style="{ backgroundColor: item.color }"></div>
+                <span class="text-xs text-gray-700 flex-1 truncate">{{ item.subject }}</span>
+                <span class="text-xs font-bold text-gray-800">{{ item.minutes }}分</span>
+              </div>
+              <div class="pt-2 border-t border-indigo-200">
+                <p class="text-lg font-bold text-indigo-600 text-center">{{ weeklySubjectData.reduce((a, b) => a + b.minutes, 0) }}分</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 今月 -->
+          <div class="w-64 flex-shrink-0 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border border-green-200">
+            <h4 class="text-sm font-bold text-green-600 mb-3">📆 今月</h4>
+            <div v-if="monthlySubjectData.length === 0" class="text-center text-gray-400 text-sm py-2">
+              記録なし
+            </div>
+            <div v-else class="space-y-2">
+              <div v-for="(item, idx) in monthlySubjectData.slice(0, 5)" :key="idx" class="flex items-center gap-2">
+                <div class="w-3 h-3 rounded-full flex-shrink-0" :style="{ backgroundColor: item.color }"></div>
+                <span class="text-xs text-gray-700 flex-1 truncate">{{ item.subject }}</span>
+                <span class="text-xs font-bold text-gray-800">{{ item.minutes }}分</span>
+              </div>
+              <div class="pt-2 border-t border-green-200">
+                <p class="text-lg font-bold text-green-600 text-center">{{ monthlySubjectData.reduce((a, b) => a + b.minutes, 0) }}分</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 累計 -->
+          <div class="w-64 flex-shrink-0 bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-4 border border-orange-200">
+            <h4 class="text-sm font-bold text-orange-600 mb-3">🏆 累計</h4>
+            <div v-if="subjectData.length === 0" class="text-center text-gray-400 text-sm py-2">
+              記録なし
+            </div>
+            <div v-else class="space-y-2">
+              <div v-for="(item, idx) in subjectData.slice(0, 5)" :key="idx" class="flex items-center gap-2">
+                <div class="w-3 h-3 rounded-full flex-shrink-0" :style="{ backgroundColor: item.color }"></div>
+                <span class="text-xs text-gray-700 flex-1 truncate">{{ item.subject }}</span>
+                <span class="text-xs font-bold text-gray-800">{{ item.minutes }}分</span>
+              </div>
+              <div class="pt-2 border-t border-orange-200">
+                <p class="text-lg font-bold text-orange-600 text-center">{{ subjectData.reduce((a, b) => a + b.minutes, 0) }}分</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <SubjectChart v-else :data="monthlySubjectData" />
-    </GlassPanel>
-
-    <!-- Subject Breakdown - Total -->
-    <GlassPanel>
-      <h3 class="font-bold text-gray-700 mb-4">📊 累計科目別時間</h3>
-      <SubjectChart :data="subjectData" />
     </GlassPanel>
 
     <!-- Recent Activity -->

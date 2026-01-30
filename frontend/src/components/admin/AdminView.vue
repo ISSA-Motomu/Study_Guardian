@@ -265,7 +265,8 @@
             v-model="announcement.target"
             class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-purple-400 focus:outline-none"
           >
-            <option value="all">👨‍👩‍👧‍👦 全員（ADMIN含む）</option>
+            <option value="self">🔔 自分だけ（テスト送信）</option>
+            <option value="all">👨‍👩‍👧‍👦 全員（自分含む）</option>
             <option value="users">👦 USERのみ</option>
             <option value="individual">👤 個別ユーザー</option>
           </select>
@@ -292,12 +293,23 @@
           class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-purple-400 focus:outline-none resize-none"
         />
         
+        <!-- 送信先プレビュー -->
+        <div class="bg-gray-50 rounded-lg p-2 text-xs text-gray-500">
+          📨 送信先: 
+          <span class="font-medium text-gray-700">
+            {{ announcement.target === 'self' ? '自分' : 
+               announcement.target === 'all' ? '全員（' + allUsers.length + '人）' : 
+               announcement.target === 'users' ? 'USERのみ（' + allUsers.filter(u => u.role !== 'ADMIN').length + '人）' : 
+               allUsers.find(u => u.user_id === announcement.targetUserId)?.user_name || '選択してください' }}
+          </span>
+        </div>
+        
         <button
           @click="sendAnnouncement"
           :disabled="!canSendAnnouncement || processing"
           class="w-full py-3 rounded-xl font-bold text-white bg-purple-500 hover:bg-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
         >
-          📢 {{ announcement.target === 'individual' ? '送信' : (announcement.target === 'users' ? 'USERに送信' : '全員に送信') }}
+          📢 {{ announcement.target === 'self' ? 'テスト送信' : (announcement.target === 'individual' ? '送信' : (announcement.target === 'users' ? 'USERに送信' : '全員に送信')) }}
         </button>
       </div>
     </GlassPanel>
@@ -373,7 +385,7 @@ const activeAction = ref(null)
 const newJob = ref({ title: '', reward: 0 })
 const pointGrant = ref({ userId: '', amount: 0 })
 const manualStudy = ref({ userId: '', subject: '', minutes: 0, comment: '' })
-const announcement = ref({ message: '', target: 'users', targetUserId: '' })
+const announcement = ref({ message: '', target: 'self', targetUserId: '' })  // デフォルトは自分だけ（テスト）
 
 // お知らせ送信可能かどうか
 const canSendAnnouncement = computed(() => {
@@ -792,7 +804,8 @@ const addManualStudy = async () => {
 const sendAnnouncement = async () => {
   if (processing.value || !canSendAnnouncement.value) return
   
-  const targetLabel = announcement.value.target === 'all' ? '全員（ADMIN含む）' : 
+  const targetLabel = announcement.value.target === 'self' ? '自分だけ（テスト）' :
+                      announcement.value.target === 'all' ? '全員（自分含む）' : 
                       announcement.value.target === 'users' ? 'USERのみ' : 
                       allUsers.value.find(u => u.user_id === announcement.value.targetUserId)?.user_name || '選択したユーザー'
   
@@ -815,14 +828,18 @@ const sendAnnouncement = async () => {
       body: JSON.stringify({
         message: announcement.value.message.trim(),
         target: announcement.value.target,
-        target_user_id: announcement.value.targetUserId
+        target_user_id: announcement.value.targetUserId,
+        sender_user_id: userStore.originalUserId || userStore.currentUserId  // 自分のIDを送信
       })
     })
     const json = await res.json()
     
     if (json.status === 'ok' || json.status === 'success') {
-      showMessage(`お知らせを${json.sent_count || ''}人に送信しました`, 'success')
-      announcement.value = { message: '', target: 'users', targetUserId: '' }
+      const resultMsg = json.failed_count > 0 
+        ? `✅ ${json.sent_count}人に送信成功（⚠️ ${json.failed_count}人失敗）`
+        : `✅ ${json.sent_count}人に送信しました`
+      showMessage(resultMsg, 'success')
+      announcement.value = { message: '', target: 'self', targetUserId: '' }
     } else {
       showMessage(json.message || 'お知らせ送信に失敗しました', 'error')
     }

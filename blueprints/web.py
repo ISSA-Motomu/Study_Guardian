@@ -1294,8 +1294,9 @@ def api_admin_broadcast():
     """管理者からユーザーへのお知らせ送信"""
     data = request.json
     message_text = data.get("message", "").strip()
-    target = data.get("target", "users")  # 'all', 'users', 'individual'
+    target = data.get("target", "users")  # 'all', 'users', 'individual', 'self'
     target_user_id = data.get("target_user_id", "")
+    sender_user_id = data.get("sender_user_id", "")  # 送信者のID（selfの場合に使用）
 
     if not message_text:
         return jsonify({"status": "error", "message": "Message is required"}), 400
@@ -1304,7 +1305,16 @@ def api_admin_broadcast():
         all_users = EconomyService.get_all_users()
 
         # 通知先リストを作成
-        if target == "individual" and target_user_id:
+        if target == "self":
+            # 自分だけ（テスト送信）- sender_user_idが無ければ空
+            if sender_user_id:
+                user_ids = [sender_user_id]
+            else:
+                # sender_user_idが無い場合はADMINユーザーを対象
+                user_ids = [
+                    u["user_id"] for u in all_users if u.get("role", "").upper() == "ADMIN"
+                ]
+        elif target == "individual" and target_user_id:
             # 個別ユーザー
             user_ids = [target_user_id]
         elif target == "all":
@@ -1317,6 +1327,7 @@ def api_admin_broadcast():
             ]
 
         sent_count = 0
+        failed_count = 0
         for user_id in user_ids:
             try:
                 line_bot_api.push_message(
@@ -1326,8 +1337,14 @@ def api_admin_broadcast():
                 sent_count += 1
             except Exception as e:
                 print(f"Failed to send to {user_id}: {e}")
+                failed_count += 1
 
-        return jsonify({"status": "ok", "sent_count": sent_count})
+        return jsonify({
+            "status": "ok", 
+            "sent_count": sent_count,
+            "failed_count": failed_count,
+            "target_count": len(user_ids)
+        })
 
     except Exception as e:
         print(f"Broadcast Error: {e}")
