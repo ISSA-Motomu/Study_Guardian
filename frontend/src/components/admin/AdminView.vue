@@ -255,9 +255,36 @@
     <!-- お知らせ送信 -->
     <GlassPanel>
       <h3 class="font-bold text-gray-700 mb-3">📢 お知らせを送信</h3>
-      <p class="text-xs text-gray-500 mb-3">全ユーザーにLINE通知を送信します</p>
+      <p class="text-xs text-gray-500 mb-3">LINE通知を送信します</p>
       
       <div class="space-y-3">
+        <!-- 通知先選択 -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">通知先</label>
+          <select 
+            v-model="announcement.target"
+            class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-purple-400 focus:outline-none"
+          >
+            <option value="all">👨‍👩‍👧‍👦 全員（ADMIN含む）</option>
+            <option value="users">👦 USERのみ</option>
+            <option value="individual">👤 個別ユーザー</option>
+          </select>
+        </div>
+        
+        <!-- 個別ユーザー選択（individualの場合） -->
+        <div v-if="announcement.target === 'individual'">
+          <label class="block text-sm font-medium text-gray-700 mb-1">送信先ユーザー</label>
+          <select 
+            v-model="announcement.targetUserId"
+            class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-purple-400 focus:outline-none"
+          >
+            <option value="">ユーザーを選択...</option>
+            <option v-for="u in allUsers" :key="u.user_id" :value="u.user_id">
+              {{ u.user_name }}
+            </option>
+          </select>
+        </div>
+        
         <textarea
           v-model="announcement.message"
           rows="3"
@@ -267,10 +294,10 @@
         
         <button
           @click="sendAnnouncement"
-          :disabled="!announcement.message.trim() || processing"
+          :disabled="!canSendAnnouncement || processing"
           class="w-full py-3 rounded-xl font-bold text-white bg-purple-500 hover:bg-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
         >
-          📢 全員に送信
+          📢 {{ announcement.target === 'individual' ? '送信' : (announcement.target === 'users' ? 'USERに送信' : '全員に送信') }}
         </button>
       </div>
     </GlassPanel>
@@ -344,7 +371,14 @@ const activeAction = ref(null)
 const newJob = ref({ title: '', reward: 0 })
 const pointGrant = ref({ userId: '', amount: 0 })
 const manualStudy = ref({ userId: '', subject: '', minutes: 0, comment: '' })
-const announcement = ref({ message: '' })
+const announcement = ref({ message: '', target: 'users', targetUserId: '' })
+
+// お知らせ送信可能かどうか
+const canSendAnnouncement = computed(() => {
+  if (!announcement.value.message.trim()) return false
+  if (announcement.value.target === 'individual' && !announcement.value.targetUserId) return false
+  return true
+})
 
 const tabs = [
   { key: 'all', label: 'すべて', icon: '📋' },
@@ -752,11 +786,15 @@ const addManualStudy = async () => {
   }
 }
 
-// お知らせを全員に送信
+// お知らせを送信
 const sendAnnouncement = async () => {
-  if (processing.value || !announcement.value.message.trim()) return
+  if (processing.value || !canSendAnnouncement.value) return
   
-  if (!confirm('全ユーザーにお知らせを送信しますか？')) return
+  const targetLabel = announcement.value.target === 'all' ? '全員（ADMIN含む）' : 
+                      announcement.value.target === 'users' ? 'USERのみ' : 
+                      allUsers.value.find(u => u.user_id === announcement.value.targetUserId)?.user_name || '選択したユーザー'
+  
+  if (!confirm(`${targetLabel}にお知らせを送信しますか？`)) return
   
   processing.value = true
   
@@ -765,14 +803,16 @@ const sendAnnouncement = async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        message: announcement.value.message.trim()
+        message: announcement.value.message.trim(),
+        target: announcement.value.target,
+        target_user_id: announcement.value.targetUserId
       })
     })
     const json = await res.json()
     
     if (json.status === 'ok' || json.status === 'success') {
       showMessage(`お知らせを${json.sent_count || ''}人に送信しました`, 'success')
-      announcement.value = { message: '' }
+      announcement.value = { message: '', target: 'users', targetUserId: '' }
     } else {
       showMessage(json.message || 'お知らせ送信に失敗しました', 'error')
     }

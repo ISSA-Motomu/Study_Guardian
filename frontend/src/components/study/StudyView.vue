@@ -114,12 +114,20 @@
           </div>
           <div class="flex justify-between items-center mt-2">
             <span class="text-xs text-gray-400">🗓️ {{ formatGoalDate(goal.target_date) }}</span>
-            <button 
-              @click="completeGoal(goal.id)"
-              class="text-xs px-2 py-1 rounded bg-green-100 text-green-600 font-medium hover:bg-green-200"
-            >
-              ✅ 達成
-            </button>
+            <div class="flex gap-1">
+              <button 
+                @click="emit('editGoal', goal)"
+                class="text-xs px-2 py-1 rounded bg-blue-100 text-blue-600 font-medium hover:bg-blue-200"
+              >
+                ✏️ 編集
+              </button>
+              <button 
+                @click="completeGoal(goal.id)"
+                class="text-xs px-2 py-1 rounded bg-green-100 text-green-600 font-medium hover:bg-green-200"
+              >
+                ✅ 達成
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -168,7 +176,7 @@ const studyStore = useStudyStore()
 const shopStore = useShopStore()
 const { playSound } = useSound()
 
-const emit = defineEmits(['timer', 'openGoalModal', 'openMaterials'])
+const emit = defineEmits(['timer', 'openGoalModal', 'openMaterials', 'editGoal'])
 
 const defaultAvatar = 'https://cdn-icons-png.flaticon.com/512/4333/4333609.png'
 

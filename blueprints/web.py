@@ -279,6 +279,17 @@ def api_user_active_session(user_id):
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+@web_bp.route("/api/study/active_sessions")
+def api_all_active_sessions():
+    """全ユーザーのアクティブな勉強セッションを取得"""
+    try:
+        sessions = GSheetService.get_all_active_sessions()
+        return jsonify({"status": "ok", "data": sessions})
+    except Exception as e:
+        print(f"Active Sessions Error: {e}")
+        return jsonify({"status": "error", "data": []})
+
+
 @web_bp.route("/api/user/<user_id>/stats")
 def api_user_stats(user_id):
     """ユーザーの学習統計詳細を取得"""
@@ -1012,17 +1023,30 @@ def api_admin_manual_study():
 
 @web_bp.route("/api/admin/broadcast", methods=["POST"])
 def api_admin_broadcast():
-    """管理者から全ユーザーへのお知らせ送信"""
+    """管理者からユーザーへのお知らせ送信"""
     data = request.json
     message_text = data.get("message", "").strip()
+    target = data.get("target", "users")  # 'all', 'users', 'individual'
+    target_user_id = data.get("target_user_id", "")
 
     if not message_text:
         return jsonify({"status": "error", "message": "Message is required"}), 400
 
     try:
-        # 全USERを取得
         all_users = EconomyService.get_all_users()
-        user_ids = [u["user_id"] for u in all_users if u.get("role", "").upper() == "USER"]
+
+        # 通知先リストを作成
+        if target == "individual" and target_user_id:
+            # 個別ユーザー
+            user_ids = [target_user_id]
+        elif target == "all":
+            # 全員（ADMIN含む）
+            user_ids = [u["user_id"] for u in all_users]
+        else:
+            # USERのみ（デフォルト）
+            user_ids = [
+                u["user_id"] for u in all_users if u.get("role", "").upper() == "USER"
+            ]
 
         sent_count = 0
         for user_id in user_ids:
@@ -1108,6 +1132,28 @@ def api_complete_goal(goal_id):
             ), 500
     except Exception as e:
         print(f"Complete Goal Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@web_bp.route("/api/goals/<goal_id>", methods=["PUT"])
+def api_update_goal(goal_id):
+    """目標を更新する"""
+    data = request.json
+    user_id = data.get("user_id")
+    title = data.get("title")
+    description = data.get("description", "")
+    target_date = data.get("target_date")
+
+    if not user_id or not title or not target_date:
+        return jsonify({"status": "error", "message": "Missing required fields"}), 400
+
+    try:
+        if GSheetService.update_goal(goal_id, user_id, title, description, target_date):
+            return jsonify({"status": "ok"})
+        else:
+            return jsonify({"status": "error", "message": "Failed to update goal"}), 500
+    except Exception as e:
+        print(f"Update Goal Error: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
 

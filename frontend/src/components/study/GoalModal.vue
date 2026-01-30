@@ -1,7 +1,9 @@
 <template>
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" @click.self="emit('close')">
     <div class="bg-white rounded-2xl p-6 w-[90%] max-w-md shadow-2xl animate-pop-in">
-      <h3 class="text-xl font-bold text-gray-800 mb-4">🎯 目標を設定</h3>
+      <h3 class="text-xl font-bold text-gray-800 mb-4">
+        {{ isEdit ? '✏️ 目標を編集' : '🎯 目標を設定' }}
+      </h3>
       
       <!-- Title -->
       <div class="mb-4">
@@ -60,7 +62,7 @@
           :disabled="!canSubmit || submitting"
           class="flex-1 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-indigo-500 to-purple-500 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {{ submitting ? '保存中...' : '🎯 設定する' }}
+          {{ submitting ? '保存中...' : (isEdit ? '✏️ 更新する' : '🎯 設定する') }}
         </button>
       </div>
     </div>
@@ -68,10 +70,17 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 
-const emit = defineEmits(['close', 'created'])
+const props = defineProps({
+  editGoal: {
+    type: Object,
+    default: null
+  }
+})
+
+const emit = defineEmits(['close', 'created', 'updated'])
 
 const userStore = useUserStore()
 
@@ -79,6 +88,9 @@ const title = ref('')
 const description = ref('')
 const targetDate = ref('')
 const submitting = ref(false)
+
+// 編集モードかどうか
+const isEdit = computed(() => !!props.editGoal)
 
 // 今日の日付（最小値として使用）
 const minDate = computed(() => {
@@ -100,34 +112,67 @@ const canSubmit = computed(() => {
   return title.value.trim() && targetDate.value && daysUntil.value >= 0
 })
 
+// 編集モードの場合、初期値を設定
+onMounted(() => {
+  if (props.editGoal) {
+    title.value = props.editGoal.title || ''
+    description.value = props.editGoal.description || ''
+    targetDate.value = props.editGoal.target_date || ''
+  }
+})
+
 const handleSubmit = async () => {
   if (!canSubmit.value || submitting.value) return
   
   submitting.value = true
   
   try {
-    const response = await fetch('/api/goals', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_id: userStore.currentUserId,
-        user_name: userStore.user.name,
-        title: title.value.trim(),
-        description: description.value.trim(),
-        target_date: targetDate.value
+    if (isEdit.value) {
+      // 更新
+      const response = await fetch(`/api/goals/${props.editGoal.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userStore.currentUserId,
+          title: title.value.trim(),
+          description: description.value.trim(),
+          target_date: targetDate.value
+        })
       })
-    })
-    
-    const result = await response.json()
-    
-    if (result.status === 'ok') {
-      emit('created')
-      emit('close')
+      
+      const result = await response.json()
+      
+      if (result.status === 'ok') {
+        emit('updated')
+        emit('close')
+      } else {
+        alert('目標の更新に失敗しました: ' + (result.message || 'Unknown error'))
+      }
     } else {
-      alert('目標の保存に失敗しました: ' + (result.message || 'Unknown error'))
+      // 新規作成
+      const response = await fetch('/api/goals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userStore.currentUserId,
+          user_name: userStore.user.name,
+          title: title.value.trim(),
+          description: description.value.trim(),
+          target_date: targetDate.value
+        })
+      })
+      
+      const result = await response.json()
+      
+      if (result.status === 'ok') {
+        emit('created')
+        emit('close')
+      } else {
+        alert('目標の保存に失敗しました: ' + (result.message || 'Unknown error'))
+      }
     }
   } catch (e) {
-    console.error('Goal creation error:', e)
+    console.error('Goal save error:', e)
     alert('目標の保存に失敗しました')
   } finally {
     submitting.value = false

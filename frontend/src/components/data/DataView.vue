@@ -1,5 +1,27 @@
 <template>
   <div class="space-y-4 mt-8 pb-8">
+    <!-- 勉強中バナー -->
+    <div v-if="activeSessions.length > 0" class="space-y-2">
+      <div 
+        v-for="session in activeSessions"
+        :key="session.user_id"
+        class="bg-gradient-to-r from-green-400 to-emerald-500 rounded-xl p-3 shadow-lg animate-pulse-soft"
+      >
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">📖</span>
+          <div class="flex-1">
+            <p class="text-white font-bold">
+              {{ session.user_name }} が <span class="text-yellow-200">{{ session.subject || '勉強' }}</span> を勉強中
+            </p>
+            <p class="text-white/80 text-sm">
+              ⏱️ {{ session.start_time }} から {{ getElapsedTime(session.start_time) }}
+            </p>
+          </div>
+          <span class="text-3xl animate-bounce">🔥</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Header with Admin Button -->
     <div class="flex justify-between items-center">
       <h2 class="text-xl font-bold text-white">📊 学習データ</h2>
@@ -461,6 +483,7 @@ const studyRecords = ref([]) // 全勉強ログ（日付・科目付き）
 const weeklyRanking = ref([]) // 週間ランキング
 const allGoals = ref([]) // みんなの目標
 const showAllActivity = ref(false) // 「もっと見る」の展開状態
+const activeSessions = ref([]) // 勉強中のセッション
 
 // Loading states
 const loadingStats = ref(true)
@@ -928,10 +951,52 @@ const deleteGoal = async (goalId) => {
   }
 }
 
+// 勉強中セッションを取得
+const fetchActiveSessions = async () => {
+  try {
+    const res = await fetch('/api/study/active_sessions')
+    const data = await res.json()
+    if (data.status === 'ok') {
+      activeSessions.value = data.data || []
+    }
+  } catch (e) {
+    console.error('Failed to fetch active sessions:', e)
+  }
+}
+
+// 経過時間を計算
+const getElapsedTime = (startTime) => {
+  if (!startTime) return ''
+  try {
+    const now = new Date()
+    const [h, m, s] = startTime.split(':').map(Number)
+    const start = new Date()
+    start.setHours(h, m, s || 0)
+    
+    // 開始時刻が現在より後の場合は前日とみなす
+    if (start > now) {
+      start.setDate(start.getDate() - 1)
+    }
+    
+    const diff = Math.floor((now - start) / 1000 / 60)
+    if (diff < 60) {
+      return `${diff}分経過`
+    }
+    const hours = Math.floor(diff / 60)
+    const mins = diff % 60
+    return `${hours}時間${mins}分経過`
+  } catch {
+    return ''
+  }
+}
+
 onMounted(() => {
   fetchData()
   fetchGlobalActivity()
   fetchWeeklyRanking()
   fetchAllGoals()
+  fetchActiveSessions()
+  // 30秒ごとに勉強中セッションを更新
+  setInterval(fetchActiveSessions, 30000)
 })
 </script>

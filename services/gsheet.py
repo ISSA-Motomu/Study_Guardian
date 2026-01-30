@@ -154,6 +154,70 @@ class GSheetService:
         return False
 
     @staticmethod
+    def get_all_active_sessions():
+        """全ユーザーのアクティブセッション（STARTED）を取得"""
+        sheet = GSheetService.get_worksheet("study_log")
+        if not sheet:
+            return []
+
+        all_records = sheet.get_all_values()
+        if not all_records:
+            return []
+
+        headers = all_records[0]
+        col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+        idx_uid = col_map.get("user_id")
+        idx_name = col_map.get("display_name")
+        idx_status = col_map.get("status")
+        idx_start = col_map.get("start_time")
+        idx_subj = col_map.get("subject")
+        idx_date = col_map.get("date")
+
+        if idx_status is None:
+            return []
+
+        active_sessions = []
+        seen_users = set()  # 同じユーザーの重複を防ぐ
+
+        # 後ろから検索（最新を優先）
+        for i in range(len(all_records) - 1, 0, -1):
+            row = all_records[i]
+            if not row:
+                continue
+
+            def get_val(idx):
+                return (
+                    str(row[idx]).strip() if idx is not None and idx < len(row) else ""
+                )
+
+            status_val = get_val(idx_status)
+            if status_val != "STARTED":
+                continue
+
+            user_id = get_val(idx_uid) if idx_uid is not None else ""
+            if user_id in seen_users:
+                continue
+            seen_users.add(user_id)
+
+            user_name = get_val(idx_name) if idx_name is not None else ""
+            start_time = get_val(idx_start) if idx_start is not None else ""
+            subject = get_val(idx_subj) if idx_subj is not None else ""
+            date = get_val(idx_date) if idx_date is not None else ""
+
+            active_sessions.append(
+                {
+                    "user_id": user_id,
+                    "user_name": user_name,
+                    "start_time": start_time,
+                    "subject": subject,
+                    "date": date,
+                }
+            )
+
+        return active_sessions
+
+    @staticmethod
     def get_user_active_session(user_id, user_name=None):
         """ユーザーのアクティブセッション（STARTED）を取得"""
         sheet = GSheetService.get_worksheet("study_log")
@@ -772,4 +836,34 @@ class GSheetService:
             return False
         except Exception as e:
             print(f"【Error】目標削除エラー: {e}")
+            return False
+
+    @staticmethod
+    def update_goal(goal_id, user_id, title, description, target_date):
+        """目標を更新する"""
+        sheet = GSheetService.get_or_create_goals_sheet()
+        if not sheet:
+            return False
+
+        try:
+            all_records = sheet.get_all_values()
+            headers = all_records[0]
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+            idx_id = col_map.get("id", 0)
+            idx_uid = col_map.get("user_id", 1)
+            idx_title = col_map.get("title", 3)
+            idx_desc = col_map.get("description", 4)
+            idx_target = col_map.get("target_date", 5)
+
+            for i, row in enumerate(all_records[1:], start=2):
+                if len(row) > idx_id and str(row[idx_id]) == str(goal_id):
+                    if len(row) > idx_uid and row[idx_uid] == user_id:
+                        sheet.update_cell(i, idx_title + 1, title)
+                        sheet.update_cell(i, idx_desc + 1, description)
+                        sheet.update_cell(i, idx_target + 1, target_date)
+                        return True
+            return False
+        except Exception as e:
+            print(f"【Error】目標更新エラー: {e}")
             return False

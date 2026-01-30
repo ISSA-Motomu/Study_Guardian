@@ -35,8 +35,9 @@
           v-else 
           ref="studyViewRef"
           @timer="view = 'timer'" 
-          @openGoalModal="showGoalModal = true"
+          @openGoalModal="openGoalModalNew"
           @openMaterials="showMaterialsModal = true"
+          @editGoal="openGoalModalEdit"
         />
       </template>
     </div>
@@ -69,8 +70,10 @@
 
     <GoalModal
       v-if="showGoalModal"
-      @close="showGoalModal = false"
+      :editGoal="editingGoal"
+      @close="closeGoalModal"
       @created="onGoalCreated"
+      @updated="onGoalUpdated"
     />
 
     <MaterialsView
@@ -133,6 +136,7 @@ const view = ref('study')
 const showGoalModal = ref(false)
 const showMaterialsModal = ref(false)
 const studyViewRef = ref(null)
+const editingGoal = ref(null)
 
 // Lifecycle
 onMounted(async () => {
@@ -193,9 +197,34 @@ const exitViewMode = async () => {
 
 const onGoalCreated = () => {
   showGoalModal.value = false
+  editingGoal.value = null
   // StudyViewの目標リストを更新
   if (studyViewRef.value?.fetchMyGoals) {
     studyViewRef.value.fetchMyGoals()
   }
+}
+
+const onGoalUpdated = () => {
+  showGoalModal.value = false
+  editingGoal.value = null
+  // StudyViewの目標リストを更新
+  if (studyViewRef.value?.fetchMyGoals) {
+    studyViewRef.value.fetchMyGoals()
+  }
+}
+
+const openGoalModalNew = () => {
+  editingGoal.value = null
+  showGoalModal.value = true
+}
+
+const openGoalModalEdit = (goal) => {
+  editingGoal.value = goal
+  showGoalModal.value = true
+}
+
+const closeGoalModal = () => {
+  showGoalModal.value = false
+  editingGoal.value = null
 }
 </script>
