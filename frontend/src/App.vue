@@ -157,7 +157,7 @@ const editingGoal = ref(null)
 // ゲストモード検知時に通知表示
 watch(() => userStore.isGuestMode, (isGuest) => {
   if (isGuest) {
-    toastStore.warning('ユーザーの読み込みに失敗しました\nゲストモードで起動しています', 5000)
+    toastStore.warning('カカ！そいはログインに失敗しとっど 👷', 5000)
   }
 })
 

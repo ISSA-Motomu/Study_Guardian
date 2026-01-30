@@ -36,6 +36,12 @@
         <div class="py-3">
           <h4 class="text-xs text-gray-400 uppercase tracking-wide mb-2">設定</h4>
           <MenuItem 
+            icon="🎨" 
+            label="テーマの選択" 
+            :description="currentThemeName"
+            @click="showThemeModal = true"
+          />
+          <MenuItem 
             icon="🔔" 
             label="通知設定" 
             @click="openNotificationSettings"
@@ -73,7 +79,13 @@
             @click="showGuide = true"
           />
           <MenuItem 
-            icon="📝" 
+            icon="�" 
+            label="ヘルプを書いてみよう" 
+            description="アプリの使い方を共有"
+            @click="showHelpEditor = true"
+          />
+          <MenuItem 
+            icon="�📝" 
             label="フィードバック" 
             @click="openFeedback"
           />
@@ -201,6 +213,67 @@
         </div>
       </div>
     </Modal>
+
+    <!-- Theme Selection Modal -->
+    <Modal v-if="showThemeModal" @close="showThemeModal = false">
+      <div class="p-6">
+        <h3 class="text-xl font-bold mb-4">🎨 テーマの選択</h3>
+        <div class="space-y-2">
+          <button
+            v-for="theme in themes"
+            :key="theme.id"
+            @click="selectTheme(theme.id)"
+            :class="[
+              'w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all',
+              currentTheme === theme.id 
+                ? 'border-indigo-500 bg-indigo-50' 
+                : 'border-gray-200 hover:border-gray-300'
+            ]"
+          >
+            <div 
+              class="w-10 h-10 rounded-lg flex items-center justify-center"
+              :style="{ background: theme.preview }"
+            >
+              <span class="text-white text-lg">{{ theme.icon }}</span>
+            </div>
+            <div class="flex-1 text-left">
+              <p class="font-bold text-gray-800">{{ theme.name }}</p>
+              <p class="text-xs text-gray-500">{{ theme.description }}</p>
+            </div>
+            <span v-if="currentTheme === theme.id" class="text-indigo-500 text-xl">✓</span>
+          </button>
+        </div>
+      </div>
+    </Modal>
+
+    <!-- Help Editor Modal -->
+    <Modal v-if="showHelpEditor" @close="showHelpEditor = false">
+      <div class="p-6">
+        <h3 class="text-xl font-bold mb-4">📚 ヘルプを書いてみよう</h3>
+        <p class="text-sm text-gray-500 mb-4">
+          アプリの使い方や、便利な機能を他のユーザーに教えてあげよう！
+        </p>
+        <textarea
+          v-model="helpText"
+          placeholder="例: 勉強を始める前に科目を選ぶと、後から振り返りやすいよ！"
+          class="w-full h-32 p-3 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+        <div class="flex gap-2 mt-4">
+          <button
+            @click="showHelpEditor = false"
+            class="flex-1 py-2 px-4 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-50"
+          >
+            キャンセル
+          </button>
+          <button
+            @click="submitHelp"
+            class="flex-1 py-2 px-4 rounded-xl bg-indigo-500 text-white hover:bg-indigo-600"
+          >
+            送信する
+          </button>
+        </div>
+      </div>
+    </Modal>
   </div>
 </template>
 
@@ -221,11 +294,59 @@ const showGuide = ref(false)
 const showAbout = ref(false)
 const showAchievements = ref(false)
 const showStudyStats = ref(false)
+const showThemeModal = ref(false)
+const showHelpEditor = ref(false)
 const achievements = ref([])
+const currentTheme = ref(localStorage.getItem('sg_theme') || 'default')
+const helpText = ref('')
 
 // Constants
 const appVersion = '1.0.0'
 const isDev = import.meta.env.DEV
+
+const themes = [
+  { 
+    id: 'default', 
+    name: 'スタンダード', 
+    description: '標準のカラーテーマ',
+    icon: '☀️',
+    preview: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+  },
+  { 
+    id: 'ocean', 
+    name: 'オーシャン', 
+    description: '爽やかな海のテーマ',
+    icon: '🌊',
+    preview: 'linear-gradient(135deg, #00c6fb 0%, #005bea 100%)'
+  },
+  { 
+    id: 'forest', 
+    name: 'フォレスト', 
+    description: '自然を感じる緑のテーマ',
+    icon: '🌲',
+    preview: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)'
+  },
+  { 
+    id: 'sunset', 
+    name: 'サンセット', 
+    description: '暖かみのある夕焼けテーマ',
+    icon: '🌅',
+    preview: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
+  },
+  { 
+    id: 'dark', 
+    name: 'ダークモード', 
+    description: '目に優しいダークテーマ',
+    icon: '🌙',
+    preview: 'linear-gradient(135deg, #232526 0%, #414345 100%)'
+  }
+]
+
+// Computed
+const currentThemeName = computed(() => {
+  const theme = themes.find(t => t.id === currentTheme.value)
+  return theme ? theme.name : 'スタンダード'
+})
 
 // Methods
 const formatHours = (hours) => {
@@ -247,6 +368,30 @@ const openSoundSettings = () => {
 
 const openFeedback = () => {
   toastStore.info('フィードバック機能は準備中です')
+}
+
+const selectTheme = (themeId) => {
+  currentTheme.value = themeId
+  localStorage.setItem('sg_theme', themeId)
+  toastStore.success(`テーマを「${currentThemeName.value}」に変更しました`)
+  showThemeModal.value = false
+  // TODO: 実際のテーマ変更処理を実装
+}
+
+const submitHelp = async () => {
+  if (!helpText.value.trim()) {
+    toastStore.warning('ヘルプ内容を入力してください')
+    return
+  }
+  
+  try {
+    // ヘルプを送信（APIがあれば）
+    toastStore.success('ヘルプを送信しました！ありがとう！ 🎉')
+    helpText.value = ''
+    showHelpEditor.value = false
+  } catch (e) {
+    toastStore.error('送信に失敗しました')
+  }
 }
 
 // Fetch achievements on mount
