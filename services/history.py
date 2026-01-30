@@ -746,6 +746,120 @@ class HistoryService:
             return users
 
     @staticmethod
+    @cached(ranking_cache, key_func=lambda: "study_time_ranking")
+    def get_weekly_study_time_ranking():
+        """過去7日間の勉強時間ランキング（科目別内訳付き）"""
+        sheet = GSheetService.get_worksheet("study_log")
+        if not sheet:
+            return []
+
+        try:
+            records = sheet.get_all_values()
+            if len(records) <= 1:
+                return []
+
+            headers = records[0]
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+            idx_uid = col_map.get("user_id")
+            idx_name = col_map.get("display_name")
+            idx_date = col_map.get("date")
+            idx_dur = col_map.get("duration_min")
+            idx_subj = col_map.get("subject")
+
+            if None in [idx_uid, idx_date, idx_dur]:
+                print("[DEBUG] Missing columns for study ranking")
+                return []
+
+            # 過去7日間の日付範囲
+            today = datetime.datetime.now(
+                datetime.timezone(datetime.timedelta(hours=9))
+            ).date()
+            week_start = today - datetime.timedelta(days=6)
+            week_start_str = week_start.strftime("%Y-%m-%d")
+
+            user_stats = {}  # {user_id: {total: int, subjects: {subject: minutes}, display_name: str}}
+
+            for row in records[1:]:
+                if len(row) <= idx_uid:
+                    continue
+
+                uid = str(row[idx_uid])
+                date_str = row[idx_date] if len(row) > idx_date else ""
+                # シングルクォート除去
+                date_str = date_str.lstrip("'").strip()
+
+                duration_str = row[idx_dur] if len(row) > idx_dur else "0"
+                subject = (
+                    row[idx_subj] if idx_subj and len(row) > idx_subj else "その他"
+                )
+                display_name = (
+                    row[idx_name] if idx_name and len(row) > idx_name else uid
+                )
+
+                # 日付フィルタ
+                if date_str < week_start_str:
+                    continue
+
+                # duration チェック
+                if not duration_str.isdigit() or int(duration_str) == 0:
+                    continue
+
+                duration = int(duration_str)
+
+                if uid not in user_stats:
+                    user_stats[uid] = {
+                        "total": 0,
+                        "subjects": {},
+                        "display_name": display_name,
+                    }
+
+                user_stats[uid]["total"] += duration
+                if subject in user_stats[uid]["subjects"]:
+                    user_stats[uid]["subjects"][subject] += duration
+                else:
+                    user_stats[uid]["subjects"][subject] = duration
+
+                # display_nameを最新のものに更新
+                if display_name and display_name != uid:
+                    user_stats[uid]["display_name"] = display_name
+
+            # ランキング作成
+            ranking = []
+            for uid, stats in user_stats.items():
+                # 科目を分単位から時間に変換してソート
+                subjects_list = [
+                    {"subject": s, "minutes": m}
+                    for s, m in sorted(
+                        stats["subjects"].items(), key=lambda x: x[1], reverse=True
+                    )
+                ]
+                ranking.append(
+                    {
+                        "user_id": uid,
+                        "display_name": stats["display_name"],
+                        "total_minutes": stats["total"],
+                        "subjects": subjects_list,
+                    }
+                )
+
+            # 勉強時間でソート
+            ranking.sort(key=lambda x: x["total_minutes"], reverse=True)
+
+            # 順位付け
+            for i, r in enumerate(ranking):
+                r["rank"] = i + 1
+
+            return ranking
+
+        except Exception as e:
+            print(f"Weekly Study Ranking Error: {e}")
+            import traceback
+
+            traceback.print_exc()
+            return []
+
+    @staticmethod
     @cached(ranking_cache)
     def get_weekly_exp_ranking():
         """今週の獲得EXPランキング（USERのみ）"""

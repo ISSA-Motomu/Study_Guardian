@@ -465,6 +465,113 @@
       </div>
     </GlassPanel>
 
+    <!-- Study Time Ranking (Past 7 Days) -->
+    <GlassPanel>
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-gray-700">📚 勉強時間ランキング <span class="text-xs text-gray-400 font-normal">(過去7日間)</span></h3>
+        <button @click="fetchStudyTimeRanking" class="text-xs text-blue-500 hover:text-blue-700">🔄 更新</button>
+      </div>
+      <div v-if="loadingStudyRanking" class="text-center py-4">
+        <span class="text-gray-400 animate-pulse">読み込み中...</span>
+      </div>
+      <div v-else-if="studyTimeRanking.length === 0" class="text-center text-gray-500 py-4">
+        勉強データがありません
+      </div>
+      <div v-else class="space-y-2">
+        <div 
+          v-for="(user, idx) in studyTimeRanking.slice(0, 10)" 
+          :key="user.user_id"
+          @click="openStudyDetail(user)"
+          :class="[
+            'flex items-center gap-3 py-3 px-4 rounded-xl transition-all cursor-pointer hover:scale-[1.02]',
+            idx === 0 ? 'bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-400' :
+            idx === 1 ? 'bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-300' :
+            idx === 2 ? 'bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-300' :
+            'bg-gray-50 hover:bg-gray-100',
+            user.user_id === userStore.currentUserId && 'ring-2 ring-indigo-400'
+          ]"
+        >
+          <!-- Rank -->
+          <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg"
+            :class="[
+              idx === 0 ? 'bg-purple-500 text-white' :
+              idx === 1 ? 'bg-blue-400 text-white' :
+              idx === 2 ? 'bg-teal-400 text-white' :
+              'bg-gray-200 text-gray-600'
+            ]"
+          >
+            {{ idx === 0 ? '🏆' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : user.rank }}
+          </div>
+          <!-- User Info -->
+          <div class="flex-1 min-w-0">
+            <p class="font-bold text-gray-800 truncate">
+              {{ user.display_name }}
+              <span v-if="user.user_id === userStore.currentUserId" class="text-xs text-indigo-500">(あなた)</span>
+            </p>
+            <!-- Subject mini bars -->
+            <div class="flex gap-0.5 mt-1 h-2 rounded overflow-hidden">
+              <div 
+                v-for="(subj, sIdx) in user.subjects?.slice(0, 5)" 
+                :key="sIdx"
+                :style="{ 
+                  width: `${Math.max(10, (subj.minutes / user.total_minutes) * 100)}%`,
+                  backgroundColor: subjectColors[subj.subject] || '#95A5A6'
+                }"
+                :title="`${subj.subject}: ${subj.minutes}分`"
+              ></div>
+            </div>
+          </div>
+          <!-- Time -->
+          <div class="text-right">
+            <p class="font-bold text-lg" :class="idx < 3 ? 'text-purple-600' : 'text-gray-700'">
+              {{ formatMinutesToHM(user.total_minutes) }}
+            </p>
+            <p class="text-[10px] text-gray-400">タップで詳細</p>
+          </div>
+        </div>
+      </div>
+    </GlassPanel>
+
+    <!-- Study Detail Modal -->
+    <div v-if="showStudyDetailModal && selectedRankingUser" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" @click.self="showStudyDetailModal = false">
+      <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden animate-pop-in">
+        <div class="bg-gradient-to-r from-purple-500 to-indigo-600 p-4 flex justify-between items-center">
+          <h3 class="text-white font-bold">📊 {{ selectedRankingUser.display_name }} の勉強詳細</h3>
+          <button @click="showStudyDetailModal = false" class="text-white/80 hover:text-white text-xl">✕</button>
+        </div>
+        <div class="p-4">
+          <!-- Total -->
+          <div class="text-center mb-4 pb-4 border-b">
+            <p class="text-4xl font-bold text-purple-600">{{ formatMinutesToHM(selectedRankingUser.total_minutes) }}</p>
+            <p class="text-sm text-gray-500">過去7日間の勉強時間</p>
+          </div>
+          <!-- Subject breakdown -->
+          <div class="space-y-3">
+            <h4 class="font-bold text-gray-700 text-sm">科目別内訳</h4>
+            <div v-for="(subj, idx) in selectedRankingUser.subjects" :key="idx" class="flex items-center gap-3">
+              <div 
+                class="w-4 h-4 rounded"
+                :style="{ backgroundColor: subjectColors[subj.subject] || '#95A5A6' }"
+              ></div>
+              <span class="flex-1 text-gray-700">{{ subj.subject }}</span>
+              <div class="flex items-center gap-2">
+                <div class="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    class="h-full rounded-full transition-all"
+                    :style="{ 
+                      width: `${(subj.minutes / selectedRankingUser.total_minutes) * 100}%`,
+                      backgroundColor: subjectColors[subj.subject] || '#95A5A6'
+                    }"
+                  ></div>
+                </div>
+                <span class="text-sm font-bold text-gray-600 w-16 text-right">{{ formatMinutesToHM(subj.minutes) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Everyone's Goals (Horizontal Scroll) -->
     <GlassPanel>
       <div class="flex justify-between items-center mb-4">
@@ -558,7 +665,8 @@ const subjectData = ref([])
 const recentActivity = ref([])
 const globalActivity = ref([])
 const studyRecords = ref([]) // 全勉強ログ（日付・科目付き）
-const weeklyRanking = ref([]) // 週間ランキング
+const weeklyRanking = ref([]) // 週間XPランキング
+const studyTimeRanking = ref([]) // 勉強時間ランキング
 const allGoals = ref([]) // みんなの目標
 const showAllActivity = ref(false) // 「もっと見る」の展開状態
 const activeSessions = ref([]) // 勉強中のセッション
@@ -571,10 +679,15 @@ const newComment = ref('')
 const loadingComments = ref(false)
 const submittingComment = ref(false)
 
+// Study time ranking detail modal
+const showStudyDetailModal = ref(false)
+const selectedRankingUser = ref(null)
+
 // Loading states
 const loadingStats = ref(true)
 const loadingActivity = ref(true)
 const loadingRanking = ref(true)
+const loadingStudyRanking = ref(true)
 const loadingGoals = ref(true)
 
 // Navigation offsets
@@ -965,6 +1078,38 @@ const fetchWeeklyRanking = async () => {
   }
 }
 
+// Fetch study time ranking
+const fetchStudyTimeRanking = async () => {
+  loadingStudyRanking.value = true
+  try {
+    const res = await fetch('/api/ranking/study_time')
+    const data = await res.json()
+    if (data.status === 'ok') {
+      studyTimeRanking.value = data.data || []
+    }
+  } catch (e) {
+    console.error('Failed to fetch study time ranking:', e)
+  } finally {
+    loadingStudyRanking.value = false
+  }
+}
+
+// Open study detail modal
+const openStudyDetail = (user) => {
+  selectedRankingUser.value = user
+  showStudyDetailModal.value = true
+}
+
+// Format minutes to hours and minutes
+const formatMinutesToHM = (minutes) => {
+  if (!minutes) return '0分'
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  if (h === 0) return `${m}分`
+  if (m === 0) return `${h}時間`
+  return `${h}時間${m}分`
+}
+
 // Fetch all goals
 const fetchAllGoals = async () => {
   loadingGoals.value = true
@@ -1215,6 +1360,7 @@ onMounted(() => {
   fetchData()
   fetchGlobalActivity()
   fetchWeeklyRanking()
+  fetchStudyTimeRanking()
   fetchAllGoals()
   fetchActiveSessions()
   // 60秒ごとに勉強中セッションを更新（API負荷軽減）
@@ -1278,6 +1424,22 @@ onMounted(() => {
   100% {
     opacity: 0;
     transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(0.5);
+  }
+}
+
+/* Modal pop-in animation */
+.animate-pop-in {
+  animation: popIn 0.2s ease-out;
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 </style>

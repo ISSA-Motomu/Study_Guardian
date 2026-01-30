@@ -372,6 +372,17 @@ def api_weekly_ranking():
         return jsonify({"status": "error", "data": []})
 
 
+@web_bp.route("/api/ranking/study_time")
+def api_study_time_ranking():
+    """過去7日間の勉強時間ランキングを取得"""
+    try:
+        ranking = HistoryService.get_weekly_study_time_ranking()
+        return jsonify({"status": "ok", "data": ranking})
+    except Exception as e:
+        print(f"Study Time Ranking API Error: {e}")
+        return jsonify({"status": "error", "data": []})
+
+
 @web_bp.route("/api/activity/recent")
 def api_recent_activity():
     """全ユーザーの最近の勉強・お手伝い履歴を取得（最新10件）"""
