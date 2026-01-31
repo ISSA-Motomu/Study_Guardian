@@ -107,17 +107,61 @@ export const useStudyStore = defineStore('study', () => {
     showMemoConfirm.value = true
   }
 
-  const finishStudy = async () => {
+  // 学習記録を保存
+  const saveLearningRecord = (reflectionData, studyMinutes, subject) => {
+    if (!reflectionData) return
+
+    const records = JSON.parse(localStorage.getItem('study_learning_records') || '[]')
+    const newRecord = {
+      date: new Date().toISOString(),
+      subject: subject,
+      minutes: studyMinutes,
+      reflection: reflectionData.reflection || '',
+      understanding: reflectionData.understanding || null,
+      reviewNote: reflectionData.reviewNote || ''
+    }
+    records.push(newRecord)
+
+    // 最新100件のみ保持
+    if (records.length > 100) {
+      records.splice(0, records.length - 100)
+    }
+
+    localStorage.setItem('study_learning_records', JSON.stringify(records))
+  }
+
+  const finishStudy = async (reflectionData = null) => {
     playSound('levelup')
     showMemoConfirm.value = false
 
+    // 振り返りボーナスがあるかどうか
+    const hasReflection = reflectionData?.hasReflection || false
+
     try {
+      // 振り返り内容をメモに追加
+      let finalMemo = memoToSend.value
+      if (reflectionData?.reflection) {
+        finalMemo += (finalMemo ? '\n\n' : '') + '【振り返り】\n' + reflectionData.reflection
+      }
+      if (reflectionData?.understanding) {
+        const understandingLabels = {
+          perfect: '🌟 バッチリ！',
+          good: '😊 だいたいOK',
+          partial: '🤔 半分くらい',
+          confused: '😵 まだ難しい'
+        }
+        finalMemo += '\n理解度: ' + (understandingLabels[reflectionData.understanding] || '')
+      }
+      if (reflectionData?.reviewNote) {
+        finalMemo += '\n次回復習: ' + reflectionData.reviewNote
+      }
+
       const res = await fetch('/api/study/finish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user_id: userStore.currentUserId,
-          memo: memoToSend.value
+          memo: finalMemo
         })
       })
 
@@ -129,8 +173,12 @@ export const useStudyStore = defineStore('study', () => {
       if (json.status === 'ok') {
         const studyMinutes = json.minutes
 
+        // 学習記録をローカルに保存
+        saveLearningRecord(reflectionData, studyMinutes, currentSubject.value)
+
         // 進化ゲームにブーストを発動（エラーがあっても無視）
         let gemsEarned = 0
+        let reflectionBonus = 0
         try {
           // 動的インポートで循環参照を回避
           const { useEvolutionStore } = await import('./evolution')
@@ -151,12 +199,23 @@ export const useStudyStore = defineStore('study', () => {
             // 勉強石を獲得！（15分以上で獲得）
             gemsEarned = evolutionStore.earnStudyGems(studyMinutes)
 
+            // 振り返りボーナス！（ファインマンテクニック報酬）
+            if (hasReflection && studyMinutes >= 15) {
+              reflectionBonus = 1
+              evolutionStore.studyGems.value += reflectionBonus
+              evolutionStore.totalStudyGems.value += reflectionBonus
+            }
+
             // ブースト発動をトーストで通知
             let message = `お疲れ様でした！\n${studyMinutes}分 勉強しました。`
 
             // 勉強石獲得メッセージ
-            if (gemsEarned > 0) {
-              message += `\n\n💎 勉強石 ×${gemsEarned} 獲得！`
+            const totalGems = gemsEarned + reflectionBonus
+            if (totalGems > 0) {
+              message += `\n\n💎 勉強石 ×${totalGems} 獲得！`
+              if (reflectionBonus > 0) {
+                message += ' (振り返りボーナス+1)'
+              }
             }
 
             if (boostResult) {
@@ -244,6 +303,7 @@ export const useStudyStore = defineStore('study', () => {
       if (json.status === 'ok') {
         studying.value = false
         clearInterval(timerInterval.value)
+        timerInterval.value = null  // 明示的にnullにセット
         // inSession remains true (paused state)
 
         if (closeApp && window.liff) {
@@ -290,11 +350,22 @@ export const useStudyStore = defineStore('study', () => {
   const resetSession = () => {
     studying.value = false
     clearInterval(timerInterval.value)
+    timerInterval.value = null
     inSession.value = false
     studyMemo.value = ''
     memoToSend.value = ''
     timerDisplay.value = '00:00:00'
   }
+
+  // 一時中断中かどうか（セッションあり、かつタイマー停止中）
+  const isPaused = computed(() => {
+    return inSession.value && timerInterval.value === null
+  })
+
+  // タイマー動作中かどうか（セッションあり、かつタイマー動作中）
+  const isTimerRunning = computed(() => {
+    return inSession.value && timerInterval.value !== null
+  })
 
   return {
     // State
@@ -309,6 +380,9 @@ export const useStudyStore = defineStore('study', () => {
     studyMemo,
     showMemoConfirm,
     memoToSend,
+    // Computed
+    isPaused,
+    isTimerRunning,
     // Actions
     openSubjectModal,
     startStudy,

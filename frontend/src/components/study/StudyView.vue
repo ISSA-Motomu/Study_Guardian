@@ -46,8 +46,8 @@
       </GlassPanel>
     </div>
 
-    <!-- Session Resume Card -->
-    <GlassPanel v-if="studyStore.inSession" class="border-2 border-amber-300 animate-pulse">
+    <!-- Session Resume Card (一時中断中のみ表示) -->
+    <GlassPanel v-if="studyStore.isPaused" class="border-2 border-amber-300 animate-pulse">
       <div class="flex items-center justify-between">
         <div>
           <p class="text-amber-600 font-bold">⏸️ 勉強中断中</p>

@@ -200,8 +200,8 @@ const handleStartStudy = async (subject) => {
   view.value = 'timer'
 }
 
-const handleFinishStudy = async () => {
-  const minutes = await studyStore.finishStudy()
+const handleFinishStudy = async (reflectionData) => {
+  const minutes = await studyStore.finishStudy(reflectionData)
   if (minutes > 0) {
     gameStore.applyStudyDamage(minutes)
     // 進化ゲームにポイント付与
