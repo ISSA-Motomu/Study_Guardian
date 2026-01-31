@@ -8,8 +8,8 @@
       class="sticky top-0 z-20 -mx-6 px-6 py-3 rounded-b-2xl shadow-lg kp-target"
       :class="headerClass"
     >
-      <!-- Dual Currency Display -->
-      <div class="grid grid-cols-2 gap-3 mb-3">
+      <!-- Triple Currency Display -->
+      <div class="grid grid-cols-3 gap-2 mb-3">
         <!-- KP (Game Currency) with Animation -->
         <div 
           class="bg-white/20 rounded-xl p-2 text-center relative overflow-hidden"
@@ -19,26 +19,35 @@
           <div class="relative z-10">
             <div class="flex items-center justify-center gap-1">
               <span class="text-lg">💡</span>
-              <span class="text-xs text-white/80">KP</span>
+              <span class="text-[10px] text-white/80">KP</span>
             </div>
             <AnimatedCounter 
               :value="evolutionStore.knowledgePoints" 
-              class="text-xl font-bold text-white"
+              class="text-lg font-bold text-white"
             />
-            <p class="text-[10px] text-white/60">ゲーム内専用</p>
           </div>
         </div>
+        <!-- Study Gems (Premium Currency from Study) -->
+        <button 
+          @click="showGemShop = true"
+          class="bg-gradient-to-br from-purple-500/40 to-pink-500/40 rounded-xl p-2 text-center hover:from-purple-500/60 hover:to-pink-500/60 transition-all active:scale-95"
+        >
+          <div class="flex items-center justify-center gap-1">
+            <span class="text-lg">💎</span>
+            <span class="text-[10px] text-white/80">石</span>
+          </div>
+          <p class="text-lg font-bold text-purple-200">{{ evolutionStore.studyGems }}</p>
+        </button>
         <!-- XP (Shop Currency) -->
         <div class="bg-black/20 rounded-xl p-2 text-center">
           <div class="flex items-center justify-center gap-1">
             <span class="text-lg">⭐</span>
-            <span class="text-xs text-white/80">XP</span>
+            <span class="text-[10px] text-white/80">XP</span>
           </div>
           <AnimatedCounter 
             :value="userStore.user.xp || 0" 
-            class="text-xl font-bold text-amber-300"
+            class="text-lg font-bold text-amber-300"
           />
-          <p class="text-[10px] text-white/60">ショップ用</p>
         </div>
       </div>
 
@@ -57,6 +66,41 @@
             :value="evolutionStore.totalEarnedPoints" 
             class="text-lg font-semibold"
           />
+        </div>
+      </div>
+
+      <!-- Boost Status Bar -->
+      <div v-if="evolutionStore.isStudyBoostActive || evolutionStore.loginStreak >= 3" class="mt-2 space-y-1">
+        <!-- Active Study Boost -->
+        <div 
+          v-if="evolutionStore.isStudyBoostActive" 
+          class="flex items-center justify-between bg-gradient-to-r from-orange-500/40 to-yellow-500/40 rounded-lg px-2 py-1.5 animate-pulse-glow"
+        >
+          <div class="flex items-center gap-2">
+            <span class="text-lg animate-bounce">🚀</span>
+            <span class="text-xs font-bold text-white">
+              勉強ブースト ×{{ evolutionStore.studyBoostMultiplier.toFixed(1) }}
+            </span>
+          </div>
+          <span class="text-xs text-white/90 font-mono">
+            {{ formatBoostTime(evolutionStore.studyBoostRemainingTime) }}
+          </span>
+        </div>
+        
+        <!-- Login Streak Bonus -->
+        <div 
+          v-if="evolutionStore.loginStreak >= 3" 
+          class="flex items-center justify-between bg-gradient-to-r from-purple-500/30 to-pink-500/30 rounded-lg px-2 py-1"
+        >
+          <div class="flex items-center gap-2">
+            <span class="text-sm">🔥</span>
+            <span class="text-xs text-white/90">
+              {{ evolutionStore.loginStreak }}日連続ログイン
+            </span>
+          </div>
+          <span class="text-xs font-bold text-amber-300">
+            +{{ Math.round((evolutionStore.getLoginStreakBonus() - 1) * 100) }}%
+          </span>
         </div>
       </div>
       
@@ -191,6 +235,9 @@
         ⚠️ 未保存の変更あり
       </div>
     </transition>
+    
+    <!-- Gem Shop Modal -->
+    <GemShopView v-if="showGemShop" @close="showGemShop = false" />
   </div>
 </template>
 
@@ -203,6 +250,7 @@ import FacilityCard from './FacilityCard.vue'
 import AnimatedCounter from './AnimatedCounter.vue'
 import KPParticles from './KPParticles.vue'
 import TechTreeView from './TechTreeView.vue'
+import GemShopView from './GemShopView.vue'
 
 const evolutionStore = useEvolutionStore()
 const userStore = useUserStore()
@@ -211,6 +259,7 @@ const viewMode = ref('list')
 const isKpGlowing = ref(false)
 const particleSystem = ref(null)
 const mainContainer = ref(null)
+const showGemShop = ref(false)
 
 // Header pulsing class based on activity
 const headerClass = ref('bg-gradient-to-r from-indigo-600/90 to-purple-600/90 backdrop-blur-lg')
@@ -241,6 +290,14 @@ const handleBuy = (facilityId) => {
     isKpGlowing.value = true
     setTimeout(() => isKpGlowing.value = false, 500)
   }
+}
+
+// ブースト残り時間フォーマット
+const formatBoostTime = (seconds) => {
+  if (seconds <= 0) return '00:00'
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
 }
 
 // Debug functions

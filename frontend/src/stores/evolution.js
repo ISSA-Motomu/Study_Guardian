@@ -746,6 +746,175 @@ const TIER_INFO = {
   6: { name: '終焉と新生', color: 'from-yellow-400 to-amber-500', bgColor: 'bg-amber-50' }
 }
 
+// ========================================
+// 勉強石ショップ（Study Gems Shop）
+// 勉強することでしか入手できない貴重な通貨で購入
+// ========================================
+const GEM_SHOP_ITEMS = [
+  // === 永続アップグレード ===
+  {
+    id: 'prod_boost_1',
+    name: '知識増幅装置 I',
+    description: '永続的に生産力+10%',
+    cost: 5,
+    type: 'permanent_buff',
+    effect: { buff: 'productionBoost', value: 10 },
+    icon: '⚡',
+    maxPurchase: 1,
+    category: 'production'
+  },
+  {
+    id: 'prod_boost_2',
+    name: '知識増幅装置 II',
+    description: '永続的に生産力+25%',
+    cost: 15,
+    type: 'permanent_buff',
+    effect: { buff: 'productionBoost', value: 25 },
+    icon: '⚡',
+    maxPurchase: 1,
+    requires: 'prod_boost_1',
+    category: 'production'
+  },
+  {
+    id: 'prod_boost_3',
+    name: '知識増幅装置 III',
+    description: '永続的に生産力+50%',
+    cost: 40,
+    type: 'permanent_buff',
+    effect: { buff: 'productionBoost', value: 50 },
+    icon: '⚡',
+    maxPurchase: 1,
+    requires: 'prod_boost_2',
+    category: 'production'
+  },
+  {
+    id: 'offline_boost_1',
+    name: 'オートスタディ I',
+    description: 'オフライン報酬+20%',
+    cost: 8,
+    type: 'permanent_buff',
+    effect: { buff: 'offlineBoost', value: 20 },
+    icon: '🌙',
+    maxPurchase: 1,
+    category: 'offline'
+  },
+  {
+    id: 'offline_boost_2',
+    name: 'オートスタディ II',
+    description: 'オフライン報酬+50%',
+    cost: 25,
+    type: 'permanent_buff',
+    effect: { buff: 'offlineBoost', value: 50 },
+    icon: '🌙',
+    maxPurchase: 1,
+    requires: 'offline_boost_1',
+    category: 'offline'
+  },
+  {
+    id: 'study_mult_1',
+    name: '集中力強化 I',
+    description: '勉強時の獲得KP+15%',
+    cost: 10,
+    type: 'permanent_buff',
+    effect: { buff: 'studyMultiplier', value: 15 },
+    icon: '📖',
+    maxPurchase: 1,
+    category: 'study'
+  },
+  {
+    id: 'study_mult_2',
+    name: '集中力強化 II',
+    description: '勉強時の獲得KP+30%',
+    cost: 30,
+    type: 'permanent_buff',
+    effect: { buff: 'studyMultiplier', value: 30 },
+    icon: '📖',
+    maxPurchase: 1,
+    requires: 'study_mult_1',
+    category: 'study'
+  },
+  {
+    id: 'critical_1',
+    name: 'ひらめきの才能',
+    description: '5%の確率で2倍の生産',
+    cost: 20,
+    type: 'permanent_buff',
+    effect: { buff: 'criticalChance', value: 5, buff2: 'criticalMultiplier', value2: 2 },
+    icon: '💡',
+    maxPurchase: 1,
+    category: 'special'
+  },
+  {
+    id: 'critical_2',
+    name: '天才の閃き',
+    description: 'クリティカル確率+5%、倍率3倍に',
+    cost: 50,
+    type: 'permanent_buff',
+    effect: { buff: 'criticalChance', value: 5, buff2: 'criticalMultiplier', value2: 1 },
+    icon: '🌟',
+    maxPurchase: 1,
+    requires: 'critical_1',
+    category: 'special'
+  },
+  // === 即時効果アイテム ===
+  {
+    id: 'instant_boost',
+    name: '緊急ブースト',
+    description: '30分間生産力3倍',
+    cost: 3,
+    type: 'instant',
+    effect: { type: 'boost', duration: 30 * 60, multiplier: 3 },
+    icon: '🚀',
+    maxPurchase: -1, // 無制限
+    category: 'consumable'
+  },
+  {
+    id: 'instant_kp',
+    name: '知識の結晶',
+    description: '現在の生産力×10分のKP獲得',
+    cost: 2,
+    type: 'instant',
+    effect: { type: 'kp_bonus', minutes: 10 },
+    icon: '💎',
+    maxPurchase: -1,
+    category: 'consumable'
+  },
+  {
+    id: 'skip_time',
+    name: '時間の砂',
+    description: '2時間分の生産をスキップ',
+    cost: 5,
+    type: 'instant',
+    effect: { type: 'time_skip', hours: 2 },
+    icon: '⏰',
+    maxPurchase: -1,
+    category: 'consumable'
+  },
+  // === 特別アイテム ===
+  {
+    id: 'double_gem',
+    name: '勉強石倍増',
+    description: '次の勉強で獲得する石が2倍（1回限り）',
+    cost: 10,
+    type: 'special',
+    effect: { type: 'double_next_gem' },
+    icon: '💠',
+    maxPurchase: -1,
+    category: 'special'
+  },
+  {
+    id: 'prestige_boost',
+    name: '転生の祝福',
+    description: '次の転生で獲得ポイント+50%',
+    cost: 30,
+    type: 'special',
+    effect: { type: 'prestige_bonus', value: 50 },
+    icon: '✨',
+    maxPurchase: 1,
+    category: 'prestige'
+  }
+]
+
 // 数値フォーマット用接尾辞
 const NUMBER_SUFFIXES = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc', 'UDc', 'DDc', 'TDc', 'QaDc', 'QiDc', 'SxDc', 'SpDc', 'OcDc', 'NoDc', 'Vg', 'Ce']
 
@@ -769,12 +938,75 @@ export const useEvolutionStore = defineStore('evolution', () => {
   const lastActiveTime = ref(Date.now())
   const pendingOfflineReward = ref(0)
 
+  // ====== 勉強石（Study Gems）システム ======
+  // 勉強することでしか手に入らない貴重なプレミアム通貨
+  const studyGems = ref(0)
+  const totalStudyGems = ref(0) // 累計獲得量
+
+  // 勉強石ショップ購入履歴
+  const purchasedGemItems = ref([])
+
+  // 勉強石で購入できる永続バフ
+  const permanentBuffs = ref({
+    productionBoost: 0,      // 永続生産力ボーナス（%）
+    offlineBoost: 0,         // オフライン報酬ボーナス（%）
+    studyMultiplier: 0,      // 勉強時獲得KPボーナス（%）
+    autoCollectLevel: 0,     // 自動収集レベル
+    criticalChance: 0,       // クリティカル確率（%）
+    criticalMultiplier: 0    // クリティカル倍率
+  })
+
+  // 勉強石倍増フラグ
+  const doubleGemActive = ref(false)
+
+  // ====== ブースト・インセンティブシステム ======
+  // 勉強ブースト: 実際に勉強すると一時的に生産量が増加
+  const studyBoostEndTime = ref(0)
+  const studyBoostMultiplier = ref(1)
+
+  // 連続ログインボーナス
+  const lastLoginDate = ref('')
+  const loginStreak = ref(0)
+
+  // デイリーチャレンジ
+  const dailyChallengeCompleted = ref(false)
+  const dailyChallengeDate = ref('')
+
   // UI状態
   const lastSyncTime = ref(null)
   const isDirty = ref(false)
 
   // イベントバス
   const eventBus = ref({})
+
+  // ====== ブースト関連の計算 ======
+  const isStudyBoostActive = computed(() => {
+    return Date.now() < studyBoostEndTime.value
+  })
+
+  const currentBoostMultiplier = computed(() => {
+    let mult = 1
+    // 勉強ブースト（最大2倍）
+    if (isStudyBoostActive.value) {
+      mult *= studyBoostMultiplier.value
+    }
+    // 連続ログインボーナス（3日で+10%, 7日で+30%, 14日で+50%, 30日で+100%）
+    if (loginStreak.value >= 30) mult *= 2.0
+    else if (loginStreak.value >= 14) mult *= 1.5
+    else if (loginStreak.value >= 7) mult *= 1.3
+    else if (loginStreak.value >= 3) mult *= 1.1
+
+    // 勉強石で購入した永続バフ
+    if (permanentBuffs.value.productionBoost > 0) {
+      mult *= (1 + permanentBuffs.value.productionBoost / 100)
+    }
+    return mult
+  })
+
+  const studyBoostRemainingTime = computed(() => {
+    if (!isStudyBoostActive.value) return 0
+    return Math.max(0, studyBoostEndTime.value - Date.now())
+  })
 
   // ===== Helper Functions =====
   const getUpgradeMultiplier = (facilityId, tier) => {
@@ -810,7 +1042,8 @@ export const useEvolutionStore = defineStore('evolution', () => {
         production += facility.baseProduction * level * upgradeMult * prestigeMultiplier.value * milestoneBonus
       }
     }
-    return production
+    // ブーストを適用
+    return production * currentBoostMultiplier.value
   })
 
   const totalMultiplier = computed(() => {
@@ -823,7 +1056,8 @@ export const useEvolutionStore = defineStore('evolution', () => {
       const upgrade = UPGRADES_MASTER.find(u => u.id === upgradeId)
       if (upgrade?.effect.type === 'global_multiply') mult *= upgrade.effect.value
     }
-    return mult * prestigeMultiplier.value
+    // ブーストを適用
+    return mult * prestigeMultiplier.value * currentBoostMultiplier.value
   })
 
   const facilitiesWithState = computed(() => {
@@ -1126,7 +1360,20 @@ export const useEvolutionStore = defineStore('evolution', () => {
       prestigePoints: prestigePoints.value,
       prestigeMultiplier: prestigeMultiplier.value,
       lastActiveTime: Date.now(),
-      lastSave: Date.now()
+      lastSave: Date.now(),
+      // ブーストシステム
+      studyBoostEndTime: studyBoostEndTime.value,
+      studyBoostMultiplier: studyBoostMultiplier.value,
+      lastLoginDate: lastLoginDate.value,
+      loginStreak: loginStreak.value,
+      dailyChallengeCompleted: dailyChallengeCompleted.value,
+      dailyChallengeDate: dailyChallengeDate.value,
+      // 勉強石システム
+      studyGems: studyGems.value,
+      totalStudyGems: totalStudyGems.value,
+      purchasedGemItems: purchasedGemItems.value,
+      permanentBuffs: permanentBuffs.value,
+      doubleGemActive: doubleGemActive.value
     }
     localStorage.setItem(`evolution_${userId}`, JSON.stringify(data))
   }
@@ -1147,6 +1394,28 @@ export const useEvolutionStore = defineStore('evolution', () => {
         prestigePoints.value = data.prestigePoints || 0
         prestigeMultiplier.value = data.prestigeMultiplier || 1
         lastActiveTime.value = data.lastActiveTime || Date.now()
+        // ブーストシステム
+        studyBoostEndTime.value = data.studyBoostEndTime || 0
+        studyBoostMultiplier.value = data.studyBoostMultiplier || 1
+        lastLoginDate.value = data.lastLoginDate || ''
+        loginStreak.value = data.loginStreak || 0
+        dailyChallengeCompleted.value = data.dailyChallengeCompleted || false
+        dailyChallengeDate.value = data.dailyChallengeDate || ''
+        // 勉強石システム
+        studyGems.value = data.studyGems || 0
+        totalStudyGems.value = data.totalStudyGems || 0
+        purchasedGemItems.value = data.purchasedGemItems || []
+        permanentBuffs.value = data.permanentBuffs || {
+          productionBoost: 0,
+          offlineBoost: 0,
+          studyMultiplier: 0,
+          autoCollectLevel: 0,
+          criticalChance: 0,
+          criticalMultiplier: 0
+        }
+        doubleGemActive.value = data.doubleGemActive || false
+        // ログインストリーク更新
+        updateLoginStreak()
         return true
       } catch (e) {
         console.error('Failed to load evolution data:', e)
@@ -1248,21 +1517,256 @@ export const useEvolutionStore = defineStore('evolution', () => {
     saveToLocalStorage()
   }
 
+  // ===== ブーストシステム関数 =====
+  // ログインストリークを更新（日付が変わったか確認）
+  function updateLoginStreak() {
+    const today = new Date().toDateString()
+    if (lastLoginDate.value === today) {
+      // 今日は既にログイン済み
+      return
+    }
+
+    const yesterday = new Date(Date.now() - 86400000).toDateString()
+    if (lastLoginDate.value === yesterday) {
+      // 昨日もログインしていた → ストリーク継続
+      loginStreak.value++
+    } else if (lastLoginDate.value !== '') {
+      // 昨日はログインしていない → ストリークリセット
+      loginStreak.value = 1
+    } else {
+      // 初回ログイン
+      loginStreak.value = 1
+    }
+
+    lastLoginDate.value = today
+    // デイリーチャレンジをリセット
+    if (dailyChallengeDate.value !== today) {
+      dailyChallengeCompleted.value = false
+      dailyChallengeDate.value = today
+    }
+
+    isDirty.value = true
+    saveToLocalStorage()
+  }
+
+  // 勉強完了時にブーストを発動（勉強時間分 × 2倍 = ブースト秒数）
+  function activateStudyBoost(studyMinutes) {
+    // 勉強時間（分）× 2 = ブースト秒数、最大30分のブースト
+    const boostSeconds = Math.min(studyMinutes * 2, 30 * 60)
+    const boostEndTime = Date.now() + boostSeconds * 1000
+
+    // 既存のブーストがある場合は延長
+    if (studyBoostEndTime.value > Date.now()) {
+      studyBoostEndTime.value = Math.max(studyBoostEndTime.value, boostEndTime)
+    } else {
+      studyBoostEndTime.value = boostEndTime
+    }
+
+    studyBoostMultiplier.value = 2.0 // 2倍ブースト
+    isDirty.value = true
+    saveToLocalStorage()
+
+    return {
+      boostSeconds,
+      multiplier: studyBoostMultiplier.value,
+      totalBoostMultiplier: currentBoostMultiplier.value
+    }
+  }
+
+  // デイリーチャレンジ完了（30分以上勉強で達成）
+  function completeDailyChallenge() {
+    const today = new Date().toDateString()
+    if (dailyChallengeCompleted.value && dailyChallengeDate.value === today) {
+      return false // 既に完了済み
+    }
+
+    dailyChallengeCompleted.value = true
+    dailyChallengeDate.value = today
+
+    // デイリーチャレンジ報酬: 知識ポイント + 10分間のブースト延長
+    const bonus = Math.max(1000, currentProduction.value * 60) // 1分間の生産量ボーナス
+    addPoints(bonus)
+
+    // ブースト延長
+    if (studyBoostEndTime.value > Date.now()) {
+      studyBoostEndTime.value += 10 * 60 * 1000 // 10分延長
+    } else {
+      studyBoostEndTime.value = Date.now() + 10 * 60 * 1000
+      studyBoostMultiplier.value = 2.0
+    }
+
+    isDirty.value = true
+    saveToLocalStorage()
+
+    return { bonus, boostExtension: 10 * 60 }
+  }
+
+  // ブースト状態を取得（UI表示用）
+  function getBoostStatus() {
+    return {
+      isBoostActive: isStudyBoostActive.value,
+      boostMultiplier: studyBoostMultiplier.value,
+      remainingSeconds: studyBoostRemainingTime.value,
+      loginStreak: loginStreak.value,
+      loginBonus: getLoginStreakBonus(),
+      totalMultiplier: currentBoostMultiplier.value,
+      isDailyChallengeCompleted: dailyChallengeCompleted.value
+    }
+  }
+
+  function getLoginStreakBonus() {
+    if (loginStreak.value >= 30) return 2.0
+    if (loginStreak.value >= 14) return 1.5
+    if (loginStreak.value >= 7) return 1.3
+    if (loginStreak.value >= 3) return 1.1
+    return 1.0
+  }
+
+  // ===== 勉強石システム関数 =====
+
+  // 勉強完了時に石を獲得（15分以上で1個、30分で2個...）
+  function earnStudyGems(studyMinutes) {
+    if (studyMinutes < 15) return 0
+
+    // 基本獲得量: 15分ごとに1個
+    let gems = Math.floor(studyMinutes / 15)
+
+    // 30分以上でボーナス
+    if (studyMinutes >= 60) gems += 2
+    else if (studyMinutes >= 45) gems += 1
+
+    // 勉強石倍増が有効な場合
+    if (doubleGemActive.value) {
+      gems *= 2
+      doubleGemActive.value = false
+    }
+
+    studyGems.value += gems
+    totalStudyGems.value += gems
+    isDirty.value = true
+    saveToLocalStorage()
+
+    return gems
+  }
+
+  // 勉強石ショップアイテムの状態を取得
+  const gemShopItems = computed(() => {
+    return GEM_SHOP_ITEMS.map(item => {
+      const purchaseCount = purchasedGemItems.value.filter(id => id === item.id).length
+      const isPermanentPurchased = item.maxPurchase === 1 && purchaseCount >= 1
+      const canAfford = studyGems.value >= item.cost
+      const requiresMet = !item.requires || purchasedGemItems.value.includes(item.requires)
+
+      return {
+        ...item,
+        purchaseCount,
+        isPurchased: isPermanentPurchased,
+        canAfford,
+        requiresMet,
+        canBuy: canAfford && requiresMet && !isPermanentPurchased
+      }
+    })
+  })
+
+  // 勉強石ショップでアイテムを購入
+  function buyGemItem(itemId) {
+    const item = GEM_SHOP_ITEMS.find(i => i.id === itemId)
+    if (!item) return { success: false, message: 'アイテムが見つかりません' }
+
+    // 購入可能かチェック
+    if (studyGems.value < item.cost) {
+      return { success: false, message: '勉強石が足りません' }
+    }
+
+    // 前提条件チェック
+    if (item.requires && !purchasedGemItems.value.includes(item.requires)) {
+      return { success: false, message: '前提アイテムを購入してください' }
+    }
+
+    // 購入回数チェック
+    if (item.maxPurchase === 1 && purchasedGemItems.value.includes(itemId)) {
+      return { success: false, message: '既に購入済みです' }
+    }
+
+    // 購入処理
+    studyGems.value -= item.cost
+    purchasedGemItems.value.push(itemId)
+
+    // 効果を適用
+    let effectMessage = ''
+
+    if (item.type === 'permanent_buff') {
+      // 永続バフを適用
+      if (item.effect.buff) {
+        permanentBuffs.value[item.effect.buff] += item.effect.value
+      }
+      if (item.effect.buff2) {
+        permanentBuffs.value[item.effect.buff2] += item.effect.value2
+      }
+      effectMessage = `永続バフを獲得！`
+    } else if (item.type === 'instant') {
+      // 即時効果
+      if (item.effect.type === 'boost') {
+        // ブースト発動
+        const boostEnd = Date.now() + item.effect.duration * 1000
+        studyBoostEndTime.value = Math.max(studyBoostEndTime.value, boostEnd)
+        studyBoostMultiplier.value = Math.max(studyBoostMultiplier.value, item.effect.multiplier)
+        effectMessage = `${item.effect.duration / 60}分間×${item.effect.multiplier}ブースト発動！`
+      } else if (item.effect.type === 'kp_bonus') {
+        // 即時KP獲得
+        const bonus = currentProduction.value * item.effect.minutes * 60
+        addPoints(bonus)
+        effectMessage = `${formatNumber(bonus)} KP獲得！`
+      } else if (item.effect.type === 'time_skip') {
+        // 時間スキップ
+        const bonus = currentProduction.value * item.effect.hours * 3600
+        addPoints(bonus)
+        effectMessage = `${item.effect.hours}時間分スキップ！ ${formatNumber(bonus)} KP獲得！`
+      }
+    } else if (item.type === 'special') {
+      if (item.effect.type === 'double_next_gem') {
+        doubleGemActive.value = true
+        effectMessage = '次の勉強で石が2倍になります！'
+      } else if (item.effect.type === 'prestige_bonus') {
+        // 転生ボーナスは転生時に処理
+        effectMessage = '次の転生でボーナス獲得！'
+      }
+    }
+
+    isDirty.value = true
+    soundManager.play('levelup')
+    saveToLocalStorage()
+
+    return { success: true, message: effectMessage, item }
+  }
+
   return {
     // State
     knowledgePoints, totalEarnedPoints, lifetimeEarnedPoints, facilityLevels,
     purchasedUpgrades, unlockedAchievements, prestigeLevel, prestigePoints,
     prestigeMultiplier, pendingOfflineReward, lastSyncTime, isDirty, lastActiveTime,
+    // Boost State
+    studyBoostEndTime, studyBoostMultiplier, lastLoginDate, loginStreak,
+    dailyChallengeCompleted, dailyChallengeDate,
+    // Study Gems State
+    studyGems, totalStudyGems, purchasedGemItems, permanentBuffs, doubleGemActive,
     // Computed
     currentProduction, totalMultiplier, facilitiesWithState, facilitiesByTier,
     upgradesWithState, availableUpgrades, nextUnlock, currentEra,
-    potentialPrestigePoints, stats,
+    potentialPrestigePoints, stats, gemShopItems,
+    // Boost Computed
+    isStudyBoostActive, currentBoostMultiplier, studyBoostRemainingTime,
     // Actions
     calculateCost, formatNumber, buyFacility, buyUpgrade, prestige,
     earnFromStudy, addPoints, tick, calculateOfflineReward, claimOfflineReward,
     checkAchievements, onEvent, syncToServer, loadFromServer, initialize,
     saveToLocalStorage, debugAddPoints,
+    // Boost Actions
+    updateLoginStreak, activateStudyBoost, completeDailyChallenge, getBoostStatus,
+    getLoginStreakBonus,
+    // Study Gems Actions
+    earnStudyGems, buyGemItem,
     // Constants
-    TIER_INFO, FACILITIES_MASTER, UPGRADES_MASTER, ACHIEVEMENTS_MASTER
+    TIER_INFO, FACILITIES_MASTER, UPGRADES_MASTER, ACHIEVEMENTS_MASTER, GEM_SHOP_ITEMS
   }
 })

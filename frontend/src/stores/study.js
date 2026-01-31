@@ -127,10 +127,59 @@ export const useStudyStore = defineStore('study', () => {
 
       const json = await res.json()
       if (json.status === 'ok') {
-        toastStore.success(`お疲れ様でした！\n${json.minutes}分 勉強しました。`)
+        const studyMinutes = json.minutes
+
+        // 進化ゲームにブーストを発動（エラーがあっても無視）
+        let gemsEarned = 0
+        try {
+          // 動的インポートで循環参照を回避
+          const { useEvolutionStore } = await import('./evolution')
+          const evolutionStore = useEvolutionStore()
+
+          if (evolutionStore) {
+            const boostResult = evolutionStore.activateStudyBoost(studyMinutes)
+
+            // 30分以上でデイリーチャレンジ達成
+            let dailyBonus = null
+            if (studyMinutes >= 30) {
+              dailyBonus = evolutionStore.completeDailyChallenge()
+            }
+
+            // 勉強ポイントを付与（進化ゲーム連携）
+            evolutionStore.earnFromStudy(studyMinutes)
+
+            // 勉強石を獲得！（15分以上で獲得）
+            gemsEarned = evolutionStore.earnStudyGems(studyMinutes)
+
+            // ブースト発動をトーストで通知
+            let message = `お疲れ様でした！\n${studyMinutes}分 勉強しました。`
+
+            // 勉強石獲得メッセージ
+            if (gemsEarned > 0) {
+              message += `\n\n💎 勉強石 ×${gemsEarned} 獲得！`
+            }
+
+            if (boostResult) {
+              const boostMins = Math.floor(boostResult.boostSeconds / 60)
+              message += `\n🚀 ${boostMins}分間 ×${boostResult.multiplier}ブースト！`
+            }
+            if (dailyBonus) {
+              message += `\n🎯 デイリーチャレンジ達成！`
+            }
+
+            toastStore.success(message)
+          } else {
+            toastStore.success(`お疲れ様でした！\n${studyMinutes}分 勉強しました。`)
+          }
+        } catch (e) {
+          // 進化ゲームエラーは無視（メイン機能に影響させない）
+          console.warn('Evolution boost error:', e)
+          toastStore.success(`お疲れ様でした！\n${studyMinutes}分 勉強しました。`)
+        }
+
         resetSession()
         await userStore.fetchUserData(userStore.currentUserId)
-        return json.minutes
+        return studyMinutes
       } else {
         toastStore.error('終了処理に失敗しました: ' + json.message)
       }

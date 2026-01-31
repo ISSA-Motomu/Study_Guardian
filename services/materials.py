@@ -18,7 +18,7 @@ class MaterialsService:
         ws = GSheetService.get_worksheet(cls.SHEET_NAME)
         if ws:
             return ws
-        
+
         # シートが無ければ作成
         try:
             sh = GSheetService.get_spreadsheet()

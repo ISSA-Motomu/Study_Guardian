@@ -64,17 +64,89 @@
       </div>
     </GlassPanel>
 
-    <!-- Today's Goal -->
+    <!-- Today's Study Todo -->
     <GlassPanel>
-      <h3 class="font-bold text-gray-700 mb-2">📌 今日の目標</h3>
-      <div class="flex items-center gap-3">
-        <div class="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="font-bold text-gray-700">📌 今日の学習計画</h3>
+        <button 
+          @click="showTodoModal = true"
+          class="text-xs px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-600 font-medium hover:bg-emerald-200 transition-colors"
+        >
+          + 追加
+        </button>
+      </div>
+      
+      <!-- Progress Summary -->
+      <div class="flex items-center gap-3 mb-3 p-2 bg-gray-50 rounded-lg">
+        <div class="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
           <div 
-            class="h-full bg-gradient-to-r from-green-400 to-emerald-500"
-            :style="{ width: dailyProgress + '%' }"
+            class="h-full bg-gradient-to-r from-green-400 to-emerald-500 transition-all duration-300"
+            :style="{ width: todoProgress + '%' }"
           />
         </div>
-        <span class="text-sm font-medium text-gray-600">{{ todayMinutes }}/60分</span>
+        <span class="text-xs font-medium text-gray-600">
+          {{ completedTodos }}/{{ todayTodos.length }} 完了
+        </span>
+      </div>
+      
+      <!-- Todo List -->
+      <div v-if="todayTodos.length === 0" class="text-center text-gray-400 py-4 text-sm">
+        今日の学習計画を立てよう！📚
+      </div>
+      
+      <div v-else class="space-y-2 max-h-48 overflow-y-auto">
+        <div 
+          v-for="todo in todayTodos" 
+          :key="todo.id"
+          :class="[
+            'p-2.5 rounded-xl border transition-all',
+            todo.completed 
+              ? 'bg-green-50 border-green-200' 
+              : 'bg-white border-gray-100 hover:border-emerald-200'
+          ]"
+        >
+          <div class="flex items-start gap-2">
+            <!-- Checkbox -->
+            <button 
+              @click="toggleTodo(todo.id)"
+              :class="[
+                'w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all',
+                todo.completed 
+                  ? 'bg-emerald-500 border-emerald-500 text-white' 
+                  : 'border-gray-300 hover:border-emerald-400'
+              ]"
+            >
+              <span v-if="todo.completed" class="text-xs">✓</span>
+            </button>
+            
+            <!-- Content -->
+            <div class="flex-1 min-w-0">
+              <p :class="['text-sm font-medium', todo.completed ? 'text-gray-400 line-through' : 'text-gray-800']">
+                {{ todo.title }}
+              </p>
+              <p v-if="todo.subject" class="text-[10px] text-gray-400">{{ todo.subject }}</p>
+            </div>
+            
+            <!-- Time Goal Badge -->
+            <span v-if="todo.targetMinutes" class="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-600 flex-shrink-0">
+              {{ todo.targetMinutes }}分
+            </span>
+            
+            <!-- Delete -->
+            <button 
+              @click="deleteTodo(todo.id)"
+              class="text-gray-300 hover:text-red-400 text-xs flex-shrink-0"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Time Summary -->
+      <div class="mt-3 pt-2 border-t border-gray-100 flex justify-between items-center text-xs text-gray-500">
+        <span>今日の勉強: {{ todayMinutes }}分</span>
+        <span v-if="totalTargetMinutes > 0">目標: {{ totalTargetMinutes }}分</span>
       </div>
     </GlassPanel>
 
@@ -171,11 +243,65 @@
         <span class="font-bold text-gray-700">本棚</span>
       </button>
     </div>
+    
+    <!-- Today's Todo Modal -->
+    <div v-if="showTodoModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
+        <div class="bg-gradient-to-r from-emerald-500 to-green-600 p-4 flex justify-between items-center">
+          <h3 class="text-white font-bold">📝 学習計画を追加</h3>
+          <button @click="showTodoModal = false" class="text-white/80 hover:text-white">✕</button>
+        </div>
+        <div class="p-4 space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">何を学ぶ？ *</label>
+            <input 
+              v-model="newTodo.title"
+              type="text"
+              placeholder="例: 数学の二次方程式を理解する"
+              class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-emerald-400 focus:outline-none"
+            >
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">科目（任意）</label>
+            <select 
+              v-model="newTodo.subject"
+              class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-emerald-400 focus:outline-none"
+            >
+              <option value="">選択しない</option>
+              <option value="国語">国語</option>
+              <option value="数学">数学</option>
+              <option value="英語">英語</option>
+              <option value="理科">理科</option>
+              <option value="社会">社会</option>
+              <option value="その他">その他</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">目標時間（分）</label>
+            <input 
+              v-model.number="newTodo.targetMinutes"
+              type="number"
+              min="0"
+              max="120"
+              placeholder="30"
+              class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-emerald-400 focus:outline-none"
+            >
+          </div>
+          <button 
+            @click="addTodo"
+            :disabled="!newTodo.title"
+            class="w-full py-3 bg-emerald-500 text-white font-bold rounded-xl disabled:bg-gray-300 hover:bg-emerald-600 transition-colors"
+          >
+            追加する
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { useStudyStore } from '@/stores/study'
 import { useShopStore } from '@/stores/shop'
@@ -200,7 +326,95 @@ const myGoals = ref([])
 
 // Today's study minutes (fetched from API)
 const todayMinutes = ref(0)
-const dailyProgress = computed(() => Math.min(100, (todayMinutes.value / 60) * 100))
+
+// ===== Today's Todo System =====
+const showTodoModal = ref(false)
+const todayTodos = ref([])
+const newTodo = ref({
+  title: '',
+  subject: '',
+  targetMinutes: 30
+})
+
+// Computed
+const completedTodos = computed(() => todayTodos.value.filter(t => t.completed).length)
+const todoProgress = computed(() => {
+  if (todayTodos.value.length === 0) return 0
+  return Math.round((completedTodos.value / todayTodos.value.length) * 100)
+})
+const totalTargetMinutes = computed(() => {
+  return todayTodos.value.reduce((sum, t) => sum + (t.targetMinutes || 0), 0)
+})
+
+// Todo functions
+const getTodayKey = () => {
+  const today = new Date().toISOString().split('T')[0]
+  return `study_todos_${userStore.currentUserId}_${today}`
+}
+
+const loadTodos = () => {
+  try {
+    const saved = localStorage.getItem(getTodayKey())
+    if (saved) {
+      todayTodos.value = JSON.parse(saved)
+    } else {
+      todayTodos.value = []
+    }
+  } catch (e) {
+    todayTodos.value = []
+  }
+}
+
+const saveTodos = () => {
+  localStorage.setItem(getTodayKey(), JSON.stringify(todayTodos.value))
+}
+
+const addTodo = () => {
+  if (!newTodo.value.title.trim()) return
+  
+  const todo = {
+    id: Date.now(),
+    title: newTodo.value.title.trim(),
+    subject: newTodo.value.subject,
+    targetMinutes: newTodo.value.targetMinutes || 0,
+    completed: false,
+    createdAt: new Date().toISOString()
+  }
+  
+  todayTodos.value.push(todo)
+  saveTodos()
+  playSound('select1')
+  
+  // Reset form
+  newTodo.value = { title: '', subject: '', targetMinutes: 30 }
+  showTodoModal.value = false
+}
+
+const toggleTodo = (id) => {
+  const todo = todayTodos.value.find(t => t.id === id)
+  if (todo) {
+    todo.completed = !todo.completed
+    saveTodos()
+    if (todo.completed) {
+      playSound('success')
+      toast.success('タスク完了！🎉')
+    }
+  }
+}
+
+const deleteTodo = async (id) => {
+  const confirmed = await showConfirm({
+    type: 'warning',
+    title: '削除確認',
+    message: 'この計画を削除しますか？',
+    confirmText: '削除',
+    cancelText: 'キャンセル'
+  })
+  if (confirmed) {
+    todayTodos.value = todayTodos.value.filter(t => t.id !== id)
+    saveTodos()
+  }
+}
 
 const openShop = () => {
   playSound('select1')
@@ -311,6 +525,7 @@ const onGoalCreated = () => {
 onMounted(() => {
   fetchTodayStats()
   fetchMyGoals()
+  loadTodos()
 })
 
 // Expose for parent component
