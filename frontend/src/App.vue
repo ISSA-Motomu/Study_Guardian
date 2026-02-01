@@ -195,8 +195,12 @@ const handleFabClick = () => {
   }
 }
 
-const handleStartStudy = async (subject) => {
-  await studyStore.startStudy(subject)
+const handleStartStudy = async (data) => {
+  // data can be string (subject) for backward compatibility or object { subject, material }
+  const subject = typeof data === 'string' ? data : data.subject
+  const material = typeof data === 'object' ? data.material : null
+  
+  await studyStore.startStudy(subject, material)
   view.value = 'timer'
 }
 

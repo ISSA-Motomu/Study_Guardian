@@ -13,6 +13,10 @@
           {{ studyStore.currentSubject }}
         </span>
       </p>
+      <!-- Material Info -->
+      <p v-if="studyStore.currentMaterial" class="mt-2 text-sm text-gray-500">
+        📚 {{ studyStore.currentMaterial.title }}
+      </p>
     </GlassPanel>
 
     <!-- Memo Input -->

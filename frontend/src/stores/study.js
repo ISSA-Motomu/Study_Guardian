@@ -18,6 +18,7 @@ export const useStudyStore = defineStore('study', () => {
   const lastSessionTime = ref('00:00:00')
   const currentSubject = ref('')
   const currentSubjectColor = ref('#000')
+  const currentMaterial = ref(null)  // 選択した教材情報
   const startTime = ref(null)
   const timerInterval = ref(null)
   const timerDisplay = ref('00:00:00')
@@ -45,7 +46,7 @@ export const useStudyStore = defineStore('study', () => {
     }
   }
 
-  const startStudy = async (subject) => {
+  const startStudy = async (subject, material = null) => {
     playSound('select1')
 
     if (!userStore.currentUserId) {
@@ -55,12 +56,17 @@ export const useStudyStore = defineStore('study', () => {
 
     studying.value = true
     try {
+      // 教材名を科目名と一緒に送信（教材選択時）
+      const subjectWithMaterial = material 
+        ? `${subject}（${material.title}）` 
+        : subject
+
       const res = await fetch('/api/study/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user_id: userStore.currentUserId,
-          subject: subject
+          subject: subjectWithMaterial
         })
       })
 
@@ -71,7 +77,8 @@ export const useStudyStore = defineStore('study', () => {
       const json = await res.json()
       if (json.status === 'ok') {
         currentSubject.value = subject
-        currentSubjectColor.value = subjects.value[subject]
+        currentSubjectColor.value = subjects.value[subject] || getSubjectColor(subject)
+        currentMaterial.value = material
         startTime.value = new Date()
         startTimerTick()
         inSession.value = true
@@ -85,6 +92,19 @@ export const useStudyStore = defineStore('study', () => {
     } finally {
       studying.value = false
     }
+  }
+
+  // 科目の色を取得（本棚から選んだ場合用）
+  const getSubjectColor = (subject) => {
+    const colors = {
+      '国語': '#EF5350',
+      '数学': '#42A5F5',
+      '理科': '#66BB6A',
+      '社会': '#AB47BC',
+      '英語': '#7986CB',
+      'その他': '#90A4AE'
+    }
+    return colors[subject] || '#90A4AE'
   }
 
   const startTimerTick = () => {
@@ -105,6 +125,8 @@ export const useStudyStore = defineStore('study', () => {
   const openMemoConfirm = () => {
     memoToSend.value = studyMemo.value
     showMemoConfirm.value = true
+    // 振り返り画面でもタイマーは継続（ファインマンテクニックの時間も勉強時間に含める）
+    // タイマーを止めない
   }
 
   // 学習記録を保存
@@ -355,6 +377,7 @@ export const useStudyStore = defineStore('study', () => {
     studyMemo.value = ''
     memoToSend.value = ''
     timerDisplay.value = '00:00:00'
+    currentMaterial.value = null
   }
 
   // 一時中断中かどうか（セッションあり、かつタイマー停止中）
@@ -375,6 +398,7 @@ export const useStudyStore = defineStore('study', () => {
     lastSessionTime,
     currentSubject,
     currentSubjectColor,
+    currentMaterial,
     timerDisplay,
     showSubjectModal,
     studyMemo,

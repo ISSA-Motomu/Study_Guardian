@@ -2,14 +2,34 @@
   <Teleport to="body">
     <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center px-4">
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-fadeInUp max-h-[90vh] flex flex-col">
-        <!-- Header -->
+        <!-- Header with Timer -->
         <div class="bg-gradient-to-r from-green-500 to-emerald-600 p-4 flex-shrink-0">
-          <h3 class="text-white font-bold text-lg text-center">🧠 学習の振り返り</h3>
-          <p class="text-green-100 text-xs text-center mt-1">ファインマンテクニックで記憶定着！</p>
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-white font-bold text-lg">🧠 学習の振り返り</h3>
+              <p class="text-green-100 text-xs mt-0.5">ファインマンテクニックで記憶定着！</p>
+            </div>
+            <!-- Live Timer Display -->
+            <div class="text-right">
+              <p class="text-white/70 text-[10px]">勉強時間</p>
+              <p class="text-white font-mono font-bold text-xl">{{ studyStore.timerDisplay }}</p>
+            </div>
+          </div>
         </div>
 
         <!-- Scrollable Content -->
         <div class="p-4 overflow-y-auto flex-1">
+          <!-- Current Material Info -->
+          <div v-if="studyStore.currentMaterial" class="bg-indigo-50 border border-indigo-200 rounded-xl p-3 mb-4">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">📚</span>
+              <div>
+                <p class="font-bold text-sm text-indigo-800">{{ studyStore.currentMaterial.title }}</p>
+                <p class="text-xs text-indigo-600">{{ studyStore.currentSubject }}</p>
+              </div>
+            </div>
+          </div>
+
           <!-- Feynman Technique Explanation -->
           <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
             <div class="flex items-start gap-2">
@@ -116,6 +136,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useSound } from '@/composables/useSound'
+import { useStudyStore } from '@/stores/study'
 
 const props = defineProps({
   memo: {
@@ -126,6 +147,7 @@ const props = defineProps({
 
 const emit = defineEmits(['confirm', 'cancel'])
 const { playSound } = useSound()
+const studyStore = useStudyStore()
 
 // State
 const learningReflection = ref('')
