@@ -56,7 +56,7 @@
           </p>
         </div>
         <button 
-          @click="emit('timer')"
+          @click="handleResume"
           class="bg-amber-500 text-white px-4 py-2 rounded-lg font-bold"
         >
           再開
@@ -520,6 +520,14 @@ const completeGoal = async (goalId) => {
 
 const onGoalCreated = () => {
   fetchMyGoals()
+}
+
+// 中断中のセッションを再開
+const handleResume = async () => {
+  const success = await studyStore.resumeStudy()
+  if (success) {
+    emit('timer')
+  }
 }
 
 onMounted(() => {

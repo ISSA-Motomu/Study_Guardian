@@ -57,8 +57,8 @@ export const useStudyStore = defineStore('study', () => {
     studying.value = true
     try {
       // 教材名を科目名と一緒に送信（教材選択時）
-      const subjectWithMaterial = material 
-        ? `${subject}（${material.title}）` 
+      const subjectWithMaterial = material
+        ? `${subject}（${material.title}）`
         : subject
 
       const res = await fetch('/api/study/start', {
@@ -347,7 +347,7 @@ export const useStudyStore = defineStore('study', () => {
       const json = await res.json()
       if (json.status === 'ok' && json.active) {
         currentSubject.value = json.data.subject
-        currentSubjectColor.value = subjects.value[json.data.subject] || '#000'
+        currentSubjectColor.value = subjects.value[json.data.subject] || getSubjectColor(json.data.subject)
 
         const startTimeParts = json.data.start_time.split(':')
         const now = new Date()
@@ -358,8 +358,34 @@ export const useStudyStore = defineStore('study', () => {
         if (startDate > now) startDate.setDate(startDate.getDate() - 1)
 
         startTime.value = startDate
-        startTimerTick()
         inSession.value = true
+
+        // PENDING（一時中断中）の場合はタイマーを開始しない
+        if (json.data.status === 'PENDING') {
+          // 中断時の時間を計算してlastSessionTimeにセット
+          if (json.data.end_time) {
+            const endParts = json.data.end_time.split(':')
+            const endDate = new Date(
+              now.getFullYear(), now.getMonth(), now.getDate(),
+              Number(endParts[0]), Number(endParts[1]), Number(endParts[2])
+            )
+            if (endDate < startDate) endDate.setDate(endDate.getDate() + 1)
+            const diff = endDate - startDate
+            const hours = Math.floor(diff / 3600000)
+            const minutes = Math.floor((diff % 3600000) / 60000)
+            const seconds = Math.floor((diff % 60000) / 1000)
+            lastSessionTime.value =
+              (hours > 0 ? String(hours).padStart(2, '0') + ':' : '') +
+              String(minutes).padStart(2, '0') + ':' +
+              String(seconds).padStart(2, '0')
+          }
+          // timerIntervalはnullのまま（isPaused = true となる）
+          timerInterval.value = null
+        } else {
+          // STARTED: 通常通りタイマーを開始
+          startTimerTick()
+        }
+
         return true
       }
     } catch (e) {
@@ -390,6 +416,45 @@ export const useStudyStore = defineStore('study', () => {
     return inSession.value && timerInterval.value !== null
   })
 
+  // 中断中のセッションを再開
+  const resumeStudy = async () => {
+    playSound('select1')
+
+    if (!userStore.currentUserId) {
+      toastStore.error('ユーザーIDが取得できていません')
+      return false
+    }
+
+    try {
+      const res = await fetch('/api/study/resume', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userStore.currentUserId })
+      })
+      const json = await res.json()
+      if (json.status === 'ok') {
+        // 開始時刻を再計算して、タイマーを再開
+        if (json.data?.start_time) {
+          const startTimeParts = json.data.start_time.split(':')
+          const now = new Date()
+          const startDate = new Date(
+            now.getFullYear(), now.getMonth(), now.getDate(),
+            Number(startTimeParts[0]), Number(startTimeParts[1]), Number(startTimeParts[2])
+          )
+          if (startDate > now) startDate.setDate(startDate.getDate() - 1)
+          startTime.value = startDate
+        }
+        startTimerTick()
+        return true
+      } else {
+        toastStore.error('再開に失敗しました: ' + (json.message || ''))
+      }
+    } catch (e) {
+      toastStore.error(`通信エラー: ${e.message}`)
+    }
+    return false
+  }
+
   return {
     // State
     subjects,
@@ -414,6 +479,7 @@ export const useStudyStore = defineStore('study', () => {
     finishStudy,
     cancelStudy,
     pauseStudy,
+    resumeStudy,
     checkActiveSession,
     resetSession
   }
