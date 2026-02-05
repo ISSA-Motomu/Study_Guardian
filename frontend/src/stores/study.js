@@ -5,31 +5,105 @@ import { useToastStore } from './toast'
 import { useSound } from '@/composables/useSound'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
 
+/**
+ * セッション状態（原子的な状態管理）
+ * - IDLE: 勉強していない
+ * - STUDYING: 勉強中（タイマー動作中）
+ * - PAUSED: 一時中断中（タイマー停止、セッションあり）
+ * - CONFIRMING: 終了確認中（振り返り画面表示中）
+ */
+const SessionState = {
+  IDLE: 'IDLE',
+  STUDYING: 'STUDYING',
+  PAUSED: 'PAUSED',
+  CONFIRMING: 'CONFIRMING'
+}
+
 export const useStudyStore = defineStore('study', () => {
   const userStore = useUserStore()
   const toastStore = useToastStore()
   const { playSound } = useSound()
   const { showConfirm } = useConfirmDialog()
 
-  // State
+  // ===== Core State (原子的) =====
+  const sessionState = ref(SessionState.IDLE)
   const subjects = ref({})
-  const studying = ref(false)
-  const inSession = ref(false)
-  const lastSessionTime = ref('00:00:00')
   const currentSubject = ref('')
   const currentSubjectColor = ref('#000')
-  const currentMaterial = ref(null)  // 選択した教材情報
+  const currentMaterial = ref(null)
   const startTime = ref(null)
+  const pausedDuration = ref(0) // 中断時の経過時間（ミリ秒）
   const timerInterval = ref(null)
   const timerDisplay = ref('00:00:00')
 
+  // UI State
   const showSubjectModal = ref(false)
   const studyMemo = ref('')
   const showMemoConfirm = ref(false)
   const memoToSend = ref('')
+  const isLoading = ref(false) // API呼び出し中
 
-  // Actions
+  // ===== Computed (後方互換性のため) =====
+  const inSession = computed(() => sessionState.value !== SessionState.IDLE)
+  const isPaused = computed(() => sessionState.value === SessionState.PAUSED)
+  const isTimerRunning = computed(() => sessionState.value === SessionState.STUDYING)
+  const isConfirming = computed(() => sessionState.value === SessionState.CONFIRMING)
+  const studying = computed(() => isLoading.value) // 後方互換
+  const lastSessionTime = computed(() => {
+    if (pausedDuration.value === 0) return timerDisplay.value
+    const diff = pausedDuration.value
+    const hours = Math.floor(diff / 3600000)
+    const minutes = Math.floor((diff % 3600000) / 60000)
+    const seconds = Math.floor((diff % 60000) / 1000)
+    return (hours > 0 ? String(hours).padStart(2, '0') + ':' : '') +
+      String(minutes).padStart(2, '0') + ':' +
+      String(seconds).padStart(2, '0')
+  })
+
+  // ===== Helper Functions =====
+  const getSubjectColor = (subject) => {
+    const colors = {
+      '国語': '#EF5350',
+      '数学': '#42A5F5',
+      '理科': '#66BB6A',
+      '社会': '#AB47BC',
+      '英語': '#7986CB',
+      'その他': '#90A4AE'
+    }
+    return colors[subject] || '#90A4AE'
+  }
+
+  const startTimerTick = () => {
+    stopTimerTick() // 既存のタイマーをクリア
+    timerInterval.value = setInterval(() => {
+      if (!startTime.value) return
+      const now = new Date()
+      const diff = now - startTime.value
+      const hours = Math.floor(diff / 3600000)
+      const minutes = Math.floor((diff % 3600000) / 60000)
+      const seconds = Math.floor((diff % 60000) / 1000)
+      timerDisplay.value =
+        (hours > 0 ? String(hours).padStart(2, '0') + ':' : '') +
+        String(minutes).padStart(2, '0') + ':' +
+        String(seconds).padStart(2, '0')
+    }, 1000)
+  }
+
+  const stopTimerTick = () => {
+    if (timerInterval.value) {
+      clearInterval(timerInterval.value)
+      timerInterval.value = null
+    }
+  }
+
+  // ===== Actions =====
   const openSubjectModal = async () => {
+    // 勉強中の場合は警告
+    if (inSession.value) {
+      toastStore.warning('勉強中です。タイマー画面から操作してください。')
+      return
+    }
+
     playSound('click')
     showSubjectModal.value = true
 
@@ -47,16 +121,25 @@ export const useStudyStore = defineStore('study', () => {
   }
 
   const startStudy = async (subject, material = null) => {
+    // ガード: 既に勉強中なら開始しない
+    if (inSession.value) {
+      toastStore.warning('既に勉強中です。')
+      return false
+    }
+    // ガード: ローディング中なら開始しない（連打防止）
+    if (isLoading.value) {
+      return false
+    }
+
     playSound('select1')
 
     if (!userStore.currentUserId) {
-      alert('エラー: ユーザーIDが取得できていません。再読み込みしてください。')
-      return
+      toastStore.error('ユーザーIDが取得できていません。再読み込みしてください。')
+      return false
     }
 
-    studying.value = true
+    isLoading.value = true
     try {
-      // 教材名を科目名と一緒に送信（教材選択時）
       const subjectWithMaterial = material
         ? `${subject}（${material.title}）`
         : subject
@@ -76,57 +159,47 @@ export const useStudyStore = defineStore('study', () => {
 
       const json = await res.json()
       if (json.status === 'ok') {
+        // 状態を原子的に更新
         currentSubject.value = subject
         currentSubjectColor.value = subjects.value[subject] || getSubjectColor(subject)
         currentMaterial.value = material
         startTime.value = new Date()
+        pausedDuration.value = 0
+        studyMemo.value = ''
+        sessionState.value = SessionState.STUDYING
         startTimerTick()
-        inSession.value = true
         showSubjectModal.value = false
+        return true
       } else {
-        alert('開始失敗: ' + json.message)
+        toastStore.error('開始失敗: ' + json.message)
+        return false
       }
     } catch (e) {
-      alert('通信エラー: ' + e.message)
+      toastStore.error('通信エラー: ' + e.message)
       console.error(e)
+      return false
     } finally {
-      studying.value = false
+      isLoading.value = false
     }
-  }
-
-  // 科目の色を取得（本棚から選んだ場合用）
-  const getSubjectColor = (subject) => {
-    const colors = {
-      '国語': '#EF5350',
-      '数学': '#42A5F5',
-      '理科': '#66BB6A',
-      '社会': '#AB47BC',
-      '英語': '#7986CB',
-      'その他': '#90A4AE'
-    }
-    return colors[subject] || '#90A4AE'
-  }
-
-  const startTimerTick = () => {
-    if (timerInterval.value) clearInterval(timerInterval.value)
-    timerInterval.value = setInterval(() => {
-      const now = new Date()
-      const diff = now - startTime.value
-      const hours = Math.floor(diff / 3600000)
-      const minutes = Math.floor((diff % 3600000) / 60000)
-      const seconds = Math.floor((diff % 60000) / 1000)
-      timerDisplay.value =
-        (hours > 0 ? String(hours).padStart(2, '0') + ':' : '') +
-        String(minutes).padStart(2, '0') + ':' +
-        String(seconds).padStart(2, '0')
-    }, 1000)
   }
 
   const openMemoConfirm = () => {
+    // ガード: 勉強中でなければ無視
+    if (sessionState.value !== SessionState.STUDYING) {
+      toastStore.warning('勉強中ではありません。')
+      return
+    }
     memoToSend.value = studyMemo.value
     showMemoConfirm.value = true
-    // 振り返り画面でもタイマーは継続（ファインマンテクニックの時間も勉強時間に含める）
-    // タイマーを止めない
+    sessionState.value = SessionState.CONFIRMING
+    // タイマーは継続（ファインマンテクニックの時間も勉強時間に含める）
+  }
+
+  const cancelMemoConfirm = () => {
+    showMemoConfirm.value = false
+    if (sessionState.value === SessionState.CONFIRMING) {
+      sessionState.value = SessionState.STUDYING
+    }
   }
 
   // 学習記録を保存
@@ -153,10 +226,21 @@ export const useStudyStore = defineStore('study', () => {
   }
 
   const finishStudy = async (reflectionData = null) => {
-    playSound('levelup')
-    showMemoConfirm.value = false
+    // ガード: 勉強中・確認中でなければ終了しない
+    if (sessionState.value !== SessionState.STUDYING && sessionState.value !== SessionState.CONFIRMING) {
+      toastStore.warning('勉強中ではありません。')
+      return 0
+    }
+    // ガード: ローディング中なら無視（連打防止）
+    if (isLoading.value) {
+      return 0
+    }
 
-    // 振り返りボーナスがあるかどうか
+    playSound('levelup')
+    stopTimerTick()
+    showMemoConfirm.value = false
+    isLoading.value = true
+
     const hasReflection = reflectionData?.hasReflection || false
 
     try {
@@ -263,15 +347,33 @@ export const useStudyStore = defineStore('study', () => {
         return studyMinutes
       } else {
         toastStore.error('終了処理に失敗しました: ' + json.message)
+        // 失敗時は状態を戻す
+        sessionState.value = SessionState.STUDYING
+        startTimerTick()
       }
     } catch (e) {
       console.error(e)
       toastStore.error(`通信エラーが発生しました\n${e.message}`)
+      // 失敗時は状態を戻す
+      sessionState.value = SessionState.STUDYING
+      startTimerTick()
+    } finally {
+      isLoading.value = false
     }
     return 0
   }
 
   const cancelStudy = async () => {
+    // ガード: 勉強中でなければ無視
+    if (!inSession.value) {
+      toastStore.warning('勉強中ではありません。')
+      return
+    }
+    // ガード: ローディング中なら無視
+    if (isLoading.value) {
+      return
+    }
+
     const confirmed = await showConfirm({
       type: 'warning',
       title: '記録の取消',
@@ -283,6 +385,7 @@ export const useStudyStore = defineStore('study', () => {
     if (!confirmed) return
 
     playSound('click')
+    isLoading.value = true
     try {
       const res = await fetch('/api/study/cancel', {
         method: 'POST',
@@ -298,10 +401,22 @@ export const useStudyStore = defineStore('study', () => {
       }
     } catch (e) {
       toastStore.error(`通信エラー: ${e.message}`)
+    } finally {
+      isLoading.value = false
     }
   }
 
   const pauseStudy = async (closeApp = false) => {
+    // ガード: 勉強中でなければ無視
+    if (sessionState.value !== SessionState.STUDYING && sessionState.value !== SessionState.CONFIRMING) {
+      toastStore.warning('勉強中ではありません。')
+      return false
+    }
+    // ガード: ローディング中なら無視
+    if (isLoading.value) {
+      return false
+    }
+
     playSound('click')
     const confirmed = await showConfirm({
       type: 'info',
@@ -313,8 +428,12 @@ export const useStudyStore = defineStore('study', () => {
     })
     if (!confirmed) return false
 
-    lastSessionTime.value = timerDisplay.value
+    // 現在の経過時間を保存
+    if (startTime.value) {
+      pausedDuration.value = new Date() - startTime.value
+    }
 
+    isLoading.value = true
     try {
       const res = await fetch('/api/study/pause', {
         method: 'POST',
@@ -323,10 +442,9 @@ export const useStudyStore = defineStore('study', () => {
       })
       const json = await res.json()
       if (json.status === 'ok') {
-        studying.value = false
-        clearInterval(timerInterval.value)
-        timerInterval.value = null  // 明示的にnullにセット
-        // inSession remains true (paused state)
+        stopTimerTick()
+        sessionState.value = SessionState.PAUSED
+        showMemoConfirm.value = false
 
         if (closeApp && window.liff) {
           liff.closeWindow()
@@ -337,6 +455,8 @@ export const useStudyStore = defineStore('study', () => {
       }
     } catch (e) {
       toastStore.error(`通信エラー: ${e.message}`)
+    } finally {
+      isLoading.value = false
     }
     return false
   }
@@ -346,8 +466,13 @@ export const useStudyStore = defineStore('study', () => {
       const res = await fetch(`/api/user/${userId}/active_session`)
       const json = await res.json()
       if (json.status === 'ok' && json.active) {
-        currentSubject.value = json.data.subject
-        currentSubjectColor.value = subjects.value[json.data.subject] || getSubjectColor(json.data.subject)
+        // 科目情報を復元（教材名付きの場合も対応）
+        const rawSubject = json.data.subject || ''
+        const subjectMatch = rawSubject.match(/^([^（]+)/)
+        const subject = subjectMatch ? subjectMatch[1] : rawSubject
+
+        currentSubject.value = subject
+        currentSubjectColor.value = subjects.value[subject] || getSubjectColor(subject)
 
         const startTimeParts = json.data.start_time.split(':')
         const now = new Date()
@@ -356,13 +481,10 @@ export const useStudyStore = defineStore('study', () => {
           Number(startTimeParts[0]), Number(startTimeParts[1]), Number(startTimeParts[2])
         )
         if (startDate > now) startDate.setDate(startDate.getDate() - 1)
-
         startTime.value = startDate
-        inSession.value = true
 
-        // PENDING（一時中断中）の場合はタイマーを開始しない
+        // PENDING（一時中断中）の場合
         if (json.data.status === 'PENDING') {
-          // 中断時の時間を計算してlastSessionTimeにセット
           if (json.data.end_time) {
             const endParts = json.data.end_time.split(':')
             const endDate = new Date(
@@ -370,19 +492,12 @@ export const useStudyStore = defineStore('study', () => {
               Number(endParts[0]), Number(endParts[1]), Number(endParts[2])
             )
             if (endDate < startDate) endDate.setDate(endDate.getDate() + 1)
-            const diff = endDate - startDate
-            const hours = Math.floor(diff / 3600000)
-            const minutes = Math.floor((diff % 3600000) / 60000)
-            const seconds = Math.floor((diff % 60000) / 1000)
-            lastSessionTime.value =
-              (hours > 0 ? String(hours).padStart(2, '0') + ':' : '') +
-              String(minutes).padStart(2, '0') + ':' +
-              String(seconds).padStart(2, '0')
+            pausedDuration.value = endDate - startDate
           }
-          // timerIntervalはnullのまま（isPaused = true となる）
-          timerInterval.value = null
+          sessionState.value = SessionState.PAUSED
         } else {
           // STARTED: 通常通りタイマーを開始
+          sessionState.value = SessionState.STUDYING
           startTimerTick()
         }
 
@@ -391,33 +506,36 @@ export const useStudyStore = defineStore('study', () => {
     } catch (e) {
       console.error(e)
     }
-    inSession.value = false
+    sessionState.value = SessionState.IDLE
     return false
   }
 
   const resetSession = () => {
-    studying.value = false
-    clearInterval(timerInterval.value)
-    timerInterval.value = null
-    inSession.value = false
+    stopTimerTick()
+    sessionState.value = SessionState.IDLE
+    currentSubject.value = ''
+    currentSubjectColor.value = '#000'
+    currentMaterial.value = null
+    startTime.value = null
+    pausedDuration.value = 0
     studyMemo.value = ''
     memoToSend.value = ''
     timerDisplay.value = '00:00:00'
-    currentMaterial.value = null
+    showMemoConfirm.value = false
   }
-
-  // 一時中断中かどうか（セッションあり、かつタイマー停止中）
-  const isPaused = computed(() => {
-    return inSession.value && timerInterval.value === null
-  })
-
-  // タイマー動作中かどうか（セッションあり、かつタイマー動作中）
-  const isTimerRunning = computed(() => {
-    return inSession.value && timerInterval.value !== null
-  })
 
   // 中断中のセッションを再開
   const resumeStudy = async () => {
+    // ガード: 中断中でなければ無視
+    if (sessionState.value !== SessionState.PAUSED) {
+      toastStore.warning('中断中のセッションがありません。')
+      return false
+    }
+    // ガード: ローディング中なら無視
+    if (isLoading.value) {
+      return false
+    }
+
     playSound('select1')
 
     if (!userStore.currentUserId) {
@@ -425,6 +543,7 @@ export const useStudyStore = defineStore('study', () => {
       return false
     }
 
+    isLoading.value = true
     try {
       const res = await fetch('/api/study/resume', {
         method: 'POST',
@@ -444,6 +563,7 @@ export const useStudyStore = defineStore('study', () => {
           if (startDate > now) startDate.setDate(startDate.getDate() - 1)
           startTime.value = startDate
         }
+        sessionState.value = SessionState.STUDYING
         startTimerTick()
         return true
       } else {
@@ -451,6 +571,8 @@ export const useStudyStore = defineStore('study', () => {
       }
     } catch (e) {
       toastStore.error(`通信エラー: ${e.message}`)
+    } finally {
+      isLoading.value = false
     }
     return false
   }
@@ -458,7 +580,6 @@ export const useStudyStore = defineStore('study', () => {
   return {
     // State
     subjects,
-    studying,
     inSession,
     lastSessionTime,
     currentSubject,
@@ -469,13 +590,17 @@ export const useStudyStore = defineStore('study', () => {
     studyMemo,
     showMemoConfirm,
     memoToSend,
+    isLoading,
     // Computed
     isPaused,
     isTimerRunning,
+    isConfirming,
+    studying, // 後方互換
     // Actions
     openSubjectModal,
     startStudy,
     openMemoConfirm,
+    cancelMemoConfirm,
     finishStudy,
     cancelStudy,
     pauseStudy,

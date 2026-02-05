@@ -58,7 +58,7 @@
       v-if="studyStore.showMemoConfirm"
       :memo="studyStore.memoToSend"
       @confirm="handleFinishStudy"
-      @cancel="studyStore.showMemoConfirm = false"
+      @cancel="studyStore.cancelMemoConfirm"
     />
 
     <BuyModal
@@ -184,6 +184,11 @@ onMounted(async () => {
   await initLiff()
   gameStore.startBattleLoop()
   evolutionStore.initialize()
+  
+  // 勉強中のセッションがあればタイマー画面を表示
+  if (studyStore.isTimerRunning) {
+    view.value = 'timer'
+  }
 })
 
 // Handlers

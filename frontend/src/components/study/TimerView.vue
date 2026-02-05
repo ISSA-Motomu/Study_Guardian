@@ -48,18 +48,12 @@
     </div>
 
     <!-- Secondary Actions -->
-    <div class="flex justify-center gap-4">
+    <div class="flex justify-center">
       <button
         @click="handleCancel"
         class="text-red-500 underline text-sm"
       >
         記録を取り消す
-      </button>
-      <button
-        @click="emit('back')"
-        class="text-gray-500 underline text-sm"
-      >
-        戻る
       </button>
     </div>
   </div>
